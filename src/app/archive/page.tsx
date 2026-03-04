@@ -1,5 +1,7 @@
 import { Header } from "@/components/Header";
 import Link from "next/link";
+import { getTodayBelgrade } from "@/lib/date";
+import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 
 const LAUNCH_DATE = "2026-03-04";
 
@@ -7,7 +9,9 @@ function getDateRange(start: string): string[] {
   const dates: string[] = [];
   const [sy, sm, sd] = start.split("-").map(Number);
   const startDate = new Date(sy!, sm! - 1, sd!);
-  const today = new Date();
+  const todayStr = getTodayBelgrade();
+  const [ty, tm, td] = todayStr.split("-").map(Number);
+  const today = new Date(ty!, tm! - 1, td!);
   today.setHours(0, 0, 0, 0);
 
   const d = new Date(startDate);
@@ -48,10 +52,8 @@ export default function ArchivePage() {
               href={`/art/${date}`}
               className="block p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
             >
-              <div className="aspect-video bg-zinc-100 dark:bg-zinc-800 rounded mb-2 flex items-center justify-center text-zinc-400 text-sm">
-                {date}
-              </div>
-              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <ArchiveThumbnail date={date} />
+              <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 {date}
               </p>
             </Link>

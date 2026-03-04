@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { seedFromDate } from "@/lib/qrng-server";
 import { QRNGStream } from "@/lib/qrng";
+import { getTodayBelgrade } from "@/lib/date";
 
 export const alt = "QRNG Art — umetnost iz kvantnog suma";
 export const dynamic = "force-dynamic";
@@ -12,9 +13,7 @@ function hslToCss(h: number, s: number, l: number): string {
 }
 
 export default async function Image() {
-  const today = new Date()
-    .toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" })
-    .replace(/\//g, "-");
+  const today = getTodayBelgrade();
 
   const values = seedFromDate(today);
   const stream = new QRNGStream(values);

@@ -1,11 +1,10 @@
 import { ArtCanvas } from "@/components/ArtCanvas";
 import { Header } from "@/components/Header";
 import { DailyArtSection } from "@/components/DailyArtSection";
+import { getTodayBelgrade } from "@/lib/date";
 
 export default function Home() {
-  const today = new Date()
-    .toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" })
-    .replace(/\//g, "-");
+  const today = getTodayBelgrade();
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
