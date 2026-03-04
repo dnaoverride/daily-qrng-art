@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://qrng-art.dnasoftwaresolutions.com";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://qrngart.dnasoftwaresolutions.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
