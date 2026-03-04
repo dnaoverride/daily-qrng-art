@@ -12,10 +12,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://qrng-art.dnasoftwaresolutions.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: "QRNG Art — umetnost iz kvantnog suma",
   description:
     "Jedinstvena slika svakog dana, generisana iz kvantno nasumičnih brojeva. Australijski nacionalni univerzitet, ANU QRNG.",
+  openGraph: {
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "QRNG Art — umetnost iz kvantnog suma",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
