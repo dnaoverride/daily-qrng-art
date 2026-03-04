@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import Link from "next/link";
 
-const PROJECT_START = "2025-03-01";
+const LAUNCH_DATE = "2026-03-04";
 
 function getDateRange(start: string): string[] {
   const dates: string[] = [];
@@ -11,6 +11,7 @@ function getDateRange(start: string): string[] {
   today.setHours(0, 0, 0, 0);
 
   const d = new Date(startDate);
+  d.setHours(0, 0, 0, 0);
   while (d <= today) {
     dates.push(
       d.toLocaleDateString("en-CA", {
@@ -26,7 +27,7 @@ function getDateRange(start: string): string[] {
 }
 
 export default function ArchivePage() {
-  const dates = getDateRange(PROJECT_START);
+  const dates = getDateRange(LAUNCH_DATE);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -35,6 +36,11 @@ export default function ArchivePage() {
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
           Arhiva generisanih slika
         </h1>
+        {dates.length === 0 ? (
+          <p className="text-zinc-500">
+            Arhiva će biti dostupna nakon prvog dana.
+          </p>
+        ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {dates.map((date) => (
             <Link
@@ -51,6 +57,7 @@ export default function ArchivePage() {
             </Link>
           ))}
         </div>
+        )}
       </main>
     </div>
   );
