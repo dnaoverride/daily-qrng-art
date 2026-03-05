@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { QRNGStream } from "@/lib/qrng";
-import { renderLandscape } from "@/lib/landscape";
+import { renderArt } from "@/lib/scenarios";
 
 const W = 600;
 const H = 338;
@@ -22,7 +22,7 @@ export function ArchiveThumbnail({ date }: { date: string }) {
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
-        renderLandscape(ctx, new QRNGStream(data.values), W, H);
+        renderArt(ctx, new QRNGStream(data.values), W, H);
         setLoaded(true);
       })
       .catch(() => {});

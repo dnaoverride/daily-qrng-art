@@ -54,6 +54,13 @@ export function Header() {
             >
               Arhiva generisanih slika
             </Link>
+            <Link
+              href="/create-art"
+              onClick={() => setOpen(false)}
+              className="block py-2 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium"
+            >
+              Playground
+            </Link>
           </div>
         </nav>
       )}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QRNGStream } from "@/lib/qrng";
-import { renderLandscape } from "@/lib/landscape";
+import { renderArt } from "@/lib/scenarios";
 
 const W = 1200;
 const H = 675;
@@ -11,9 +11,16 @@ interface ArtCanvasProps {
   values: number[];
   date?: string;
   className?: string;
+  /** Called with the canvas element after draw (e.g. for PNG download) */
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
 
-export function ArtCanvas({ values, date, className = "" }: ArtCanvasProps) {
+export function ArtCanvas({
+  values,
+  date,
+  className = "",
+  onCanvasReady,
+}: ArtCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -25,9 +32,10 @@ export function ArtCanvas({ values, date, className = "" }: ArtCanvasProps) {
     if (!ctx) return;
 
     const stream = new QRNGStream(values);
-    renderLandscape(ctx, stream, W, H);
+    renderArt(ctx, stream, W, H);
     setReady(true);
-  }, [values]);
+    onCanvasReady?.(canvas);
+  }, [values, onCanvasReady]);
 
   useEffect(() => {
     draw();
