@@ -3,6 +3,8 @@ import { Header } from "@/components/Header";
 import { DailyArtSection } from "@/components/DailyArtSection";
 import { getTodayBelgrade } from "@/lib/date";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   const today = getTodayBelgrade();
 

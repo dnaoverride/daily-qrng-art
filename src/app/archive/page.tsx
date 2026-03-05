@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getTodayBelgrade } from "@/lib/date";
 import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 
+export const dynamic = "force-dynamic";
+
 const LAUNCH_DATE = "2026-03-04";
 
 function getDateRange(start: string): string[] {
