@@ -1,7 +1,6 @@
 import { Header } from "@/components/Header";
 import Link from "next/link";
 import { getTodayBelgrade } from "@/lib/date";
-import { seedFromDate } from "@/lib/qrng-server";
 import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 
 const LAUNCH_DATE = "2026-03-04";
@@ -19,11 +18,13 @@ function getDateRange(start: string): string[] {
   d.setHours(0, 0, 0, 0);
   while (d <= today) {
     dates.push(
-      d.toLocaleDateString("en-CA", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).replace(/\//g, "-")
+      d
+        .toLocaleDateString("en-CA", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\//g, "-")
     );
     d.setDate(d.getDate() + 1);
   }
@@ -47,21 +48,18 @@ export default function ArchivePage() {
           </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {dates.map((date) => {
-              const values = seedFromDate(date);
-              return (
-                <Link
-                  key={date}
-                  href={`/art/${date}`}
-                  className="block p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
-                >
-                  <ArchiveThumbnail values={values} />
-                  <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                    {date}
-                  </p>
-                </Link>
-              );
-            })}
+            {dates.map((date) => (
+              <Link
+                key={date}
+                href={`/art/${date}`}
+                className="block p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+              >
+                <ArchiveThumbnail date={date} />
+                <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  {date}
+                </p>
+              </Link>
+            ))}
           </div>
         )}
       </main>
