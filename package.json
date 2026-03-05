@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9500",
+    "prebuild": "rm -rf .next",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.95",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
