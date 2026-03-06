@@ -62,10 +62,11 @@ export function drawSunGlow(
   coreColor: RGB,
   layers = 18,
   alphaBase = 10,
-  alphaStep = 12
+  alphaStep = 12,
+  glowSpread = 0.18
 ): void {
   for (let k = layers; k >= 0; k--) {
-    const rr = Math.floor(radius * (1 + k * 0.18));
+    const rr = Math.floor(radius * (1 + k * glowSpread));
     const alpha = alphaBase + k * alphaStep;
     ctx.fillStyle = `rgba(${glowColor[0]},${glowColor[1]},${glowColor[2]},${alpha / 255})`;
     ctx.beginPath();

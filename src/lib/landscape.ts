@@ -135,9 +135,10 @@ export function renderLandscape(
     radius,
     glowColor,
     coreColor,
-    18,
-    10,
-    scene !== "night" ? 12 : 10
+    scene === "night" ? 5 : 18,
+    scene === "night" ? 4 : 10,
+    scene === "night" ? 5 : 12,
+    scene === "night" ? 0.06 : 0.18
   );
 
   if (scene !== "night") {
