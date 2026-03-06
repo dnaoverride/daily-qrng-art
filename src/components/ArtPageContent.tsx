@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal } from "./QRNGReveal";
 
@@ -11,15 +12,16 @@ interface ArtPageContentProps {
 export function ArtPageContent({ date }: ArtPageContentProps) {
   const [values, setValues] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("art");
 
   useEffect(() => {
     fetch(`/api/art/${date}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.values) setValues(data.values);
-        else setError(data.error || "Greška");
+        else setError(data.error || t("error"));
       })
-      .catch(() => setError("Greška učitavanja"));
+      .catch(() => setError(t("errorLoad")));
   }, [date]);
 
   if (error) {
@@ -33,7 +35,7 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
   if (!values) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <p className="text-zinc-500">Učitavanje...</p>
+        <p className="text-zinc-500">{t("loading")}</p>
       </div>
     );
   }
@@ -41,7 +43,7 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
   return (
     <div>
       <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-        Slika za {date}
+        {t("title", { date })}
       </h1>
       <div className="flex justify-center">
         <ArtCanvas values={values} date={date} />

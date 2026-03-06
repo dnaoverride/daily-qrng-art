@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { getTodayBelgrade } from "@/lib/date";
 import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 
@@ -34,19 +35,20 @@ function getDateRange(start: string): string[] {
   return dates.reverse();
 }
 
-export default function ArchivePage() {
+export default async function ArchivePage() {
   const dates = getDateRange(LAUNCH_DATE);
+  const t = await getTranslations("archive");
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Header />
       <main className="pt-20 pb-16 px-4 max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
-          Arhiva generisanih slika
+          {t("title")}
         </h1>
         {dates.length === 0 ? (
           <p className="text-zinc-500">
-            Arhiva će biti dostupna nakon prvog dana.
+            {t("empty")}
           </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

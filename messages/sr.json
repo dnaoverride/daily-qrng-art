@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "title": "QRNG Art — umetnost iz kvantnog šuma",
+    "description": "Jedinstvena slika svakog dana, generisana iz kvantno nasumičnih brojeva. Australijski nacionalni univerzitet, ANU QRNG.",
+    "ogAlt": "QRNG Art — umetnost iz kvantnog šuma"
+  },
+  "header": {
+    "brand": "QRNG Art",
+    "archive": "Arhiva generisanih slika",
+    "playground": "Igraonica",
+    "menuAria": "Meni"
+  },
+  "home": {
+    "title": "Slika dana",
+    "howTitle": "Kako je ova slika nastala?",
+    "paragraph1Prefix": "Ova slika nastala je iz ",
+    "paragraph1Strong": "kvantnog šuma",
+    "paragraph1Suffix": " — prave nasumičnosti koja potiče iz kvantnih procesa (fotonska detekcija na Australijskom nacionalnom univerzitetu), ne iz algoritma na računaru.",
+    "paragraph2": "Svaki od 1000 kvantno generisanih brojeva utiče na finalni izgled: boju neba, broj zvezda, oblik planina, poziciju sunca ili meseca, oblake. Isti set brojeva uvek daje istu sliku — reproducibilnu umetnost iz haosa."
+  },
+  "createArt": {
+    "title": "Igraonica — unesi 1000 brojeva",
+    "placeholder": "1000 brojeva (0–65535), odvojenih zarezom, razmakom ili novim redom",
+    "generate": "Generiši sliku",
+    "loadToday": "Učitaj današnji art",
+    "random": "Nasumični brojevi",
+    "downloadPng": "Preuzmi PNG",
+    "scenario": "Scenarij: {name}",
+    "errorRequired": "Unesite tačno 1000 brojeva (0–65535), odvojenih zarezom, razmakom ili novim redom.",
+    "errorLoadToday": "Nije moguće učitati današnji art. Pokušajte ponovo.",
+    "errorRandom": "Nije moguće učitati nasumične brojeve. Pokušajte ponovo."
+  },
+  "archive": {
+    "title": "Arhiva generisanih slika",
+    "empty": "Arhiva će biti dostupna nakon prvog dana."
+  },
+  "art": {
+    "title": "Slika za {date}",
+    "loading": "Učitavanje...",
+    "errorLoad": "Greška učitavanja",
+    "error": "Greška"
+  },
+  "qrngReveal": {
+    "toggle": "Kvantni brojevi koji su kreirali ovu sliku",
+    "count": "{count} uint16 vrednosti",
+    "copied": "Kopirano!",
+    "copyJson": "Kopiraj JSON"
+  }
+}

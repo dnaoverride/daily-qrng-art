@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal } from "./QRNGReveal";
 
@@ -11,15 +12,16 @@ interface DailyArtSectionProps {
 export function DailyArtSection({ date }: DailyArtSectionProps) {
   const [values, setValues] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("art");
 
   useEffect(() => {
     fetch(`/api/art/${date}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.values) setValues(data.values);
-        else setError(data.error || "Greška učitavanja");
+        else setError(data.error || t("errorLoad"));
       })
-      .catch(() => setError("Nije moguće učitati sliku"));
+      .catch(() => setError(t("errorLoad")));
   }, [date]);
 
   if (error) {
@@ -33,7 +35,7 @@ export function DailyArtSection({ date }: DailyArtSectionProps) {
   if (!values) {
     return (
       <div className="flex justify-center items-center min-h-[400px] bg-zinc-100 dark:bg-zinc-900 rounded-lg">
-        <p className="text-zinc-500">Učitavanje...</p>
+        <p className="text-zinc-500">{t("loading")}</p>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Header } from "@/components/Header";
 import { ArtCanvas } from "@/components/ArtCanvas";
 import {
@@ -29,11 +30,13 @@ export default function CreateArtPage() {
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const t = useTranslations("createArt");
+
   function handleGenerate() {
     setError(null);
     const parsed = parseValues(input);
     if (!parsed) {
-      setError(`Unesite tačno ${REQUIRED_COUNT} brojeva (0–65535), odvojenih zarezom, razmakom ili novim redom.`);
+      setError(t("errorRequired"));
       setValues(null);
       return;
     }
@@ -53,7 +56,7 @@ export default function CreateArtPage() {
       setInput(data.values.join(", "));
       setValues(data.values);
     } catch {
-      setError("Nije moguće učitati današnji art. Pokušajte ponovo.");
+      setError(t("errorLoadToday"));
     }
   }
 
@@ -69,7 +72,7 @@ export default function CreateArtPage() {
       setInput(data.values.join(", "));
       setValues(data.values);
     } catch {
-      setError("Nije moguće učitati nasumične brojeve. Pokušajte ponovo.");
+      setError(t("errorRandom"));
     }
   }
 
@@ -96,14 +99,14 @@ export default function CreateArtPage() {
       <Header />
       <main className="pt-20 pb-16 px-4 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center mb-6">
-          Playground — unesi 1000 brojeva
+          {t("title")}
         </h1>
 
         <div className="space-y-3">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={`${REQUIRED_COUNT} brojeva (0–65535), odvojenih zarezom, razmakom ili novim redom`}
+            placeholder={t("placeholder")}
             rows={8}
             className="w-full px-4 py-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500"
           />
@@ -113,21 +116,21 @@ export default function CreateArtPage() {
               onClick={handleGenerate}
               className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium hover:opacity-90 transition-opacity"
             >
-              Generiši sliku
+              {t("generate")}
             </button>
             <button
               type="button"
               onClick={handleLoadToday}
               className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
-              Učitaj današnji art
+              {t("loadToday")}
             </button>
             <button
               type="button"
               onClick={handleRandom}
               className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
-              Nasumični brojevi
+              {t("random")}
             </button>
             {values && (
               <button
@@ -135,7 +138,7 @@ export default function CreateArtPage() {
                 onClick={handleDownloadPng}
                 className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                Preuzmi PNG
+                {t("downloadPng")}
               </button>
             )}
           </div>
@@ -150,7 +153,7 @@ export default function CreateArtPage() {
           <div className="mt-8">
             {scenarioName && (
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
-                Scenarij: {scenarioName}
+                {t("scenario", { name: scenarioName })}
               </p>
             )}
             <ArtCanvas
