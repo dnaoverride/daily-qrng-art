@@ -13,7 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://qrngart.dnasoftwaresolutions.com";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://qrng-art-test.dnasoftwaresolutions.com";
+const ogImageUrl = `${baseUrl.replace(/\/$/, "")}/api/og-image`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/api/og-image",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "QRNG Art — umetnost iz kvantnog suma",
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/api/og-image"],
+    images: [ogImageUrl],
   },
 };
 

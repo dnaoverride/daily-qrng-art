@@ -175,7 +175,7 @@ Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis prom
 - **README** — Inicijalna dokumentacija. Pravilo: SVAKI update se beleži u Changelog.
 - **Dokumentacija** — Izmene scenarija se beleže u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija), README referencira tu sekciju.
 - **Kosmos** — Pozadina zatamnena. Šest različitih boja. Umanjeno sencenje, specular highlight ka suncu (svetla tačka 0.92).
-- **Share / Open Graph** — `/api/og-image` renderuje pravu sliku dana (PNG) na serveru pomoću @napi-rs/canvas. og:image sada pokazuje stvarnu umetnost za Viber, Facebook itd.
+- **Share / Open Graph** — `/api/og-image` renderuje pravu sliku dana (PNG). Obrisan opengraph-image.tsx (imao prednost nad metadata). og:image koristi apsolutni URL.
 
 ---
 
