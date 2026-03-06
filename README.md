@@ -55,7 +55,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ### Pejzaž
 
-- Nebo ograničeno na prirodne nijanse (plava, siva, tople); nikad zelena (hue 85–165)
+- Nebo nikad zelena: avoidGreen za hue 85–165. Plava (day/night) ili narandžasto/crvenkasto (sunrise/sunset)
 - Oblaci beli ili svetlo sivi
 - Sunce uvek toplo (hue 25–60), ne plavo
 

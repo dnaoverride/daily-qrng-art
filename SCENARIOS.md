@@ -201,5 +201,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-03-05 | Kosmos | Sencenje umanjeno (shadow 0.32 umesto 0.06). Specular highlight ka suncu: svetla tačka (0.92) na poziciji usmerenoj ka izvoru svetlosti. |
 | 2026-03-05 | Kosmos | Specular omekšan: peak 0.84, širi prelaz (stop 0.06, 0.18), mekši falloff. |
 | 2026-03-05 | Kosmos | Specular vrh smanjen na 0.64. |
+| 2026-03-05 | Pejzaž | Nebo uvek plavo. Sneg: crna ivica samo gde ima snega. Planine: zelene (90%, sat 0.4, svetlije) ili tamno sive (10%). |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).
