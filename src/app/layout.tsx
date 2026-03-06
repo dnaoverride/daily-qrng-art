@@ -24,12 +24,16 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/api/og-image",
         width: 1200,
         height: 630,
         alt: "QRNG Art — umetnost iz kvantnog suma",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/api/og-image"],
   },
 };
 
