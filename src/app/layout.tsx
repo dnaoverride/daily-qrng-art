@@ -14,9 +14,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://qrng-art-test.dnasoftwaresolutions.com";
-const ogImageUrl = `${baseUrl.replace(/\/$/, "")}/api/og-image`;
+function getBaseUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://qrng-art-test.dnasoftwaresolutions.com";
+  const trimmed = raw.trim().replace(/\/$/, "");
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+const baseUrl = getBaseUrl();
+const ogImageUrl = `${baseUrl}/api/og-image`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("metadata");
