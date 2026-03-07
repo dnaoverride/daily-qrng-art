@@ -13,15 +13,15 @@ export function renderForest(
   h: number
 ): void {
   const isNight = stream.next_f() < 0.25;
-  const baseHueRoll = stream.next_f();
+  const isSunset = !isNight && stream.next_f() < 0.35;
   const greenHue = 100 + stream.next_int(0, 50);
-  const skyHue = isNight ? 235 + stream.next_int(0, 25) : baseHueRoll < 0.5 ? 200 + stream.next_int(0, 40) : 25 + stream.next_int(0, 35);
-  const accentHue = (skyHue + 40) % 360;
+  const skyHue = isNight ? 235 + stream.next_int(0, 25) : isSunset ? 15 + stream.next_int(0, 25) : 200 + stream.next_int(0, 40);
+  const accentHue = isSunset ? skyHue + 10 : (skyHue + 25) % 360;
   const horizonY = Math.floor(h * (0.35 + 0.15 * stream.next_f()));
 
-  const skyTop = hslToRgb(skyHue, 0.45, isNight ? 0.15 : baseHueRoll < 0.5 ? 0.6 : 0.55);
-  const skyMid = hslToRgb(accentHue, isNight ? 0.4 : 0.5, isNight ? 0.12 : 0.48);
-  const skyBot = hslToRgb(skyHue + 10, 0.35, isNight ? 0.1 : 0.4);
+  const skyTop = hslToRgb(skyHue, isSunset ? 0.6 : 0.45, isNight ? 0.15 : isSunset ? 0.55 : 0.6);
+  const skyMid = hslToRgb(accentHue, isSunset ? 0.55 : isNight ? 0.4 : 0.5, isNight ? 0.12 : isSunset ? 0.45 : 0.48);
+  const skyBot = hslToRgb(isSunset ? Math.min(360, skyHue + 20) : skyHue + 10, isSunset ? 0.5 : 0.35, isNight ? 0.1 : isSunset ? 0.35 : 0.4);
   const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
   skyGrad.addColorStop(0, rgbString(skyTop));
   skyGrad.addColorStop(0.45, rgbString(skyMid));
@@ -31,7 +31,9 @@ export function renderForest(
 
   const sunX = Math.floor(w * (0.2 + 0.6 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.15 + 0.3 * stream.next_f()));
-  const sunR = Math.floor(30 + 45 * stream.next_f());
+  const sunR = isNight
+    ? Math.floor(14 + 12 * stream.next_f())
+    : Math.floor(22 + 14 * stream.next_f());
   const glowColor: RGB = isNight ? [235, 240, 255] : [255, 240, 200];
   const coreColor: RGB = isNight ? [245, 248, 255] : [255, 250, 230];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, isNight ? 10 : 16);
@@ -132,42 +134,128 @@ export function renderForest(
     { count: stream.next_int(6, 12), scale: 1.0, yRange: 0.45, alpha: 1.0 },
   ];
 
-  for (const layer of layers) {
-    ctx.save();
-    ctx.globalAlpha = layer.alpha;
+  type Tree = {
+    baseY: number;
+    layer: { scale: number; alpha: number };
+    x: number;
+    trunkH: number;
+    trunkW: number;
+    trunkTopY: number;
+    crownBaseY: number;
+    crownBaseX: number;
+    crownHue: number;
+    trunkHue: number;
+    treeType: "deciduous" | "conifer";
+    conifer?: { coneH: number; baseHalfW: number };
+    deciduous?: { envelopeW: number; envelopeH: number; blobs: Array<{ ox: number; oy: number; r: number; hue: number; sat: number; light: number }> };
+  };
 
+  const trees: Tree[] = [];
+  for (const layer of layers) {
     for (let i = 0; i < layer.count; i++) {
       const x = stream.next_int(-80, w + 80);
       const baseY =
         horizonY +
         stream.next_int(0, Math.floor((h - horizonY) * layer.yRange));
       const trunkH = Math.floor((70 + 90 * stream.next_f()) * layer.scale);
-      const trunkW = Math.max(5, Math.floor(12 * layer.scale));
-
+      const treeType: "deciduous" | "conifer" =
+        stream.next_f() < 0.65 ? "deciduous" : "conifer";
+      const trunkW = Math.max(
+        5,
+        Math.floor((treeType === "conifer" ? 8 : 12) * layer.scale)
+      );
       const trunkTopY = baseY - trunkH;
-      const trunkHue = 25 + stream.next_int(0, 25);
-      const trunkColor = hslToRgb(trunkHue, 0.4, 0.22 + 0.1 * layer.scale);
-      ctx.fillStyle = rgbString(trunkColor);
-      ctx.fillRect(x - trunkW / 2, trunkTopY, trunkW, trunkH);
-
-      const crownBaseY = trunkTopY - stream.next_int(0, Math.floor(15 * layer.scale));
+      const crownBaseY = trunkTopY + Math.floor(4 * layer.scale);
       const crownBaseX = x;
-      const blobs = stream.next_int(6, 12);
       const crownHue = greenHue + stream.next_int(-15, 25);
+      const trunkHue = 25 + stream.next_int(0, 25);
 
-      for (let b = 0; b < blobs; b++) {
-        const ox = (stream.next_f() - 0.5) * 150 * layer.scale;
-        const oy = (stream.next_f() - 0.5) * 90 * layer.scale;
-        const r = (20 + 55 * stream.next_f()) * layer.scale;
-        const blobHue = crownHue + stream.next_int(-10, 15);
-        const blobSat = 0.4 + 0.25 * stream.next_f();
-        const blobLight = 0.18 + 0.2 * stream.next_f();
-        ctx.fillStyle = rgbString(hslToRgb(blobHue, blobSat, blobLight));
+      const tree: Tree = {
+        baseY,
+        layer,
+        x,
+        trunkH,
+        trunkW,
+        trunkTopY,
+        crownBaseY,
+        crownBaseX,
+        crownHue,
+        trunkHue,
+        treeType,
+      };
+
+      if (treeType === "conifer") {
+        tree.conifer = {
+          coneH: (50 + 60 * stream.next_f()) * layer.scale,
+          baseHalfW: (45 + 50 * stream.next_f()) * layer.scale,
+        };
+      } else {
+        const envelopeW = 55 * layer.scale;
+        const envelopeH = 50 * layer.scale;
+        const blobs: { ox: number; oy: number; r: number; hue: number; sat: number; light: number }[] = [];
+        const numBlobs = stream.next_int(6, 12);
+        for (let b = 0; b < numBlobs; b++) {
+          blobs.push({
+            ox: (stream.next_f() - 0.5) * envelopeW * 2,
+            oy: (stream.next_f() - 0.5) * envelopeH * 2,
+            r: (18 + 45 * stream.next_f()) * layer.scale,
+            hue: crownHue + stream.next_int(-10, 15),
+            sat: 0.4 + 0.25 * stream.next_f(),
+            light: 0.18 + 0.2 * stream.next_f(),
+          });
+        }
+        tree.deciduous = { envelopeW, envelopeH, blobs };
+      }
+      trees.push(tree);
+    }
+  }
+
+  trees.sort((a, b) => a.baseY - b.baseY);
+
+  for (const tree of trees) {
+    ctx.save();
+    ctx.globalAlpha = tree.layer.alpha;
+
+    if (tree.treeType === "conifer" && tree.conifer) {
+      const { coneH, baseHalfW } = tree.conifer;
+      const coneTopY = tree.crownBaseY - coneH;
+      const darkGreen = hslToRgb(tree.crownHue, 0.5, 0.18 + 0.08 * tree.layer.scale);
+      const midGreen = hslToRgb((tree.crownHue + 8) % 360, 0.45, 0.22 + 0.1 * tree.layer.scale);
+      const lightGreen = hslToRgb((tree.crownHue + 15) % 360, 0.4, 0.28 + 0.08 * tree.layer.scale);
+      ctx.fillStyle = rgbString(darkGreen);
+      ctx.beginPath();
+      ctx.moveTo(tree.crownBaseX - baseHalfW, tree.crownBaseY);
+      ctx.lineTo(tree.crownBaseX + baseHalfW, tree.crownBaseY);
+      ctx.lineTo(tree.crownBaseX + 2, coneTopY);
+      ctx.lineTo(tree.crownBaseX - 2, coneTopY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = rgbString(midGreen);
+      ctx.beginPath();
+      ctx.moveTo(tree.crownBaseX - baseHalfW * 0.7, tree.crownBaseY - coneH * 0.35);
+      ctx.lineTo(tree.crownBaseX + baseHalfW * 0.7, tree.crownBaseY - coneH * 0.35);
+      ctx.lineTo(tree.crownBaseX, coneTopY + coneH * 0.2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = rgbString(lightGreen);
+      ctx.beginPath();
+      ctx.moveTo(tree.crownBaseX - baseHalfW * 0.35, tree.crownBaseY - coneH * 0.6);
+      ctx.lineTo(tree.crownBaseX + baseHalfW * 0.35, tree.crownBaseY - coneH * 0.6);
+      ctx.lineTo(tree.crownBaseX, coneTopY);
+      ctx.closePath();
+      ctx.fill();
+    } else if (tree.deciduous) {
+      for (const blob of tree.deciduous.blobs) {
+        ctx.fillStyle = rgbString(hslToRgb(blob.hue, blob.sat, blob.light));
         ctx.beginPath();
-        ctx.arc(crownBaseX + ox, crownBaseY + oy, r, 0, Math.PI * 2);
+        ctx.arc(tree.crownBaseX + blob.ox, tree.crownBaseY + blob.oy, blob.r, 0, Math.PI * 2);
         ctx.fill();
       }
     }
+
+    const trunkColor = hslToRgb(tree.trunkHue, 0.4, 0.22 + 0.1 * tree.layer.scale);
+    ctx.fillStyle = rgbString(trunkColor);
+    ctx.fillRect(tree.x - tree.trunkW / 2, tree.trunkTopY, tree.trunkW, tree.trunkH);
 
     ctx.restore();
   }
@@ -181,6 +269,13 @@ export function renderForest(
     ctx.fill();
     ctx.beginPath();
     ctx.ellipse(sqX + 12, sqY - 4, 10, 6, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgb(0,0,0)";
+    ctx.beginPath();
+    ctx.arc(sqX + 10, sqY - 6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sqX + 16, sqY - 6, 2, 0, Math.PI * 2);
     ctx.fill();
   }
 }

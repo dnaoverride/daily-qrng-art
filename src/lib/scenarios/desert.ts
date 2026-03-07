@@ -25,7 +25,7 @@ export function renderDesert(
 
   const sunX = Math.floor(w * (0.4 + 0.35 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.25 + 0.25 * stream.next_f()));
-  const sunR = Math.floor(28 + 25 * stream.next_f());
+  const sunR = Math.floor(22 + 14 * stream.next_f());
   const glowColor: RGB = [255, 200, 140];
   const coreColor: RGB = [255, 235, 200];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 14);
@@ -56,5 +56,79 @@ export function renderDesert(
     ctx.lineTo(w + 10, h);
     ctx.closePath();
     ctx.fill();
+  }
+
+  if (stream.next_f() < 0.45) {
+    const vegType: "cactus" | "palm" =
+      stream.next_f() < 0.7 ? "cactus" : "palm";
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+
+    if (vegType === "cactus") {
+      const numCacti = stream.next_int(1, 3);
+      const cactusHue = 110 + stream.next_int(-15, 25);
+      for (let c = 0; c < numCacti; c++) {
+        const cx = stream.next_int(50, w - 50);
+        const baseY =
+          horizonY +
+          Math.floor((h - horizonY) * (0.5 + 0.35 * stream.next_f()));
+        const segments = 2 + stream.next_int(0, 2);
+        const segH = 25 + 25 * stream.next_f();
+        let y = baseY;
+        for (let s = 0; s < segments; s++) {
+          const segW = 12 + 10 * stream.next_f();
+          const segCol = hslToRgb(
+            cactusHue,
+            0.45,
+            0.28 + 0.1 * stream.next_f()
+          );
+          ctx.fillStyle = rgbString(segCol);
+          ctx.beginPath();
+          ctx.ellipse(cx, y - segH / 2, segW / 2, segH / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = rgbString(
+            hslToRgb(cactusHue, 0.4, 0.18)
+          );
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          y -= segH;
+        }
+      }
+    } else {
+      const px = stream.next_int(80, w - 80);
+      const baseY =
+        horizonY +
+        Math.floor((h - horizonY) * (0.55 + 0.3 * stream.next_f()));
+      const trunkH = stream.next_int(50, 90);
+      const trunkW = 6 + 4 * stream.next_f();
+      ctx.fillStyle = rgbString(hslToRgb(sandHue - 12, 0.35, 0.16));
+      ctx.beginPath();
+      ctx.moveTo(px - trunkW / 2, baseY);
+      ctx.lineTo(px + trunkW / 2, baseY);
+      ctx.lineTo(px + trunkW / 3, baseY - trunkH);
+      ctx.lineTo(px - trunkW / 3, baseY - trunkH);
+      ctx.closePath();
+      ctx.fill();
+      const crownX = px;
+      const crownY = baseY - trunkH;
+      const leafHue = 115 + stream.next_int(-10, 20);
+      const numFronds = 5 + stream.next_int(0, 3);
+      for (let i = 0; i < numFronds; i++) {
+        const angle = (2 * Math.PI * i) / numFronds + (stream.next_f() - 0.5) * 0.3;
+        const len = 25 + 15 * stream.next_f();
+        const tipX = crownX + len * 0.7 * Math.sin(angle);
+        const tipY = crownY + len * Math.cos(angle);
+        ctx.strokeStyle = rgbString(
+          hslToRgb((leafHue + stream.next_int(-5, 10)) % 360, 0.5, 0.2)
+        );
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(crownX, crownY);
+        ctx.lineTo(tipX, tipY);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
 }

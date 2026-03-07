@@ -39,7 +39,7 @@ export function renderCityNight(
 
   const moonX = Math.floor(w * (0.65 + 0.25 * stream.next_f()));
   const moonY = Math.floor(horizonY * (0.2 + 0.25 * stream.next_f()));
-  const moonR = Math.floor(22 + 18 * stream.next_f());
+  const moonR = Math.floor(14 + 12 * stream.next_f());
   const glowColor: RGB = [240, 245, 255];
   const coreColor: RGB = [250, 252, 255];
   drawSunGlow(ctx, moonX, moonY, moonR, glowColor, coreColor, 10);

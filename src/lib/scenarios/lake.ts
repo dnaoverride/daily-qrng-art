@@ -4,6 +4,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints, drawSunGlow } from "../draw-utils";
+import { drawRecursiveBranch, DECIDUOUS_PARAMS } from "../tree-lsystem";
 
 export function renderLake(
   ctx: CanvasRenderingContext2D,
@@ -27,7 +28,9 @@ export function renderLake(
 
   const sunX = Math.floor(w * (0.3 + 0.4 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.25 + 0.2 * stream.next_f()));
-  const sunR = Math.floor(35 + 35 * stream.next_f());
+  const sunR = isNight
+    ? Math.floor(14 + 12 * stream.next_f())
+    : Math.floor(22 + 14 * stream.next_f());
   const glowColor: RGB = isNight ? [235, 240, 255] : [255, 248, 220];
   const coreColor: RGB = isNight ? [245, 248, 255] : [255, 252, 240];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 16);
@@ -110,6 +113,56 @@ export function renderLake(
     }
     ctx.lineTo(w, wy);
     ctx.stroke();
+  }
+  ctx.restore();
+
+  const numShoreTrees = stream.next_int(1, 4);
+  ctx.save();
+  ctx.globalAlpha = 0.88;
+  const shoreY = horizonY + Math.floor((h - horizonY) * 0.5);
+  for (let i = 0; i < numShoreTrees; i++) {
+    const x = stream.next_int(30, w - 30);
+    const baseY =
+      shoreY + stream.next_int(0, Math.floor((h - shoreY) * 0.35));
+    const trunkH = stream.next_int(60, 110);
+    const trunkTopY = baseY - trunkH;
+    const trunkW = 6 + 4 * stream.next_f();
+
+    const crownBaseX = x + (stream.next_f() - 0.5) * 8;
+    const crownBaseY = trunkTopY + 4;
+    const trunkLean = stream.next_f() - 0.5;
+    const baseHue = 110 + stream.next_int(-15, 30);
+    const maxDepth = 4 + stream.next_int(0, 1);
+    const numMainBranches = 5 + stream.next_int(0, 4);
+
+    for (let b = 0; b < numMainBranches; b++) {
+      const angle = -Math.PI / 2 + (stream.next_f() - 0.5) * 1.2;
+      const length = 35 + 50 * stream.next_f();
+      drawRecursiveBranch(
+        ctx,
+        stream,
+        crownBaseX,
+        crownBaseY,
+        angle,
+        length,
+        maxDepth,
+        maxDepth,
+        DECIDUOUS_PARAMS,
+        baseHue,
+        trunkLean
+      );
+    }
+
+    const trunkHue = 28 + stream.next_int(0, 20);
+    ctx.fillStyle = rgbString(hslToRgb(trunkHue, 0.4, 0.24));
+    const leanOffset = trunkLean * 14;
+    ctx.beginPath();
+    ctx.moveTo(x - trunkW / 2, baseY);
+    ctx.lineTo(x + trunkW / 2, baseY);
+    ctx.lineTo(x + trunkW / 2 + leanOffset, trunkTopY);
+    ctx.lineTo(x - trunkW / 2 + leanOffset, trunkTopY);
+    ctx.closePath();
+    ctx.fill();
   }
   ctx.restore();
 }

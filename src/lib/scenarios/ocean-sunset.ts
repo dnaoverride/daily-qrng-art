@@ -27,7 +27,7 @@ export function renderOceanSunset(
 
   const sunX = Math.floor(w * (0.35 + 0.3 * stream.next_f()));
   const sunY = horizonY;
-  const sunR = Math.floor(45 + 35 * stream.next_f());
+  const sunR = Math.floor(22 + 14 * stream.next_f());
   const glowColor: RGB = [255, 180, 100];
   const coreColor: RGB = [255, 200, 120];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 17);

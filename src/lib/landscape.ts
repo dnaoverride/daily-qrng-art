@@ -174,11 +174,11 @@ export function renderLandscape(
 
   const cx = Math.floor(w * (0.25 + 0.5 * stream.next_f()));
   const cy = Math.floor(h * (0.12 + 0.22 * stream.next_f()));
-  // Manji sunce + blag halo (ne Venera) — radius ~20–58, glow manji
+  // Sunce/mesec: konzistentna veličina (sun 22–36, moon 14–26 px)
   const radius =
     scene === "night"
-      ? Math.floor(28 + 38 * stream.next_f())
-      : Math.floor(20 + 39 * stream.next_f());
+      ? Math.floor(14 + 12 * stream.next_f())
+      : Math.floor(22 + 14 * stream.next_f());
   const coreColor: RGB =
     scene !== "night" ? [255, 245, 220] : [235, 240, 255];
 

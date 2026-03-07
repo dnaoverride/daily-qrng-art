@@ -6,6 +6,52 @@ import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints, drawSunGlow } from "../draw-utils";
 
+function drawPalmFronds(
+  ctx: CanvasRenderingContext2D,
+  stream: QRNGStream,
+  crownX: number,
+  crownY: number,
+  leafHue: number
+): void {
+  const numFronds = 6 + stream.next_int(0, 4);
+  const spreadOffset = (stream.next_f() - 0.5) * 0.4;
+  const lenBase = 56 + 52 * stream.next_f();
+
+  for (let i = 0; i < numFronds; i++) {
+    const angle =
+      (2 * Math.PI * i) / numFronds +
+      spreadOffset +
+      (stream.next_f() - 0.5) * 0.2;
+    const len = lenBase * (0.85 + 0.3 * stream.next_f());
+    const tipX = crownX + len * 0.75 * Math.sin(angle);
+    const tipY = crownY + len * Math.cos(angle);
+    const curveOff = (stream.next_f() - 0.5) * len * 0.3;
+    const cpX = crownX + (tipX - crownX) * 0.5 + curveOff * Math.cos(angle);
+    const cpY = crownY + (tipY - crownY) * 0.5 + curveOff * Math.sin(angle);
+
+    const frondHue = leafHue + stream.next_int(-5, 10);
+    const width = 6 + 5 * stream.next_f();
+    const perpX = Math.cos(angle + Math.PI / 2) * width;
+    const perpY = Math.sin(angle + Math.PI / 2) * width;
+
+    ctx.fillStyle = rgbString(
+      hslToRgb(frondHue % 360, 0.5, 0.2 + 0.15 * stream.next_f())
+    );
+    ctx.beginPath();
+    ctx.moveTo(crownX + perpX, crownY + perpY);
+    ctx.quadraticCurveTo(cpX + perpX * 0.5, cpY + perpY * 0.5, tipX, tipY);
+    ctx.lineTo(tipX - perpX * 0.3, tipY - perpY * 0.3);
+    ctx.quadraticCurveTo(
+      cpX - perpX * 0.5,
+      cpY - perpY * 0.5,
+      crownX - perpX,
+      crownY - perpY
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
 export function renderBeach(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -27,7 +73,7 @@ export function renderBeach(
 
   const sunX = Math.floor(w * (0.3 + 0.4 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.25 + 0.2 * stream.next_f()));
-  const sunR = Math.floor(40 + 35 * stream.next_f());
+  const sunR = Math.floor(22 + 14 * stream.next_f());
   const glowColor: RGB = [255, 220, 180];
   const coreColor: RGB = [255, 248, 220];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 17);
@@ -87,14 +133,17 @@ export function renderBeach(
   ctx.globalAlpha = 0.9;
   for (let i = 0; i < numPalms; i++) {
     const x = stream.next_int(40, w - 40);
-    const baseY = horizonY + Math.floor(seaHeight * 0.5) + stream.next_int(0, Math.floor(seaHeight * 0.4));
+    const baseY =
+      horizonY +
+      Math.floor(seaHeight * 0.5) +
+      stream.next_int(0, Math.floor(seaHeight * 0.4));
     const trunkH = stream.next_int(80, 160);
     const tilt = (stream.next_f() - 0.5) * 0.15;
+    const topW = 8 + 6 * stream.next_f();
+    const botW = 14 + 8 * stream.next_f();
 
     ctx.fillStyle = rgbString(hslToRgb(sandHue - 10, 0.4, 0.2));
     ctx.beginPath();
-    const topW = 8 + 6 * stream.next_f();
-    const botW = 14 + 8 * stream.next_f();
     ctx.moveTo(x - botW / 2, baseY);
     ctx.lineTo(x + botW / 2, baseY);
     ctx.lineTo(x + topW / 2 + tilt * 40, baseY - trunkH);
@@ -102,19 +151,24 @@ export function renderBeach(
     ctx.closePath();
     ctx.fill();
 
+    const numRings = 4 + stream.next_int(0, 3);
+    ctx.strokeStyle = rgbString(hslToRgb(sandHue - 15, 0.35, 0.14));
+    ctx.lineWidth = 1;
+    for (let r = 0; r < numRings; r++) {
+      const t = (r + 1) / (numRings + 1);
+      const ringY = baseY - trunkH * t;
+      const ringW = botW * (1 - t) + topW * t;
+      const tiltOff = tilt * 40 * (2 * t - 1);
+      ctx.beginPath();
+      ctx.moveTo(x - ringW / 2 + tiltOff, ringY);
+      ctx.lineTo(x + ringW / 2 + tiltOff, ringY);
+      ctx.stroke();
+    }
+
     const crownY = baseY - trunkH;
     const crownX = x + tilt * 50;
-    const leafBlobs = stream.next_int(4, 8);
     const leafHue = 125 + stream.next_int(-15, 20);
-    ctx.fillStyle = rgbString(hslToRgb(leafHue, 0.5, 0.15));
-    for (let b = 0; b < leafBlobs; b++) {
-      const ox = (stream.next_f() - 0.5) * 100;
-      const oy = (stream.next_f() - 0.5) * 60;
-      const r = 25 + 35 * stream.next_f();
-      ctx.beginPath();
-      ctx.arc(crownX + ox, crownY + oy, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    drawPalmFronds(ctx, stream, crownX, crownY, leafHue);
   }
   ctx.restore();
 }

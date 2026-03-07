@@ -64,8 +64,8 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 - **Parametri**:
   - Talasi: 8–16 elipsi, wa 70–180, wb 6–22
   - Pesak: amplitude ~14–26, rough 0.72–0.87
-  - Palme: 2–5, trunk 80–160px, 4–8 blobova za krošnju
-- **Posebnosti**: palme sastavljene od trapezoidnog debla + blob krugovi za lišće
+  - Palme: 2–5, trunk 80–160px, 6–10 peraja u ventilatoru
+- **Posebnosti**: palme — trapezoidno deblo sa ringovima, drawPalmFronds (fan peraja)
 
 ---
 
@@ -87,7 +87,8 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 - **Parametri**:
   - Dune: amplitude 45–80, rough 0.9, detailScale 0.06, anchorStep 60
   - Prva duna može da prelazi horizont (yBase = horizonY - 25 + 35)
-- **Posebnosti**: 4 dune, minimalistički, bez oblaka/talasa
+  - Vegetacija (45% verovatnoće): 1–3 kaktusa (segmentirano) ili 1 palma (oaza)
+- **Posebnosti**: 4 dune; opciono kaktusi/palme
 
 ---
 
@@ -122,7 +123,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 - **Varijacije**: noć (25%) ili dan (75%); dan: plavo ili toplo nebo (50/50); noć: sova/šišmiš (50/50); dan: light rays; dan: eventualno srnjak (50%)
 - **Redosled crtanja**: 1) nebo → 2) zvezde (noć) ili ptice (dan) ili sova/šišmiš (noć) → 3) sunce/mesec → 4) light rays (dan, 6–14) → 5) zemlja (3-stop gradient) → 6) drveće (3 sloja: 6–12, 8–14, 6–12) → 7) srnjak (dan, 50%)
 - **Parametri**:
-  - Drveće: 3 sloja dubine (scale 0.35, 0.65, 1.0), 6–12 blobova po krošnji
+  - Drveće: 3 sloja dubine (scale 0.35, 0.65, 1.0); listopadno (65%) — sferični envelope; četinar (35%) — konusna krošnja
   - Ptice: 1–4, quadraticCurve za krila
   - Sova/šišmiš: 1–3, stroke stil
 - **Posebnosti**: light rays kao linear gradient pruge; srnjak kao 2 elipse
@@ -132,11 +133,11 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 ### 7. Jezero (`lake.ts`)
 
 - **Varijacije**: noć (30%) ili dan (70%)
-- **Redosled crtanja**: 1) nebo (3-stop) → 2) ptice (2–6) → 3) sunce (drawSunGlow) → 4) voda (2-stop gradient) → 5) refleks sunca (elliptični radial gradient u vodi) → 6) brda (1–2 ridgePoints) → 7) talasi (2–4 šumne linije)
+- **Redosled crtanja**: 1) nebo (3-stop) → 2) ptice (2–6) → 3) sunce (drawSunGlow) → 4) voda (2-stop gradient) → 5) refleks sunca (elliptični radial gradient u vodi) → 6) brda (1–2 ridgePoints) → 7) talasi (2–4 šumne linije) → 8) obalsko drveće (1–4: samo listač)
 - **Parametri**:
   - Refleks: reflexY = 2×horizonY - sunY, elliptičan (1.8×r × 0.5×r)
   - Talasi: ellipse-free, stroke linija sa šumom po Y
-- **Posebnosti**: ogledalo neba u vodi, refleks sunca kao elipsa ispod horizonta
+- **Posebnosti**: ogledalo neba u vodi, refleks sunca kao elipsa; obalsko drveće (samo listač, krošnja nagore) — rekurzivno grananje L-sistem ([tree-lsystem.ts](src/lib/tree-lsystem.ts))
 
 ---
 
@@ -154,6 +155,18 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 | Ptice/životinje | | | | | | | ✓ | ✓ |
 | Light rays | | | | | | | ✓ (dan) | |
 | Prstenovi | | | | | | ✓ | | |
+
+---
+
+## 5a. Tipovi drveća/vegetacije po scenariju
+
+Drveće i vegetacija prilagođeni scenariju (Weber model: fan fronds, Shape conical/spherical).
+
+- **Plaža**: Palma — tapered deblo sa ringovima, fan peraja (6–10)
+- **Šuma**: Listočad (65%) — sferična/elipsoidna krošnja (blobovi u envelope); Četinar (35%) — konusna krošnja (trougao/trapez)
+- **Jezero**: Samo obalski listač — rekurzivno grananje nagore (L-system inspirisano)
+- **Pustinja**: Kaktus (70% od vegetacije) — 2–4 segmenta; Palma (30%) — manja, tamnija (oaza)
+- **Pejzaž, Zalazak, Grad, Kosmos**: bez drveća
 
 ---
 
@@ -202,5 +215,22 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-03-05 | Kosmos | Specular omekšan: peak 0.84, širi prelaz (stop 0.06, 0.18), mekši falloff. |
 | 2026-03-05 | Kosmos | Specular vrh smanjen na 0.64. |
 | 2026-03-05 | Pejzaž | Nebo uvek plavo. Sneg: crna ivica samo gde ima snega. Planine: zelene (90%, sat 0.4, svetlije) ili tamno sive (10%). |
+| 2026-03-05 | Plaža | Palme: peraje u ventilatoru (6–10), drawPalmFronds; deblo sa ringovima. |
+| 2026-03-05 | Šuma | Drveće: listopadno (65%) sferično, četinar (35%) konusno. |
+| 2026-03-05 | Jezero | Obalsko drveće (1–4): vrba (weeping) ili listač. |
+| 2026-03-05 | Pustinja | Vegetacija (45%): kaktusi (1–3) ili palma (oaza). |
+| 2026-03-05 | — | Sekcija 5a Tipovi drveća po scenariju. |
+| 2026-03-05 | Plaža | Palma peraje povećane 40–55% (lenBase 56–108, width 6–11). |
+| 2026-03-05 | Šuma | Deblo se crta POSLE krošnje — uvek vidljivo (fix: krošnja ne prekriva deblo). |
+| 2026-03-05 | Svi | Sunce/mesec: konzistentna veličina (sun 22–36 px, moon 14–26 px) na svim scenarijima. |
+| 2026-03-05 | Jezero | Deblo obalskog drveća crta se posle krošnje — uvek vidljivo. |
+| 2026-03-05 | Jezero | Vrba: 10–18 grana (bilo 5–11), debljina 2.5–4.5 px, duže grane. Listač: sferična krošnja od 5–10 blobova (kao Šuma). |
+| 2026-03-05 | Jezero | Vrba i listač: rekurzivno grananje (L-system inspirisano) — tree-lsystem.ts, drawRecursiveBranch, fractal-like struktura. |
+| 2026-03-05 | Jezero | Uklonjena vrba — samo listač (grane nagore), stil kao zeleno zaokruženo. |
+| 2026-03-05 | Šuma | Fix: crownBaseY = trunkTopY + overlap (bor ne visi); sva debla crtana posle svih krošnji u sloju. |
+| 2026-03-05 | Šuma | Fix: sva debla crtana posle SVIH krošnji (svi slojevi) — nijedna krošnja ne prekriva deblo. Veverica: dve crne tačkice kao oči. |
+| 2026-03-05 | Šuma | Fix: painter's algorithm — svako drvo (krošnja+deblo) crta se kao celina, slojevi unazad; prednje drveće pravilno prekriva zadnje. |
+| 2026-03-05 | Šuma | Fix: sva drveća sortiraju se po baseY (dubina) pa se crtaju — prednje (niže na platnu) prekrivaju zadnje. |
+| 2026-03-05 | Šuma | Fix: nebo uvek plavo ili crvenkasto (zalazak); uklonjena zelena nijansa neba (accentHue 65–100). |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).
