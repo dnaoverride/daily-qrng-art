@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/db";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { users } from "@/lib/schema";
 
 export async function POST(req: Request) {
   try {
@@ -17,17 +19,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Lozinka mora imati najmanje 8 karaktera." }, { status: 400 });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
     if (existing) {
       return NextResponse.json({ error: "Korisnik sa ovim emailom već postoji." }, { status: 409 });
     }
 
     const hashed = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({
-      data: { email, password: hashed, name: name ?? email.split("@")[0] },
+    const id = crypto.randomUUID();
+    const displayName = name?.trim() || email.split("@")[0];
+
+    await db.insert(users).values({
+      id,
+      email,
+      password: hashed,
+      name: displayName,
+      createdAt: new Date(),
     });
 
-    return NextResponse.json({ id: user.id, email: user.email, name: user.name }, { status: 201 });
+    return NextResponse.json({ id, email, name: displayName }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Greška servera." }, { status: 500 });
   }

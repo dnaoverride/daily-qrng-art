@@ -1,22 +1,25 @@
-import { PrismaClient } from "@prisma/client";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import * as schema from "./schema";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+const globalForDb = globalThis as unknown as { pool: mysql.Pool | undefined };
 
-const baseUrl = process.env.DATABASE_URL ?? "";
-const dbUrl =
-  baseUrl === ""
-    ? undefined
-    : baseUrl.includes("?")
-      ? `${baseUrl}&connection_limit=3&pool_timeout=10`
-      : `${baseUrl}?connection_limit=3&pool_timeout=10`;
+// Strip any Prisma-specific query params from the URL
+const rawUrl = process.env.DATABASE_URL ?? "";
+const baseUrl = rawUrl.split("?")[0];
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    ...(dbUrl && { datasources: { db: { url: dbUrl } } }),
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+const pool =
+  globalForDb.pool ??
+  mysql.createPool({
+    uri: baseUrl,
+    connectionLimit: 2,
+    connectTimeout: 30000,
+    waitForConnections: true,
+    queueLimit: 0,
   });
 
-globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.pool = pool;
+}
+
+export const db = drizzle(pool, { schema, mode: "default" });

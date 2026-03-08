@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["dnaoverride.noip.me"],
-  serverExternalPackages: ["@napi-rs/canvas", "@prisma/client", "bcryptjs"],
+  serverExternalPackages: ["@napi-rs/canvas", "mysql2", "bcryptjs"],
   poweredByHeader: false,
   compress: false,
   experimental: {

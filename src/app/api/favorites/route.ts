@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { desc, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { favorites } from "@/lib/schema";
 
 export async function GET() {
   const session = await auth();
@@ -9,21 +11,20 @@ export async function GET() {
     return NextResponse.json({ error: "Niste prijavljeni." }, { status: 401 });
   }
 
-  const favorites = await prisma.favorite.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      scenarioName: true,
-      isPublic: true,
-      shareToken: true,
-      createdAt: true,
-      // values (1000 brojeva) se ne vraća u list viewu — preuzima se tek pri otvaranju jednog favorita
-    },
-  });
+  const favs = await db
+    .select({
+      id: favorites.id,
+      title: favorites.title,
+      scenarioName: favorites.scenarioName,
+      isPublic: favorites.isPublic,
+      shareToken: favorites.shareToken,
+      createdAt: favorites.createdAt,
+    })
+    .from(favorites)
+    .where(eq(favorites.userId, session.user.id))
+    .orderBy(desc(favorites.createdAt));
 
-  return NextResponse.json({ favorites }, {
+  return NextResponse.json({ favorites: favs }, {
     headers: { "Cache-Control": "no-store" },
   });
 }
@@ -46,17 +47,24 @@ export async function POST(req: Request) {
   }
 
   const shareToken = body.isPublic ? randomBytes(8).toString("hex") : null;
+  const id = crypto.randomUUID();
 
-  const favorite = await prisma.favorite.create({
-    data: {
-      userId: session.user.id,
-      values: body.values,
-      title: body.title?.trim() || "Bez naziva",
-      scenarioName: body.scenarioName ?? null,
-      isPublic: body.isPublic ?? false,
-      shareToken,
-    },
+  await db.insert(favorites).values({
+    id,
+    userId: session.user.id,
+    values: body.values as number[],
+    title: body.title?.trim() || "Bez naziva",
+    scenarioName: body.scenarioName ?? null,
+    isPublic: body.isPublic ?? false,
+    shareToken,
+    createdAt: new Date(),
   });
+
+  const [favorite] = await db
+    .select()
+    .from(favorites)
+    .where(eq(favorites.id, id))
+    .limit(1);
 
   return NextResponse.json({ favorite }, { status: 201 });
 }

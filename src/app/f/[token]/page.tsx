@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
 import { ArtCanvas } from "@/components/ArtCanvas";
-import { prisma } from "@/lib/db";
+import { db } from "@/lib/db";
+import { favorites, users } from "@/lib/schema";
 import { getTranslations } from "next-intl/server";
 
 export const revalidate = 3600;
@@ -14,16 +16,27 @@ export default async function SharedFavoritePage({ params }: PageProps) {
   const { token } = await params;
   const t = await getTranslations("shared");
 
-  const favorite = await prisma.favorite.findUnique({
-    where: { shareToken: token },
-    include: { user: { select: { name: true } } },
-  });
+  const rows = await db
+    .select({
+      id: favorites.id,
+      title: favorites.title,
+      values: favorites.values,
+      scenarioName: favorites.scenarioName,
+      isPublic: favorites.isPublic,
+      createdAt: favorites.createdAt,
+      userName: users.name,
+    })
+    .from(favorites)
+    .leftJoin(users, eq(favorites.userId, users.id))
+    .where(eq(favorites.shareToken, token))
+    .limit(1);
 
-  if (!favorite || !favorite.isPublic) {
+  if (!rows.length || !rows[0].isPublic) {
     notFound();
   }
 
-  const values = Array.isArray(favorite.values) ? (favorite.values as number[]) : [];
+  const favorite = rows[0];
+  const values = Array.isArray(favorite.values) ? favorite.values : [];
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -38,9 +51,9 @@ export default async function SharedFavoritePage({ params }: PageProps) {
                 {t("scenario", { name: favorite.scenarioName })}
               </span>
             )}
-            {favorite.user?.name && (
+            {favorite.userName && (
               <span className="text-sm text-zinc-400">
-                {t("observer", { name: favorite.user.name })}
+                {t("observer", { name: favorite.userName })}
               </span>
             )}
             <span className="text-sm text-zinc-400">
