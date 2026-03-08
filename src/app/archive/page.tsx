@@ -1,10 +1,11 @@
-import { Header } from "@/components/Header";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getTodayBelgrade } from "@/lib/date";
 import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 
-export const dynamic = "force-dynamic";
+// Revalidate svakih sat — nova slika se dodaje jednom dnevno,
+// lista datuma je čista matematika bez DB upita.
+export const revalidate = 3600;
 
 const LAUNCH_DATE = "2026-03-04";
 
@@ -41,7 +42,6 @@ export default async function ArchivePage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Header />
       <main className="pt-20 pb-16 px-4 max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-6">
           {t("title")}

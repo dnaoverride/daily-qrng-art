@@ -5,7 +5,9 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["dnaoverride.noip.me"],
-  serverExternalPackages: ["@napi-rs/canvas"],
+  serverExternalPackages: ["@napi-rs/canvas", "@prisma/client", "bcryptjs"],
+  poweredByHeader: false,
+  compress: false,
   async headers() {
     return [
       {
@@ -14,23 +16,6 @@ const nextConfig: NextConfig = {
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-store, no-cache, must-revalidate",
-          },
-          {
-            key: "X-LiteSpeed-Cache-Control",
-            value: "no-cache",
-          },
-          {
-            key: "Pragma",
-            value: "no-cache",
           },
         ],
       },

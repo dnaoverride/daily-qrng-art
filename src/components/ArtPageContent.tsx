@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal } from "./QRNGReveal";
+import { SaveFavoriteButton } from "./SaveFavoriteButton";
+import { SCENARIO_NAMES, NUM_SCENARIOS } from "@/lib/scenarios";
 
 interface ArtPageContentProps {
   date: string;
@@ -40,11 +42,19 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
     );
   }
 
+  const scenarioName =
+    values.length >= 4
+      ? SCENARIO_NAMES[((values[0]! ^ values[1]! ^ values[2]! ^ values[3]!) >>> 0) % NUM_SCENARIOS] ?? "Pejzaž"
+      : null;
+
   return (
     <div>
-      <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
-        {t("title", { date })}
-      </h1>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+          {t("title", { date })}
+        </h1>
+        <SaveFavoriteButton values={values} scenarioName={scenarioName} />
+      </div>
       <div className="flex justify-center">
         <ArtCanvas values={values} date={date} />
       </div>

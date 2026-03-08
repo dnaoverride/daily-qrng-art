@@ -14,9 +14,22 @@ export function QRNGReveal({ values, date }: QRNGRevealProps) {
   const t = useTranslations("qrngReveal");
 
   const copyJson = () => {
-    navigator.clipboard.writeText(JSON.stringify(values));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const text = JSON.stringify(values);
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt(t("copyJson"), text);
+    }
+    document.body.removeChild(textarea);
   };
 
   return (

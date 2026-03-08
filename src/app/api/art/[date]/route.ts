@@ -12,7 +12,11 @@ export async function GET(
   }
   try {
     const values = seedFromDate(date);
-    return NextResponse.json({ values, date });
+    return NextResponse.json({ values, date }, {
+      headers: {
+        "Cache-Control": "public, max-age=86400, s-maxage=86400, immutable",
+      },
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Seed generation failed" }, { status: 500 });

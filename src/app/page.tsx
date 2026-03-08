@@ -1,10 +1,11 @@
-import { ArtCanvas } from "@/components/ArtCanvas";
-import { Header } from "@/components/Header";
+import Link from "next/link";
 import { DailyArtSection } from "@/components/DailyArtSection";
 import { getTodayBelgrade } from "@/lib/date";
 import { getTranslations } from "next-intl/server";
 
-export const dynamic = "force-dynamic";
+// Revalidate svakih 24h — stranica ne sadrži per-request dinamičke podatke,
+// art sekcija se učitava client-side pa ISR nema štete.
+export const revalidate = 86400;
 
 export default async function Home() {
   const today = getTodayBelgrade();
@@ -12,7 +13,6 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Header />
       <main className="pt-20 pb-16 px-4 max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center mb-6">
           {t("title")}
@@ -22,12 +22,19 @@ export default async function Home() {
           <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">
             {t("howTitle")}
           </h2>
-          <p>
-            {t("paragraph1Prefix")}
-            <strong className="text-zinc-800 dark:text-zinc-200">{t("paragraph1Strong")}</strong>
-            {t("paragraph1Suffix")}
-          </p>
+          <p>{t("paragraph1")}</p>
           <p>{t("paragraph2")}</p>
+          <p>{t("paragraph3")}</p>
+          <p>
+            {t("paragraph4Prefix")}
+            <Link
+              href="/create-art"
+              className="font-medium text-zinc-800 dark:text-zinc-200 underline underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300"
+            >
+              {t("paragraph4Link")}
+            </Link>
+            {t("paragraph4Suffix")}
+          </p>
         </section>
       </main>
     </div>

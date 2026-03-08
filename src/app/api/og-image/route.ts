@@ -1,6 +1,10 @@
 /**
  * Open Graph image — prava slika dana kao PNG.
  * Viber, Facebook i ostali koriste ovaj URL za share preview.
+ *
+ * In-memory LRU cache: čuva do MAX_CACHE_ENTRIES rendiranih PNG-ova.
+ * Rezultat za isti datum je uvek isti (deterministički), pa ga možemo keširati
+ * bez brige o invalidaciji.
  */
 import { NextResponse } from "next/server";
 import { createCanvas } from "@napi-rs/canvas/node-canvas";
@@ -11,6 +15,18 @@ import { renderArt } from "@/lib/scenarios";
 
 const W = 1200;
 const H = 630;
+const MAX_CACHE_ENTRIES = 30;
+
+const pngCache = new Map<string, Buffer>();
+
+function renderPng(date: string): Buffer {
+  const values = seedFromDate(date);
+  const stream = new QRNGStream(values);
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+  renderArt(ctx, stream, W, H);
+  return canvas.toBuffer("image/png");
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -20,17 +36,18 @@ export async function GET(req: Request) {
     : getTodayBelgrade();
 
   try {
-    const values = seedFromDate(date);
-    const stream = new QRNGStream(values);
+    let png = pngCache.get(date);
 
-    const canvas = createCanvas(W, H);
-    const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
+    if (!png) {
+      png = renderPng(date);
+      if (pngCache.size >= MAX_CACHE_ENTRIES) {
+        const oldestKey = pngCache.keys().next().value;
+        if (oldestKey) pngCache.delete(oldestKey);
+      }
+      pngCache.set(date, png);
+    }
 
-    renderArt(ctx, stream, W, H);
-
-    const png = canvas.toBuffer("image/png");
-
-    return new NextResponse(new Uint8Array(png), {
+    return new NextResponse(png as unknown as BodyInit, {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=3600, s-maxage=86400",

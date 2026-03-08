@@ -8,15 +8,20 @@
     "brand": "QRNG Art",
     "archive": "Arhiva generisanih slika",
     "playground": "Igraonica",
-    "menuAria": "Meni"
+    "menuAria": "Meni",
+    "login": "Prijavi se",
+    "logout": "Odjavi se",
+    "profile": "Moj profil"
   },
   "home": {
     "title": "Slika dana",
     "howTitle": "Kako je ova slika nastala?",
-    "paragraph1Prefix": "Ova slika nastala je iz ",
-    "paragraph1Strong": "kvantnog šuma",
-    "paragraph1Suffix": " — prave nasumičnosti koja potiče iz kvantnih procesa (fotonska detekcija na Australijskom nacionalnom univerzitetu), ne iz algoritma na računaru.",
-    "paragraph2": "Svaki od 1000 kvantno generisanih brojeva utiče na finalni izgled: boju neba, broj zvezda, oblik planina, poziciju sunca ili meseca, oblake. Isti set brojeva uvek daje istu sliku — reproducibilnu umetnost iz haosa."
+    "paragraph1": "Ovo nije slika koju je nacrtao umetnik niti izgenerisao veštački model. Svaki dan nova slika nastaje samo iz kvantne slučajnosti — prave nasumičnosti koja potiče iz kvantnih procesa na Australijskom nacionalnom univerzitetu.",
+    "paragraph2": "ANU QRNG servis generiše brojeve pomoću fotonske detekcije — ne pomoću računarskog algoritma. To znači da je svaki broj zaista nepredvidljiv i unikatan.",
+    "paragraph3": "Svaki od 1000 brojeva utiče na finalnu sliku: boju neba, broj zvezda, oblik planina, poziciju sunca ili meseca, oblake. Isti set brojeva uvek daje istu sliku — reproducibilnu umetnost iz haosa.",
+    "paragraph4Prefix": "Zainteresovan? ",
+    "paragraph4Link": "Igraonica",
+    "paragraph4Suffix": " omogućava eksperimentisanje sa svojim brojevima."
   },
   "createArt": {
     "title": "Igraonica — unesi 1000 brojeva",
@@ -39,6 +44,65 @@
     "loading": "Učitavanje...",
     "errorLoad": "Greška učitavanja",
     "error": "Greška"
+  },
+  "favorites": {
+    "save": "Sačuvaj u omiljene",
+    "saved": "Sačuvano!",
+    "saving": "Čuvanje...",
+    "titleLabel": "Naziv (opciono)",
+    "titlePlaceholder": "Bez naziva",
+    "publicLabel": "Javna slika (vidljiva svima sa linkom)",
+    "cancel": "Otkaži",
+    "confirm": "Sačuvaj",
+    "loginRequired": "Morate biti prijavljeni da čuvate omiljene.",
+    "error": "Greška pri čuvanju.",
+    "viewProfile": "Pogledaj profil"
+  },
+  "profile": {
+    "title": "Moj profil",
+    "favorites": "Omiljene slike",
+    "empty": "Još nemaš sačuvanih slika.",
+    "noTitle": "Bez naziva",
+    "delete": "Obriši",
+    "deleteConfirm": "Da li si siguran da želiš da obrišeš ovu sliku?",
+    "share": "Deli",
+    "copyLink": "Kopiraj link",
+    "copied": "Kopirano!",
+    "makePublic": "Učini javnom",
+    "makePrivate": "Učini privatnom",
+    "scenario": "Scenarij: {name}",
+    "createdAt": "Sačuvano: {date}",
+    "goToPlayground": "Idi na Igraonicu"
+  },
+  "shared": {
+    "noTitle": "Bez naziva",
+    "scenario": "Scenarij: {name}",
+    "observer": "Posmatrač: {name}",
+    "goToPlayground": "Igraonica — napravi svoju sliku",
+    "goHome": "QRNG Art"
+  },
+  "login": {
+    "titleLogin": "Prijavi se",
+    "titleRegister": "Registruj se",
+    "subtitleLogin": "Čuvaj omiljene QRNG slike",
+    "subtitleRegister": "Napravi nalog i čuvaj omiljene",
+    "nameLabel": "Ime (opciono)",
+    "namePlaceholder": "Tvoje ime",
+    "emailLabel": "Email",
+    "emailPlaceholder": "email@primer.com",
+    "passwordLabel": "Lozinka",
+    "passwordPlaceholderRegister": "Min. 8 karaktera",
+    "passwordPlaceholderLogin": "Tvoja lozinka",
+    "loading": "Molimo sačekajte...",
+    "submitLogin": "Prijavi se",
+    "submitRegister": "Registruj se",
+    "noAccount": "Nemaš nalog?",
+    "hasAccount": "Već imaš nalog?",
+    "registerLink": "Registruj se",
+    "loginLink": "Prijavi se",
+    "backHome": "← Nazad na početnu",
+    "errorWrongCredentials": "Pogrešan email ili lozinka.",
+    "errorRegister": "Greška pri registraciji."
   },
   "qrngReveal": {
     "toggle": "Kvantni brojevi koji su kreirali ovu sliku",

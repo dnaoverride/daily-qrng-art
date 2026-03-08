@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { Header } from "@/components/Header";
 import { ArtCanvas } from "@/components/ArtCanvas";
+import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
 import {
   SCENARIO_NAMES,
   NUM_SCENARIOS,
@@ -96,7 +96,6 @@ export default function CreateArtPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Header />
       <main className="pt-20 pb-16 px-4 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center mb-6">
           {t("title")}
@@ -133,13 +132,16 @@ export default function CreateArtPage() {
               {t("random")}
             </button>
             {values && (
-              <button
-                type="button"
-                onClick={handleDownloadPng}
-                className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                {t("downloadPng")}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleDownloadPng}
+                  className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  {t("downloadPng")}
+                </button>
+                <SaveFavoriteButton values={values} scenarioName={scenarioName} />
+              </>
             )}
           </div>
           {error && (

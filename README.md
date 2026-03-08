@@ -103,48 +103,138 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 src/
 ├── app/
 │   ├── page.tsx              # Početna — današnji art
-│   ├── create-art/page.tsx   # Playground — unesi 1000 brojeva
+│   ├── layout.tsx            # Root layout + Providers (SessionProvider)
+│   ├── create-art/page.tsx   # Igraonica — unesi 1000 brojeva, generiši, preuzmi PNG, snimi u omiljene
 │   ├── art/[date]/page.tsx   # Art po datumu
 │   ├── archive/page.tsx      # Arhiva
+│   ├── login/page.tsx        # Prijava / registracija
+│   ├── profile/page.tsx      # Profil — omiljene slike korisnika
+│   ├── f/[token]/page.tsx   # Javno deljenje omiljene slike
 │   └── api/
-│       ├── generate/route.ts # GET → ANU QRNG ili entropy fallback
-│       └── art/[date]/route.ts
+│       ├── generate/route.ts      # GET → ANU QRNG ili entropy fallback
+│       ├── art/[date]/route.ts    # GET → art za datum
+│       ├── og-image/route.ts      # GET → PNG slika dana (Open Graph)
+│       ├── auth/[...nextauth]/route.ts  # NextAuth GET/POST
+│       ├── auth/register/route.ts # POST — registracija korisnika
+│       └── favorites/
+│           ├── route.ts           # GET (lista) + POST (dodaj)
+│           └── [id]/route.ts     # GET, DELETE, PATCH (ažuriraj naslov/javnost)
 ├── lib/
 │   ├── qrng.ts, qrng-server.ts
 │   ├── color.ts, draw-utils.ts, date.ts
+│   ├── auth.ts                 # NextAuth konfiguracija (Credentials + Prisma)
+│   ├── db.ts                   # Prisma client singleton
 │   ├── landscape.ts
+│   ├── tree-lsystem.ts         # L-system rekurentno grananje (drveće)
 │   └── scenarios/
-│       ├── router.ts         # renderArt, NUM_SCENARIOS
-│       ├── index.ts          # SCENARIO_NAMES
-│       ├── beach.ts
-│       ├── ocean-sunset.ts
-│       ├── desert.ts
-│       ├── city-night.ts
-│       ├── cosmos.ts
-│       ├── forest.ts
-│       └── lake.ts
+│       ├── router.ts, index.ts
+│       ├── beach.ts, ocean-sunset.ts, desert.ts
+│       ├── city-night.ts, cosmos.ts, forest.ts, lake.ts
 └── components/
-    ├── ArtCanvas.tsx
-    ├── Header.tsx
-    ├── DailyArtSection.tsx
-    ├── ArtPageContent.tsx
-    ├── ArchiveThumbnail.tsx
-    └── QRNGReveal.tsx
+    ├── ArtCanvas.tsx, Header.tsx, Providers.tsx
+    ├── DailyArtSection.tsx, ArtPageContent.tsx
+    ├── ArchiveThumbnail.tsx, QRNGReveal.tsx
+    └── SaveFavoriteButton.tsx   # Modal za snimanje u omiljene
+
+prisma/
+├── schema.prisma   # User, Account, Session, VerificationToken, Favorite
+└── migrations/     # SQL migracije
 ```
 
 ---
 
 ## Pokretanje
 
-```bash
-npm install
-npm run dev   # http://localhost:9500
-```
+### Preduslovi
+
+- **Node.js** 18+ (preporučeno 20+)
+- **MySQL** — baza za korisnike i omiljene
+
+### 1. Instalacija
 
 ```bash
-npm run build
-npm start     # produkcija
+npm install
 ```
+
+### 2. Konfiguracija okruženja
+
+Kreiraj `.env` u root folderu:
+
+```env
+# Obavezno za Auth.js
+AUTH_SECRET="nasumicni-dugacak-string-minimum-32-karaktera"
+
+# Obavezno za Prisma (MySQL)
+DATABASE_URL="mysql://KORISNIK:LOZINKA@HOST:3306/IME_BAZE"
+
+# Opciono — apsolutni URL sajta (za OG slike, share linkove)
+NEXTAUTH_URL="http://localhost:9500"
+```
+
+- **AUTH_SECRET** — generiši sa `openssl rand -base64 32`
+- **DATABASE_URL** — format za MySQL: `mysql://user:pass@host:port/dbname`
+- **NEXTAUTH_URL** — u produkciji postavi na realan domen (npr. `https://qrng-art.dnasoftwaresolutions.com`)
+
+### 3. Baza podataka (Prisma)
+
+```bash
+# Generiši Prisma client i primeni migracije
+npx prisma generate
+npx prisma migrate deploy   # ili: npx prisma migrate dev (prvi put / dev)
+```
+
+Ako baza još ne postoji, kreiraj je u MySQL-u, pa pokreni `migrate deploy` ili `migrate dev`.
+
+### 4. Pokretanje razvojnog servera
+
+```bash
+npm run dev
+```
+
+Aplikacija je dostupna na **http://localhost:9500**.
+
+### npm skripte
+
+| Skripta | Opis |
+|---------|------|
+| `npm run dev` | Razvojni server (Next.js) na portu 9500 |
+| `npm run build` | Build za produkciju |
+| `npm start` | Pokreće produkcijsku verziju (posle `npm run build`) |
+| `npm run lint` | ESLint provera |
+| `npx prisma generate` | Regeneriše Prisma client iz schema.prisma |
+| `npx prisma migrate dev` | Kreira novu migraciju i primenjuje je (dev) |
+| `npx prisma migrate deploy` | Primena postojećih migracija (produkcija) |
+| `npx prisma studio` | GUI za pregled/editovanje baze |
+
+---
+
+## Novi paketi i funkcije
+
+### Prisma (ORM)
+
+- **Šta radi:** Povezuje aplikaciju sa MySQL bazom. Schema (`prisma/schema.prisma`) definiše modele: `User`, `Account`, `Session`, `VerificationToken`, `Favorite`.
+- **Zašto:** Auth.js treba tabelu korisnika; omiljene slike čuvaju `values` (1000 uint16) i metapodatke.
+
+### NextAuth (Auth.js v5)
+
+- **Šta radi:** Autentifikacija — prijava/odjava, sesija, JWT. Credentials provider (email + lozinka). Prisma adapter čuva sesije i naloge.
+- **Zašto:** Korisnici mogu da se registruju, prijave i snime omiljene slike.
+- **Rute:** `/login`, `/api/auth/*`
+
+### bcryptjs
+
+- **Šta radi:** Hash-uje lozinke pre čuvanja u bazi. Nikad plain text.
+- **Gde se koristi:** Registracija (`/api/auth/register`), Credentials provider u `auth.ts`.
+
+### @napi-rs/canvas
+
+- **Šta radi:** Server-side canvas rendering (Node.js). Koristi se za OG slike (`/api/og-image`).
+- **Zašto:** Za share linkove (Viber, Facebook…) potrebna je stvarna PNG slika, ne React komponenta.
+
+### next-intl
+
+- **Šta radi:** Internacionalizacija — prevodi UI stringove iz `messages/sr.json`.
+- **Zašto:** Ceo sajt na srpskom (šuma, Igraonica, Slika dana, itd.).
 
 ---
 
@@ -154,6 +244,14 @@ npm start     # produkcija
 |----------|------|
 | `GET /api/generate` | Vraća 1000 uint16 vrednosti (ANU QRNG ili crypto fallback) |
 | `GET /api/art/[date]` | Vraća art za datum (YYYY-MM-DD) — `{ values: number[] }` |
+| `GET /api/og-image` | Vraća PNG sliku dana (1200×675) za og:image |
+| `GET/POST /api/auth/[...nextauth]` | NextAuth rute (callback, session, signIn/Out) |
+| `POST /api/auth/register` | Registracija (email, lozinka, ime) |
+| `GET /api/favorites` | Lista omiljenih (za ulogovanog korisnika) |
+| `POST /api/favorites` | Dodaj u omiljene (values, title?, scenarioName?, isPublic?) |
+| `GET /api/favorites/[id]` | Jedna omiljena |
+| `DELETE /api/favorites/[id]` | Obriši omiljenu |
+| `PATCH /api/favorites/[id]` | Ažuriraj (title, isPublic) |
 
 ---
 
@@ -181,12 +279,37 @@ Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis prom
 - **Svi scenariji** — Sunce/mesec: konzistentna veličina (sun 22–36 px, moon 14–26 px).
 - **Jezero** — Deblo obalskog drveća crta se posle krošnje (kao Šuma).
 - **Jezero** — Vrba i listač: L-system inspirisano rekurzivno grananje (tree-lsystem.ts).
+- **Auth + Favorites** — Prisma 5, NextAuth (Credentials), bcryptjs. Korisnici: registracija, prijava, profil, snimanje omiljenih, javno deljenje `/f/[token]`.
+- **README** — Detaljna sekcija Pokretanje (prerequisites, .env, Prisma migrate), npm skripte, pregled novih paketa (Prisma, NextAuth, bcryptjs, @napi-rs/canvas, next-intl), ažurirana struktura projekta i API tabela.
+
+### 2026-03-07 — Optimizacija resursa (Hostinger fix)
+
+- **`src/lib/db.ts`** — KRITIČAN FIX: Prisma singleton se sada čuva i u produkciji (`globalForPrisma.prisma = prisma` bez uslova). Pre ovog fixa, svaki HTTP zahtev u produkciji spawnovao je novi Prisma query engine (Rust child process), direktno uzrokujući prekoračenje Max Processes limita (120/120 na Hostingeru).
+- **`next.config.ts`** — KRITIČAN FIX: Uklonjen globalni `no-store` header koji je pokrivao sve URL-ove (`/:path*`). Ostao je samo keš za `/_next/static/`. Sada svaka ruta sama definiše svoju keš strategiju.
+- **`src/components/ArchiveThumbnail.tsx`** — Dodat `IntersectionObserver` (rootMargin 200px): `fetch(/api/art/${date})` se poziva samo kada thumbnail uđe u viewport. Pre ovog fixa, N thumbnailova na arhivnoj strani istovremeno slalo N paralelnih zahteva serveru pri učitavanju stranice.
+- **`src/app/api/og-image/route.ts`** — Dodat in-memory LRU keš (`Map<string, Buffer>`, max 30 unosa). OG slika je deterministička (isti datum → ista slika zauvek), pa se renderuje samo jednom po procesu. Pre toga, svaki Viber/Telegram share pokretao je puni canvas render + PNG enkodiranje.
+- **`src/app/api/art/[date]/route.ts`** — Dodat `Cache-Control: public, max-age=86400, immutable` header. Ruta je deterministička, može se keširati u browseru i CDN-u.
+- **`src/app/api/favorites/route.ts`** — Uklonjen `values` iz SELECT za list view. 1000 brojeva po favoritu se sada ne prenosi pri listanju, samo pri otvaranju jednog favorita. Dodat `no-store` header (privatni podaci).
+- **`src/app/api/favorites/[id]/route.ts`** — DELETE sada koristi `deleteMany({ where: { id, userId } })` (1 query umesto 2). PATCH koristi `updateMany` sa userId uslovom. Dodat `no-store` header.
+- **`src/app/profile/page.tsx`** — `FavoriteCard` sada lazy-load-uje `values` putem `IntersectionObserver` — canvas se popunjava tek kada kartica uđe u viewport, ne odjednom za sve favorite.
+- **`src/app/page.tsx`** — `force-dynamic` zamenjen sa `revalidate: 86400` (ISR). Stranica ne sadrži per-request dinamičke podatke.
+- **`src/app/archive/page.tsx`** — `force-dynamic` zamenjen sa `revalidate: 3600` (ISR). Lista datuma je čista matematika.
 
 ---
 
 ## Konfiguracija
 
+### Aplikacija
+
 - **REQUIRED_COUNT** — 1000 brojeva za generisanje
 - **Canvas** — 1200×675 px
 - **Datum** — timezone `Europe/Belgrade` (srpsko vreme)
 - **Port** — 9500 (dev)
+
+### Okruženje (.env)
+
+| Promenljiva | Obavezna | Opis |
+|-------------|----------|------|
+| `AUTH_SECRET` | Da | Min. 32 karaktera; `openssl rand -base64 32` |
+| `DATABASE_URL` | Da | MySQL connection string (`mysql://user:pass@host:3306/db`) |
+| `NEXTAUTH_URL` | Produkcija | Apsolutni URL sajta (za Auth callback i OG slike) |
