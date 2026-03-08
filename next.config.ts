@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@napi-rs/canvas", "@prisma/client", "bcryptjs"],
   poweredByHeader: false,
   compress: false,
+  experimental: {
+    workerThreads: false,
+    cpus: 2,
+  },
   async headers() {
     return [
       {
