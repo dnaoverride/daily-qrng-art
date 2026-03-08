@@ -42,7 +42,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id, email, name: displayName }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("[register] Error:", err);
     return NextResponse.json({ error: "Greška servera." }, { status: 500 });
   }
 }

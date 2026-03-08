@@ -8,15 +8,14 @@ const globalForDb = globalThis as unknown as { pool: mysql.Pool | undefined };
 const rawUrl = process.env.DATABASE_URL ?? "";
 const baseUrl = rawUrl.split("?")[0];
 
+// mysql2 createPool: pass URI string + query params (uri in object can be flaky)
+const poolUrl =
+  baseUrl || "mysql://localhost:3306/mydb";
 const pool =
   globalForDb.pool ??
-  mysql.createPool({
-    uri: baseUrl,
-    connectionLimit: 2,
-    connectTimeout: 30000,
-    waitForConnections: true,
-    queueLimit: 0,
-  });
+  mysql.createPool(
+    `${poolUrl}${poolUrl.includes("?") ? "&" : "?"}connectionLimit=2&connectTimeout=30000`
+  );
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.pool = pool;
