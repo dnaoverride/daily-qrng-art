@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 function getBaseUrl(): string {
   const raw =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://qrng-art-test.dnasoftwaresolutions.com";
+    process.env.NEXTAUTH_URL || "https://qrng-art-test.dnasoftwaresolutions.com";
   const trimmed = raw.trim().replace(/\/$/, "");
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;

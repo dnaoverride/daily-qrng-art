@@ -83,7 +83,7 @@ Ovaj dokument definiše pravila i best practices za deploy aplikacije na Hosting
 - [ ] `next build` prolazi bez grešaka
 - [ ] `prisma generate` i `prisma db push` / `prisma migrate deploy` izvršeni
 - [ ] `DATABASE_URL` sadrži `connection_limit=3&pool_timeout=10` (ili je dodato u `PrismaClient` datasources)
-- [ ] `.env` varijable podešene na Hostingeru (NEXTAUTH_SECRET, AUTH_SECRET, DATABASE_URL, NEXT_PUBLIC_SITE_URL)
+- [ ] `.env` varijable podešene na Hostingeru (NEXTAUTH_SECRET, AUTH_SECRET, DATABASE_URL, NEXTAUTH_URL)
 - [ ] PM2 konfiguracija: max 2–3 instance
 - [ ] Proveriti da `@napi-rs/canvas` native binary radi na Hostinger Linux (glibc kompatibilnost)
 - [ ] Testirati OG image: `/api/og-image?date=YYYY-MM-DD` vraća PNG
