@@ -36,7 +36,12 @@ export default async function SharedFavoritePage({ params }: PageProps) {
   }
 
   const favorite = rows[0];
-  const values = Array.isArray(favorite.values) ? favorite.values : [];
+  const rawValues = favorite.values;
+  const values = Array.isArray(rawValues)
+    ? rawValues
+    : typeof rawValues === "string"
+      ? (JSON.parse(rawValues) as number[])
+      : [];
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
