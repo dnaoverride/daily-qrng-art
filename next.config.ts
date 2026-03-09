@@ -8,10 +8,6 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@napi-rs/canvas", "mysql2", "bcryptjs"],
   poweredByHeader: false,
   compress: false,
-  experimental: {
-    workerThreads: false,
-    cpus: 2,
-  },
   async headers() {
     return [
       {
