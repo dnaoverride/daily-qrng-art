@@ -103,7 +103,17 @@ U **hPanel > Deployments > Environment Variables** dodaj:
 
 ---
 
-## 4. Push
+## 4. Hostinger — Pre push-a (workaround za NPROC spike)
+
+Pre `git push` da izbegneš 503 zbog max procesa (120):
+
+- [ ] **hPanel → Hosting Plan → Resources Usage** → klikni **"Stop running processes"**
+
+Time se gasi stare Node procese pre nego što novi build krene, da ne bi stari + novi build workers prešli limit.
+
+---
+
+## 5. Push
 
 ```bash
 git add .
@@ -119,5 +129,6 @@ git push origin main
 1. Kreirati korisnika i bazu u Hostinger hPanel > Databases  
 2. Ostaviti bazu praznu (bez ručno kreiranih tabela)  
 3. U Deployments dodati `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`  
-4. Pushovati na `main`  
-5. Pratiti build u Hostinger Deployments panelu
+4. **Pre svakog push-a:** Resources Usage → Stop running processes  
+5. Pushovati na `main`  
+6. Pratiti build u Hostinger Deployments panelu

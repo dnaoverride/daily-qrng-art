@@ -54,9 +54,14 @@ function FavoriteCard({
         fetch(`/api/favorites/${fav.id}`)
           .then((res) => res.json())
           .then((data: { favorite?: Favorite }) => {
-            if (!cancelled && Array.isArray(data.favorite?.values)) {
-              setValues(data.favorite!.values);
-            }
+            if (cancelled) return;
+            const v = data.favorite?.values;
+            const arr = Array.isArray(v)
+              ? v
+              : typeof v === "string"
+                ? (JSON.parse(v) as number[])
+                : null;
+            if (arr && arr.length) setValues(arr);
           })
           .catch(() => {});
       },

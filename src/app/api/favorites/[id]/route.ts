@@ -32,11 +32,19 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   const row = rows[0];
+  // Drizzle/MySQL JSON može vratiti string umesto niza u nekim okruženjima
+  const rawValues = row.values;
+  const values = Array.isArray(rawValues)
+    ? rawValues
+    : typeof rawValues === "string"
+      ? (JSON.parse(rawValues) as number[])
+      : [];
+
   const favorite = {
     id: row.id,
     userId: row.userId,
     title: row.title,
-    values: row.values,
+    values,
     scenarioName: row.scenarioName,
     isPublic: row.isPublic,
     shareToken: row.shareToken,
