@@ -4,7 +4,6 @@ import {
   index,
   json,
   mysqlTable,
-  text,
   varchar,
 } from "drizzle-orm/mysql-core";
 

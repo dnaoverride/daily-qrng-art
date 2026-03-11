@@ -122,8 +122,9 @@ src/
 ├── lib/
 │   ├── qrng.ts, qrng-server.ts
 │   ├── color.ts, draw-utils.ts, date.ts
-│   ├── auth.ts                 # NextAuth konfiguracija (Credentials + Prisma)
-│   ├── db.ts                   # Prisma client singleton
+│   ├── auth.ts                 # NextAuth konfiguracija (Credentials + Drizzle)
+│   ├── db.ts                   # Drizzle + mysql2 connection pool
+│   ├── schema.ts               # Drizzle šema (User, Favorite)
 │   ├── landscape.ts
 │   ├── tree-lsystem.ts         # L-system rekurentno grananje (drveće)
 │   └── scenarios/
@@ -136,9 +137,11 @@ src/
     ├── ArchiveThumbnail.tsx, QRNGReveal.tsx
     └── SaveFavoriteButton.tsx   # Modal za snimanje u omiljene
 
-prisma/
-├── schema.prisma   # User, Account, Session, VerificationToken, Favorite
-└── migrations/     # SQL migracije
+drizzle.config.ts   # Drizzle Kit konfiguracija
+drizzle/
+└── 0000_init.sql   # SQL fallback za inicijalizaciju (User, Favorite)
+
+# prisma/ — legacy (više se ne koristi, projekat koristi Drizzle)
 ```
 
 ---
@@ -150,22 +153,48 @@ prisma/
 - **Node.js** 18+ (preporučeno 20+)
 - **MySQL** — baza za korisnike i omiljene
 
-### 1. Instalacija
+### 1. Instalacija MySQL-a (Linux)
+
+```bash
+sudo apt update
+sudo apt install mysql-server -y
+sudo systemctl start mysql
+sudo systemctl enable mysql
+sudo mysql_secure_installation
+```
+
+### 2. Kreiranje baze i korisnika
+
+```bash
+sudo mysql -u root -p
+```
+
+U MySQL konzoli:
+
+```sql
+CREATE DATABASE qrng_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'qrng_user'@'localhost' IDENTIFIED BY 'tvoja_lozinka';
+GRANT ALL PRIVILEGES ON qrng_db.* TO 'qrng_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### 3. Instalacija zavisnosti
 
 ```bash
 npm install
 ```
 
-### 2. Konfiguracija okruženja
+### 4. Konfiguracija okruženja
 
-Kreiraj `.env` u root folderu:
+Kreiraj `.env.local` u root folderu (ili `.env`):
 
 ```env
 # Obavezno za Auth.js
 AUTH_SECRET="nasumicni-dugacak-string-minimum-32-karaktera"
 
-# Obavezno za Prisma (MySQL)
-DATABASE_URL="mysql://KORISNIK:LOZINKA@HOST:3306/IME_BAZE"
+# Obavezno za Drizzle/MySQL
+DATABASE_URL="mysql://qrng_user:tvoja_lozinka@localhost:3306/qrng_db"
 
 # Opciono — apsolutni URL sajta (za OG slike, share linkove)
 NEXTAUTH_URL="http://localhost:9500"
@@ -175,17 +204,21 @@ NEXTAUTH_URL="http://localhost:9500"
 - **DATABASE_URL** — format za MySQL: `mysql://user:pass@host:port/dbname`
 - **NEXTAUTH_URL** — u produkciji postavi na realan domen (npr. `https://qrng-art.dnasoftwaresolutions.com`)
 
-### 3. Baza podataka (Prisma)
+### 5. Inicijalizacija baze (Drizzle)
+
+**Opcija A — Drizzle push (preporučeno):**
 
 ```bash
-# Generiši Prisma client i primeni migracije
-npx prisma generate
-npx prisma migrate deploy   # ili: npx prisma migrate dev (prvi put / dev)
+npm run db:push
 ```
 
-Ako baza još ne postoji, kreiraj je u MySQL-u, pa pokreni `migrate deploy` ili `migrate dev`.
+**Opcija B — Ručni SQL (ako db:push ne radi):**
 
-### 4. Pokretanje razvojnog servera
+```bash
+mysql -u qrng_user -p qrng_db < drizzle/0000_init.sql
+```
+
+### 6. Pokretanje razvojnog servera
 
 ```bash
 npm run dev
@@ -201,23 +234,22 @@ Aplikacija je dostupna na **http://localhost:9500**.
 | `npm run build` | Build za produkciju |
 | `npm start` | Pokreće produkcijsku verziju (posle `npm run build`) |
 | `npm run lint` | ESLint provera |
-| `npx prisma generate` | Regeneriše Prisma client iz schema.prisma |
-| `npx prisma migrate dev` | Kreira novu migraciju i primenjuje je (dev) |
-| `npx prisma migrate deploy` | Primena postojećih migracija (produkcija) |
-| `npx prisma studio` | GUI za pregled/editovanje baze |
+| `npm run db:push` | Drizzle: push šeme u bazu (kreira/ ažurira tabele) |
+| `npm run db:generate` | Drizzle: generiše SQL migracije iz schema.ts |
+| `npm run db:migrate` | Drizzle: primenjuje generisane migracije |
 
 ---
 
 ## Novi paketi i funkcije
 
-### Prisma (ORM)
+### Drizzle ORM + mysql2
 
-- **Šta radi:** Povezuje aplikaciju sa MySQL bazom. Schema (`prisma/schema.prisma`) definiše modele: `User`, `Account`, `Session`, `VerificationToken`, `Favorite`.
-- **Zašto:** Auth.js treba tabelu korisnika; omiljene slike čuvaju `values` (1000 uint16) i metapodatke.
+- **Šta radi:** Povezuje aplikaciju sa MySQL bazom. Schema (`src/lib/schema.ts`) definiše modele: `User`, `Favorite`. Connection pool u `src/lib/db.ts`.
+- **Zašto:** Auth.js treba tabelu korisnika; omiljene slike čuvaju `values` (1000 uint16) i metapodatke. Drizzle je lakši od Prisma za Hostinger (bez Rust query engine procesa).
 
 ### NextAuth (Auth.js v5)
 
-- **Šta radi:** Autentifikacija — prijava/odjava, sesija, JWT. Credentials provider (email + lozinka). Prisma adapter čuva sesije i naloge.
+- **Šta radi:** Autentifikacija — prijava/odjava, sesija, JWT. Credentials provider (email + lozinka). Sesije u JWT-u (bez database sesija).
 - **Zašto:** Korisnici mogu da se registruju, prijave i snime omiljene slike.
 - **Rute:** `/login`, `/api/auth/*`
 
@@ -284,16 +316,24 @@ Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis prom
 
 ### 2026-03-07 — Optimizacija resursa (Hostinger fix)
 
-- **`src/lib/db.ts`** — KRITIČAN FIX: Prisma singleton se sada čuva i u produkciji (`globalForPrisma.prisma = prisma` bez uslova). Pre ovog fixa, svaki HTTP zahtev u produkciji spawnovao je novi Prisma query engine (Rust child process), direktno uzrokujući prekoračenje Max Processes limita (120/120 na Hostingeru).
+- **`src/lib/db.ts`** — KRITIČAN FIX: Prelazak sa Prisma na Drizzle + mysql2. Prisma je imala Rust query engine koji je spawnovao procese i prekoračavao Max Processes limit (120/120 na Hostingeru). Drizzle koristi mysql2 connection pool bez dodatnih child procesa.
 - **`next.config.ts`** — KRITIČAN FIX: Uklonjen globalni `no-store` header koji je pokrivao sve URL-ove (`/:path*`). Ostao je samo keš za `/_next/static/`. Sada svaka ruta sama definiše svoju keš strategiju.
 - **`src/components/ArchiveThumbnail.tsx`** — Dodat `IntersectionObserver` (rootMargin 200px): `fetch(/api/art/${date})` se poziva samo kada thumbnail uđe u viewport. Pre ovog fixa, N thumbnailova na arhivnoj strani istovremeno slalo N paralelnih zahteva serveru pri učitavanju stranice.
 - **`src/app/api/og-image/route.ts`** — Dodat in-memory LRU keš (`Map<string, Buffer>`, max 30 unosa). OG slika je deterministička (isti datum → ista slika zauvek), pa se renderuje samo jednom po procesu. Pre toga, svaki Viber/Telegram share pokretao je puni canvas render + PNG enkodiranje.
 - **`src/app/api/art/[date]/route.ts`** — Dodat `Cache-Control: public, max-age=86400, immutable` header. Ruta je deterministička, može se keširati u browseru i CDN-u.
 - **`src/app/api/favorites/route.ts`** — Uklonjen `values` iz SELECT za list view. 1000 brojeva po favoritu se sada ne prenosi pri listanju, samo pri otvaranju jednog favorita. Dodat `no-store` header (privatni podaci).
-- **`src/app/api/favorites/[id]/route.ts`** — DELETE sada koristi `deleteMany({ where: { id, userId } })` (1 query umesto 2). PATCH koristi `updateMany` sa userId uslovom. Dodat `no-store` header.
+- **`src/app/api/favorites/[id]/route.ts`** — DELETE i PATCH koriste Drizzle sa userId uslovom. Dodat `no-store` header.
 - **`src/app/profile/page.tsx`** — `FavoriteCard` sada lazy-load-uje `values` putem `IntersectionObserver` — canvas se popunjava tek kada kartica uđe u viewport, ne odjednom za sve favorite.
 - **`src/app/page.tsx`** — `force-dynamic` zamenjen sa `revalidate: 86400` (ISR). Stranica ne sadrži per-request dinamičke podatke.
 - **`src/app/archive/page.tsx`** — `force-dynamic` zamenjen sa `revalidate: 3600` (ISR). Lista datuma je čista matematika.
+
+### 2026-03-11 — Drizzle setup i README dokumentacija
+
+- **README** — Ažurirana dokumentacija: Prisma zamenjena sa Drizzle u celoj sekciji Pokretanje. Dodati koraci: instalacija MySQL-a, kreiranje baze i korisnika, `npm run db:push`, SQL fallback `drizzle/0000_init.sql`.
+- **Projektna struktura** — Prisma folder zamenjen sa `drizzle.config.ts` i `drizzle/0000_init.sql`. `db.ts` i `auth.ts` sada koriste Drizzle.
+- **drizzle.config.ts** — Novi fajl za Drizzle Kit; učitava `.env` i `.env.local` za `DATABASE_URL`.
+- **drizzle-kit** — Dodat u devDependencies. Nove skripte: `db:push`, `db:generate`, `db:migrate`.
+- **drizzle/0000_init.sql** — SQL fallback za ručnu inicijalizaciju (samo `User` i `Favorite`, bez Prisma tabela).
 
 ---
 
