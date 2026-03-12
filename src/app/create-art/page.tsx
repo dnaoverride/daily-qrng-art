@@ -112,10 +112,10 @@ export default function CreateArtPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={handleGenerate}
+              onClick={handleRandom}
               className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium hover:opacity-90 transition-opacity"
             >
-              {t("generate")}
+              {t("random")}
             </button>
             <button
               type="button"
@@ -126,10 +126,10 @@ export default function CreateArtPage() {
             </button>
             <button
               type="button"
-              onClick={handleRandom}
+              onClick={handleGenerate}
               className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
-              {t("random")}
+              {t("generate")}
             </button>
             {values && (
               <>
