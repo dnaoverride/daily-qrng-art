@@ -196,8 +196,13 @@ export default function AlgorithmicPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/generate");
-      if (!res.ok) throw new Error();
-      const data = (await res.json()) as { values?: number[] };
+      const text = await res.text();
+      let data: { values?: number[] };
+      try {
+        data = JSON.parse(text) as { values?: number[] };
+      } catch {
+        throw new Error("not json");
+      }
       if (!Array.isArray(data.values) || data.values.length !== REQUIRED_COUNT) throw new Error();
       setValues(data.values);
       renderCurrent(data.values);

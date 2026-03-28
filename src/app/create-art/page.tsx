@@ -64,8 +64,13 @@ export default function CreateArtPage() {
     setError(null);
     try {
       const res = await fetch("/api/generate");
-      if (!res.ok) throw new Error("Nije moguće učitati.");
-      const data = (await res.json()) as { values?: number[] };
+      const text = await res.text();
+      let data: { values?: number[] };
+      try {
+        data = JSON.parse(text) as { values?: number[] };
+      } catch {
+        throw new Error("not json");
+      }
       if (!Array.isArray(data.values) || data.values.length !== REQUIRED_COUNT) {
         throw new Error("Neispravan odgovor.");
       }
