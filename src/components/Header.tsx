@@ -86,6 +86,13 @@ export function Header({ currentLocale = "sr" }: HeaderProps) {
             >
               {t("playground")}
             </Link>
+            <Link
+              href="/algorithmic"
+              onClick={() => setOpen(false)}
+              className="block py-2 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium"
+            >
+              {t("algorithmic")}
+            </Link>
 
             <div className="border-t border-zinc-100 dark:border-zinc-800 pt-2 mt-2">
               {session?.user ? (

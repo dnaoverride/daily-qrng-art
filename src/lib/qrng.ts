@@ -34,7 +34,12 @@ export class QRNGStream {
       this.i += 1;
       return v;
     }
-    return this.xorshift32() & 0xffff;
+    // Nakon 1000 vrednosti: XOR-ujemo PRNG izlaz sa cikličnim QRNG vrednostima
+    // čime proširene vrednosti zadržavaju kvantnu entropiju iz originalnog seta.
+    const prng = this.xorshift32() & 0xffff;
+    const qrng = this.values[this.i % this.values.length]! & 0xffff;
+    this.i += 1;
+    return prng ^ qrng;
   }
 
   next_f(): number {

@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { ArtCanvas } from "@/components/ArtCanvas";
+import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
+import { PHILOSOPHIES } from "@/lib/algorithmic/types";
 
 interface Favorite {
   id: string;
@@ -28,6 +29,7 @@ function FavoriteCard({
   onTogglePublic: (id: string, isPublic: boolean, shareToken: string | null) => void;
 }) {
   const t = useTranslations("profile");
+  const tAlgo = useTranslations("algorithmic");
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -115,11 +117,23 @@ function FavoriteCard({
     year: "numeric",
   });
 
+  function getDisplayScenarioName(raw: string | null): string | null {
+    if (!raw) return null;
+    if (raw.startsWith("algo:")) {
+      const id = raw.slice(5);
+      const ph = PHILOSOPHIES.find((p) => p.id === id);
+      if (ph) return tAlgo(ph.labelKey);
+    }
+    return raw;
+  }
+
+  const displayScenario = getDisplayScenarioName(fav.scenarioName ?? null);
+
   return (
     <div ref={cardRef} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <div className="relative aspect-video bg-zinc-100 dark:bg-zinc-800">
         {values ? (
-          <ArtCanvas values={values} className="w-full h-full" />
+          <AlgoArtCanvas values={values} scenarioName={fav.scenarioName} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full animate-pulse bg-zinc-200 dark:bg-zinc-700" />
         )}
@@ -129,9 +143,9 @@ function FavoriteCard({
         <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
           {fav.title ?? t("noTitle")}
         </h3>
-        {fav.scenarioName && (
+        {displayScenario && (
           <p className="text-xs text-zinc-400 mt-0.5">
-            {t("scenario", { name: fav.scenarioName })}
+            {t("scenario", { name: displayScenario })}
           </p>
         )}
         <p className="text-xs text-zinc-400 mt-0.5">{t("createdAt", { date })}</p>

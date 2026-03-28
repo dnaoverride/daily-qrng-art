@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { ArtCanvas } from "@/components/ArtCanvas";
+import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
+import { PHILOSOPHIES } from "@/lib/algorithmic/types";
 import { db } from "@/lib/db";
 import { favorites, users } from "@/lib/schema";
 import { getTranslations } from "next-intl/server";
@@ -43,6 +44,20 @@ export default async function SharedFavoritePage({ params }: PageProps) {
       ? (JSON.parse(rawValues) as number[])
       : [];
 
+  const tAlgo = await getTranslations("algorithmic");
+
+  function getDisplayScenarioName(raw: string | null | undefined): string | null {
+    if (!raw) return null;
+    if (raw.startsWith("algo:")) {
+      const id = raw.slice(5);
+      const ph = PHILOSOPHIES.find((p) => p.id === id);
+      if (ph) return tAlgo(ph.labelKey);
+    }
+    return raw;
+  }
+
+  const displayScenario = getDisplayScenarioName(favorite.scenarioName);
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
@@ -51,9 +66,9 @@ export default async function SharedFavoritePage({ params }: PageProps) {
             {favorite.title ?? t("noTitle")}
           </h1>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            {favorite.scenarioName && (
+            {displayScenario && (
               <span className="text-sm text-zinc-500">
-                {t("scenario", { name: favorite.scenarioName })}
+                {t("scenario", { name: displayScenario })}
               </span>
             )}
             {favorite.userName && (
@@ -72,7 +87,11 @@ export default async function SharedFavoritePage({ params }: PageProps) {
         </div>
 
         <div className="flex justify-center mb-6">
-          <ArtCanvas values={values} />
+          <AlgoArtCanvas
+            values={values}
+            scenarioName={favorite.scenarioName}
+            className="w-full max-w-4xl h-auto rounded-lg shadow-xl"
+          />
         </div>
 
         <div className="flex flex-wrap gap-3 justify-center">

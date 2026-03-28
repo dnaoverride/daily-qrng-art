@@ -2,6 +2,7 @@ import {
   boolean,
   datetime,
   index,
+  int,
   json,
   mysqlTable,
   varchar,
@@ -15,6 +16,18 @@ export const users = mysqlTable("User", {
   image: varchar("image", { length: 191 }),
   createdAt: datetime("createdAt", { fsp: 3 }).notNull(),
 });
+
+export const qrng_pool = mysqlTable(
+  "qrng_pool",
+  {
+    id:        int("id").autoincrement().primaryKey(),
+    values:    json("values").notNull().$type<number[]>(),
+    fetchedAt: datetime("fetchedAt", { fsp: 3 }).notNull(),
+    usedAt:    datetime("usedAt",    { fsp: 3 }),
+    used:      boolean("used").notNull().default(false),
+  },
+  (t) => [index("qrng_pool_used_idx").on(t.used, t.fetchedAt)]
+);
 
 export const favorites = mysqlTable(
   "Favorite",
