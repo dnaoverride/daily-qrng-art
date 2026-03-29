@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
+import { QRNGReveal } from "@/components/QRNGReveal";
 import { getTodayBelgrade } from "@/lib/date";
 import {
   PHILOSOPHIES,
@@ -584,6 +585,12 @@ export default function AlgorithmicPage() {
                 )}
               </div>
             </div>
+
+            {values && (
+              <div className="algo-section">
+                <QRNGReveal values={values} className="max-w-none mx-0" />
+              </div>
+            )}
 
             <section
               className="algo-section space-y-3"

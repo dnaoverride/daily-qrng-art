@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
+import { QRNGReveal } from "@/components/QRNGReveal";
 import { PHILOSOPHIES } from "@/lib/algorithmic/types";
 
 interface Favorite {
@@ -138,6 +139,12 @@ function FavoriteCard({
           <div className="w-full h-full animate-pulse bg-zinc-200 dark:bg-zinc-700" />
         )}
       </div>
+
+      {values && values.length > 0 && (
+        <div className="px-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/40">
+          <QRNGReveal values={values} className="mt-0 max-w-none mx-0" />
+        </div>
+      )}
 
       <div className="p-4">
         <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">

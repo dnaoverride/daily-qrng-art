@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { ArtCanvas } from "@/components/ArtCanvas";
+import { QRNGReveal } from "@/components/QRNGReveal";
 import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
 import {
   SCENARIO_NAMES,
@@ -169,6 +170,7 @@ export default function CreateArtPage() {
                 canvasRef.current = el;
               }}
             />
+            <QRNGReveal values={values} />
           </div>
         )}
       </main>

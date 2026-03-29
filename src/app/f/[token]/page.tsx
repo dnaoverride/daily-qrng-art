@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
+import { QRNGReveal } from "@/components/QRNGReveal";
 import { PHILOSOPHIES } from "@/lib/algorithmic/types";
 import { db } from "@/lib/db";
 import { favorites, users } from "@/lib/schema";
@@ -93,6 +94,12 @@ export default async function SharedFavoritePage({ params }: PageProps) {
             className="w-full max-w-4xl h-auto rounded-lg shadow-xl"
           />
         </div>
+
+        {values.length > 0 && (
+          <div className="mb-8 max-w-4xl mx-auto">
+            <QRNGReveal values={values} className="max-w-none mx-0" />
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3 justify-center">
           <Link

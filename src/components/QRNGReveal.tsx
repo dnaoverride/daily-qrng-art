@@ -6,9 +6,10 @@ import { useTranslations } from "next-intl";
 interface QRNGRevealProps {
   values: number[];
   date?: string;
+  className?: string;
 }
 
-export function QRNGReveal({ values, date }: QRNGRevealProps) {
+export function QRNGReveal({ values, date, className }: QRNGRevealProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const t = useTranslations("qrngReveal");
@@ -33,7 +34,9 @@ export function QRNGReveal({ values, date }: QRNGRevealProps) {
   };
 
   return (
-    <div className="mt-4 max-w-4xl mx-auto">
+    <div
+      className={["mt-4 max-w-4xl mx-auto", className].filter(Boolean).join(" ")}
+    >
       <button
         type="button"
         onClick={() => setOpen(!open)}
