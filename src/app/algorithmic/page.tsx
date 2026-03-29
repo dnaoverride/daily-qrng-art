@@ -15,6 +15,7 @@ import {
   DEFAULT_TRUCHET,
   DEFAULT_JULIA,
   DEFAULT_NEWTON,
+  DEFAULT_APOLLONIAN,
 } from "@/lib/algorithmic/types";
 import type {
   PhilosophyId,
@@ -26,6 +27,7 @@ import type {
   TruchetParams,
   JuliaParams,
   NewtonParams,
+  ApollonianParams,
   Palette,
   AlgoParams,
 } from "@/lib/algorithmic/types";
@@ -42,6 +44,7 @@ import { renderCellularAutomata } from "@/lib/algorithmic/cellular-automata";
 import { renderTruchet } from "@/lib/algorithmic/truchet";
 import { renderJulia } from "@/lib/algorithmic/julia";
 import { renderNewton } from "@/lib/algorithmic/newton";
+import { renderApollonian } from "@/lib/algorithmic/apollonian";
 
 const W = 1200;
 const H = 675;
@@ -62,7 +65,7 @@ const PALETTE_LABEL_KEY: Record<Palette, string> = {
 
 // Filozofije grupisane po tipu za prikaz
 const NON_FRACTAL_IDS: PhilosophyId[] = ["flow-field", "wave", "voronoi", "l-system", "cellular-automata", "truchet"];
-const FRACTAL_IDS: PhilosophyId[] = ["julia", "newton"];
+const FRACTAL_IDS: PhilosophyId[] = ["julia", "newton", "apollonian"];
 
 function scenarioStoryText(
   philosophy: PhilosophyId,
@@ -85,6 +88,8 @@ function scenarioStoryText(
       return t("storyJulia");
     case "newton":
       return t("storyNewton");
+    case "apollonian":
+      return t("storyApollonian");
   }
 }
 
@@ -109,6 +114,9 @@ export default function AlgorithmicPage() {
   const [truchetParams, setTruchetParams] = useState<TruchetParams>({ ...DEFAULT_TRUCHET });
   const [juliaParams, setJuliaParams] = useState<JuliaParams>({ ...DEFAULT_JULIA });
   const [newtonParams, setNewtonParams] = useState<NewtonParams>({ ...DEFAULT_NEWTON });
+  const [apollonianParams, setApollonianParams] = useState<ApollonianParams>({
+    ...DEFAULT_APOLLONIAN,
+  });
 
   function getCurrentParams(): AlgoParams {
     switch (philosophy) {
@@ -120,6 +128,7 @@ export default function AlgorithmicPage() {
       case "truchet":           return truchetParams;
       case "julia":             return juliaParams;
       case "newton":            return newtonParams;
+      case "apollonian":        return apollonianParams;
     }
   }
 
@@ -169,6 +178,7 @@ export default function AlgorithmicPage() {
       case "truchet":           renderTruchet(ctx, vals, truchetParams); break;
       case "julia":             renderJulia(ctx, vals, juliaParams); break;
       case "newton":            renderNewton(ctx, vals, newtonParams); break;
+      case "apollonian":        renderApollonian(ctx, vals, apollonianParams); break;
     }
   }
 
@@ -265,6 +275,7 @@ export default function AlgorithmicPage() {
       case "truchet":           setTruchetParams((p) => ({ ...p, palette: v })); break;
       case "julia":             setJuliaParams((p) => ({ ...p, palette: v })); break;
       case "newton":            setNewtonParams((p) => ({ ...p, palette: v })); break;
+      case "apollonian":        setApollonianParams((p) => ({ ...p, palette: v })); break;
     }
   }
 
@@ -497,6 +508,21 @@ export default function AlgorithmicPage() {
                   <SliderRow label={t("newtonZoom")} value={newtonParams.zoom}
                     min={0.5} max={3.0} step={0.1} decimals={1}
                     onChange={(v) => setNewtonParams((p) => ({ ...p, zoom: v }))} />
+                </>
+              )}
+
+              {/* Apollonian gasket parametri */}
+              {philosophy === "apollonian" && (
+                <>
+                  <SliderRow label={t("apollonianMaxCircles")} value={apollonianParams.maxCircles}
+                    min={500} max={8000} step={100}
+                    onChange={(v) => setApollonianParams((p) => ({ ...p, maxCircles: v }))} />
+                  <SliderRow label={t("apollonianMinRadius")} value={apollonianParams.minRadiusPx}
+                    min={0.5} max={4} step={0.1} decimals={1}
+                    onChange={(v) => setApollonianParams((p) => ({ ...p, minRadiusPx: v }))} />
+                  <SliderRow label={t("apollonianLineWidth")} value={apollonianParams.lineWidth}
+                    min={0.5} max={2} step={0.1} decimals={1}
+                    onChange={(v) => setApollonianParams((p) => ({ ...p, lineWidth: v }))} />
                 </>
               )}
             </div>

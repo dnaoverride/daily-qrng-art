@@ -67,6 +67,13 @@ export interface NewtonParams {
   palette: Palette;
 }
 
+export interface ApollonianParams {
+  maxCircles: number;   // 500 – 8000
+  minRadiusPx: number; // 0.5 – 4
+  lineWidth: number;   // 0.5 – 2
+  palette: Palette;
+}
+
 export type AlgoParams =
   | FlowFieldParams
   | WaveParams
@@ -75,7 +82,8 @@ export type AlgoParams =
   | CellularAutomataParams
   | TruchetParams
   | JuliaParams
-  | NewtonParams;
+  | NewtonParams
+  | ApollonianParams;
 
 export type PhilosophyId =
   | "flow-field"
@@ -85,7 +93,8 @@ export type PhilosophyId =
   | "cellular-automata"
   | "truchet"
   | "julia"
-  | "newton";
+  | "newton"
+  | "apollonian";
 
 export interface Philosophy {
   id: PhilosophyId;
@@ -146,6 +155,13 @@ export const DEFAULT_NEWTON: NewtonParams = {
   palette: "quantum",
 };
 
+export const DEFAULT_APOLLONIAN: ApollonianParams = {
+  maxCircles: 3500,
+  minRadiusPx: 1.2,
+  lineWidth: 1,
+  palette: "quantum",
+};
+
 export const PHILOSOPHIES: Philosophy[] = [
   { id: "flow-field",        labelKey: "flowField",       defaultParams: DEFAULT_FLOW_FIELD },
   { id: "wave",              labelKey: "wave",             defaultParams: DEFAULT_WAVE },
@@ -155,6 +171,7 @@ export const PHILOSOPHIES: Philosophy[] = [
   { id: "truchet",           labelKey: "truchet",          defaultParams: DEFAULT_TRUCHET },
   { id: "julia",             labelKey: "julia",            defaultParams: DEFAULT_JULIA },
   { id: "newton",            labelKey: "newton",           defaultParams: DEFAULT_NEWTON },
+  { id: "apollonian",        labelKey: "apollonian",       defaultParams: DEFAULT_APOLLONIAN },
 ];
 
 /** Paleta → RGBA boje koje scenariji koriste */

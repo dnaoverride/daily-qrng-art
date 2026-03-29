@@ -13,6 +13,7 @@ import {
   DEFAULT_TRUCHET,
   DEFAULT_JULIA,
   DEFAULT_NEWTON,
+  DEFAULT_APOLLONIAN,
   type PhilosophyId,
 } from "@/lib/algorithmic/types";
 import { initFlowField, drawFlowFieldFrame } from "@/lib/algorithmic/flow-field";
@@ -23,6 +24,7 @@ import { renderCellularAutomata } from "@/lib/algorithmic/cellular-automata";
 import { renderTruchet } from "@/lib/algorithmic/truchet";
 import { renderJulia } from "@/lib/algorithmic/julia";
 import { renderNewton } from "@/lib/algorithmic/newton";
+import { renderApollonian } from "@/lib/algorithmic/apollonian";
 
 const W = 1200;
 const H = 675;
@@ -42,6 +44,8 @@ const LABEL_TO_PHILOSOPHY_ID: Record<string, PhilosophyId> = {
   "Julia Fractal": "julia",
   "Julia Set": "julia",
   "Newton Fractal": "newton",
+  "Apollonian gasket": "apollonian",
+  "Apollonian Gasket": "apollonian",
   // srpski
   "Kvantna turbulencija": "flow-field",
   "Talasna interferencija": "wave",
@@ -52,6 +56,7 @@ const LABEL_TO_PHILOSOPHY_ID: Record<string, PhilosophyId> = {
   "Truchet plo\u010dice": "truchet",
   "Julia fraktal": "julia",
   "Newton fraktal": "newton",
+  "Apolonijev paket": "apollonian",
 };
 
 function extractPhilosophyId(scenarioName: string | null | undefined): PhilosophyId | null {
@@ -112,6 +117,9 @@ function renderAlgorithmic(
       break;
     case "newton":
       renderNewton(ctx, values, DEFAULT_NEWTON);
+      break;
+    case "apollonian":
+      renderApollonian(ctx, values, DEFAULT_APOLLONIAN);
       break;
   }
 }

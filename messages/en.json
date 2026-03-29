@@ -88,6 +88,7 @@
     "truchet": "Truchet Tiles",
     "julia": "Julia Fractal",
     "newton": "Newton Fractal",
+    "apollonian": "Apollonian gasket",
     "params": "Parameters",
     "palette": "Palette",
     "paletteQuantum": "Quantum",
@@ -121,6 +122,9 @@
     "newtonDegree": "Polynomial degree",
     "newtonMaxIter": "Max iterations",
     "newtonZoom": "Zoom",
+    "apollonianMaxCircles": "Max circles",
+    "apollonianMinRadius": "Min. radius (px)",
+    "apollonianLineWidth": "Line width",
     "loading": "Loading...",
     "random": "Random QRNG",
     "loadToday": "Today's set",
@@ -140,7 +144,8 @@
     "storyCellular": "Controls: 3 (palette + rule, cell size). From the batch: one value per column of the initial row — column count is canvas width divided by cell size (up to about 1200 at the smallest cell size).",
     "storyTruchet": "Controls: 3 (palette + tile size, line width). From the batch: one draw per tile for rotation (0° or 90°). If the total tile count is below ~800, an extra draw per tile decides a rare glow overlay.",
     "storyJulia": "Controls: 3 (palette + max iterations, zoom). From the batch: exactly the first 4 values — two for the real and imaginary parts of c, two for a small perturbation.",
-    "storyNewton": "Controls: 4 (palette + polynomial degree, max iterations, zoom). From the batch: exactly 2×degree successive values for initial root positions in the complex plane (degree 3–7 → 6 to 14 draws)."
+    "storyNewton": "Controls: 4 (palette + polynomial degree, max iterations, zoom). From the batch: exactly 2×degree successive values for initial root positions in the complex plane (degree 3–7 → 6 to 14 draws).",
+    "storyApollonian": "Apollonian gasket: repeatedly add a circle tangent to three existing ones (Descartes’ theorem and complex-number centers). Starts from the classic −1, 2, 2, 3 curvature quadruple; the first 12 uint16 values gently perturb bends and centers. BFS expands triples until max circle count or minimum radius. Colour uses depth plus a pattern from the batch. Background on the geometry: https://www.malinc.se/math/geometry/apolloniangasketen.php"
   },
   "qrngReveal": {
     "toggle": "Quantum numbers that created this image",
