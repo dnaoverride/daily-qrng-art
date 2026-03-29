@@ -34,11 +34,15 @@
     "scenario": "Scenarij: {name}",
     "errorRequired": "Unesite tačno 1000 brojeva (0–65535), odvojenih zarezom, razmakom ili novim redom.",
     "errorLoadToday": "Nije moguće učitati današnji art. Pokušajte ponovo.",
-    "errorRandom": "Nije moguće učitati nasumične brojeve. Pokušajte ponovo."
+    "errorRandom": "Nije moguće učitati nasumične brojeve. Pokušajte ponovo.",
+    "errorLoadFavorite": "Nije moguće učitati ovu omiljenu. Možda je obrisana ili nemate pristup."
   },
   "archive": {
     "title": "Arhiva generisanih slika",
-    "empty": "Arhiva će biti dostupna nakon prvog dana."
+    "empty": "Arhiva će biti dostupna nakon prvog dana.",
+    "currentMonth": "Ovaj mesec",
+    "previousMonths": "Prethodni meseci",
+    "daysCount": "{count, plural, one {# slika} few {# slike} other {# slika}}"
   },
   "art": {
     "title": "Slika za {date}",
@@ -175,7 +179,8 @@
     "emptyHint": "Učitaj QRNG vrednosti da počneš",
     "live": "Uživo",
     "errorRandom": "Nije moguće učitati QRNG vrednosti. Pokušajte ponovo.",
-    "errorToday": "Nije moguće učitati današnji art. Pokušajte ponovo."
+    "errorToday": "Nije moguće učitati današnji art. Pokušajte ponovo.",
+    "errorLoadFavorite": "Nije moguće učitati ovu omiljenu. Možda je obrisana ili nemate pristup."
   },
   "qrngReveal": {
     "toggle": "Kvantni brojevi koji su kreirali ovu sliku",

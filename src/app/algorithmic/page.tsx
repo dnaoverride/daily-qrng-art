@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
 import { QRNGReveal } from "@/components/QRNGReveal";
@@ -46,6 +47,7 @@ import { renderTruchet } from "@/lib/algorithmic/truchet";
 import { renderJulia } from "@/lib/algorithmic/julia";
 import { renderNewton } from "@/lib/algorithmic/newton";
 import { renderApollonian } from "@/lib/algorithmic/apollonian";
+import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
 
 const W = 1200;
 const H = 675;
@@ -94,8 +96,11 @@ function scenarioStoryText(
   }
 }
 
-export default function AlgorithmicPage() {
+function AlgorithmicPageInner() {
   const t = useTranslations("algorithmic");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const favoriteId = searchParams.get("favorite");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const flowStateRef = useRef<FlowFieldState | null>(null);
@@ -163,7 +168,7 @@ export default function AlgorithmicPage() {
     animFrameRef.current = requestAnimationFrame(frame);
   }
 
-  function renderStatic(vals: number[]) {
+  function renderStatic(vals: number[], p: PhilosophyId) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -171,7 +176,9 @@ export default function AlgorithmicPage() {
 
     stopAnimation();
 
-    switch (philosophy) {
+    switch (p) {
+      case "flow-field":
+        break;
       case "wave":              renderWaveInterference(ctx, vals, waveParams); break;
       case "voronoi":           renderVoronoi(ctx, vals, voronoiParams); break;
       case "l-system":          renderLSystem(ctx, vals, lSystemParams); break;
@@ -183,13 +190,67 @@ export default function AlgorithmicPage() {
     }
   }
 
-  function renderCurrent(vals: number[]) {
-    if (philosophy === "flow-field") {
+  function renderCurrent(vals: number[], p: PhilosophyId = philosophy) {
+    if (p === "flow-field") {
       startFlowFieldAnimation(vals, ffParams);
     } else {
-      renderStatic(vals);
+      renderStatic(vals, p);
     }
   }
+
+  useEffect(() => {
+    if (!favoriteId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/favorites/${favoriteId}`);
+        const data = (await res.json()) as {
+          favorite?: { values?: unknown; scenarioName?: string | null };
+        };
+        if (!alive || !res.ok || !data.favorite) {
+          if (alive) {
+            setError(t("errorLoadFavorite"));
+            router.replace("/algorithmic");
+          }
+          return;
+        }
+        const raw = data.favorite.values;
+        const vals = Array.isArray(raw)
+          ? raw
+          : typeof raw === "string"
+            ? (JSON.parse(raw) as number[])
+            : [];
+        if (vals.length !== REQUIRED_COUNT) {
+          if (alive) {
+            setError(t("errorLoadFavorite"));
+            router.replace("/algorithmic");
+          }
+          return;
+        }
+        const pid = parseFavoriteScenarioToPhilosophyId(data.favorite.scenarioName);
+        if (!pid) {
+          if (alive) router.replace(`/create-art?favorite=${favoriteId}`);
+          return;
+        }
+        if (!alive) return;
+        setPhilosophy(pid);
+        setValues(vals);
+        requestAnimationFrame(() => {
+          renderCurrent(vals, pid);
+          router.replace("/algorithmic");
+        });
+      } catch {
+        if (alive) {
+          setError(t("errorLoadFavorite"));
+          router.replace("/algorithmic");
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per favoriteId; renderCurrent intentionally omitted
+  }, [favoriteId, router, t]);
 
   useEffect(() => {
     stopAnimation();
@@ -618,6 +679,14 @@ export default function AlgorithmicPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AlgorithmicPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+      <AlgorithmicPageInner />
+    </Suspense>
   );
 }
 

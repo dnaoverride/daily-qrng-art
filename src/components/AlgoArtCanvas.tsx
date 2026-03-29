@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
 import {
-  PHILOSOPHIES,
   DEFAULT_FLOW_FIELD,
   DEFAULT_WAVE,
   DEFAULT_VORONOI,
@@ -16,6 +15,7 @@ import {
   DEFAULT_APOLLONIAN,
   type PhilosophyId,
 } from "@/lib/algorithmic/types";
+import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
 import { initFlowField, drawFlowFieldFrame } from "@/lib/algorithmic/flow-field";
 import { renderWaveInterference } from "@/lib/algorithmic/wave-interference";
 import { renderVoronoi } from "@/lib/algorithmic/voronoi";
@@ -28,55 +28,6 @@ import { renderApollonian } from "@/lib/algorithmic/apollonian";
 
 const W = 1200;
 const H = 675;
-
-/**
- * Mapiranje lokalizovanih labela (stari format "Algo: <label>") na philosophy ID.
- * Pokriva i srpski i engleski za backward-compat sa starim zapisima u bazi.
- */
-const LABEL_TO_PHILOSOPHY_ID: Record<string, PhilosophyId> = {
-  // engleski
-  "Quantum Turbulence": "flow-field",
-  "Wave Interference": "wave",
-  "Stochastic Crystallization": "voronoi",
-  "L-System Tree": "l-system",
-  "Cellular Automaton": "cellular-automata",
-  "Truchet Tiles": "truchet",
-  "Julia Fractal": "julia",
-  "Julia Set": "julia",
-  "Newton Fractal": "newton",
-  "Apollonian gasket": "apollonian",
-  "Apollonian Gasket": "apollonian",
-  // srpski
-  "Kvantna turbulencija": "flow-field",
-  "Talasna interferencija": "wave",
-  "Stoha\u0161ti\u010dka kristalizacija": "voronoi",
-  "Stohasti\u010dka kristalizacija": "voronoi",
-  "L-System drvo": "l-system",
-  "Celularni automat": "cellular-automata",
-  "Truchet plo\u010dice": "truchet",
-  "Julia fraktal": "julia",
-  "Newton fraktal": "newton",
-  "Apolonijev paket": "apollonian",
-};
-
-function extractPhilosophyId(scenarioName: string | null | undefined): PhilosophyId | null {
-  if (!scenarioName) return null;
-
-  // Novi format: "algo:newton", "algo:flow-field" itd.
-  if (scenarioName.startsWith("algo:")) {
-    const id = scenarioName.slice(5) as PhilosophyId;
-    if (PHILOSOPHIES.some((p) => p.id === id)) return id;
-  }
-
-  // Stari format: "Algo: Newton fraktal" (lokalizovano)
-  const oldPrefix = "Algo: ";
-  if (scenarioName.startsWith(oldPrefix)) {
-    const label = scenarioName.slice(oldPrefix.length).trim();
-    return LABEL_TO_PHILOSOPHY_ID[label] ?? null;
-  }
-
-  return null;
-}
 
 function renderAlgorithmic(
   ctx: CanvasRenderingContext2D,
@@ -145,7 +96,7 @@ export function AlgoArtCanvas({ values, scenarioName, className = "" }: AlgoArtC
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const philosophyId = extractPhilosophyId(scenarioName);
+    const philosophyId = parseFavoriteScenarioToPhilosophyId(scenarioName);
 
     if (philosophyId) {
       renderAlgorithmic(ctx, philosophyId, values);

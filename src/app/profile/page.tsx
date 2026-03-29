@@ -8,6 +8,7 @@ import Link from "next/link";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
 import { PHILOSOPHIES } from "@/lib/algorithmic/types";
+import { isAlgorithmicFavoriteScenario } from "@/lib/algorithmic/scenario-name";
 
 interface Favorite {
   id: string;
@@ -130,15 +131,22 @@ function FavoriteCard({
 
   const displayScenario = getDisplayScenarioName(fav.scenarioName ?? null);
 
+  const playgroundHref = isAlgorithmicFavoriteScenario(fav.scenarioName)
+    ? `/algorithmic?favorite=${fav.id}`
+    : `/create-art?favorite=${fav.id}`;
+
   return (
     <div ref={cardRef} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-      <div className="relative aspect-video bg-zinc-100 dark:bg-zinc-800">
+      <Link
+        href={playgroundHref}
+        className="relative aspect-video bg-zinc-100 dark:bg-zinc-800 block group outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset dark:focus-visible:ring-zinc-500"
+      >
         {values ? (
-          <AlgoArtCanvas values={values} scenarioName={fav.scenarioName} className="w-full h-full object-cover" />
+          <AlgoArtCanvas values={values} scenarioName={fav.scenarioName} className="w-full h-full object-cover transition-opacity group-hover:opacity-95" />
         ) : (
           <div className="w-full h-full animate-pulse bg-zinc-200 dark:bg-zinc-700" />
         )}
-      </div>
+      </Link>
 
       {values && values.length > 0 && (
         <div className="px-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/40">

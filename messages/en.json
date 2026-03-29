@@ -34,11 +34,15 @@
     "scenario": "Scenario: {name}",
     "errorRequired": "Enter exactly 1000 numbers (0–65535), separated by comma, space or newline.",
     "errorLoadToday": "Unable to load today's art. Please try again.",
-    "errorRandom": "Unable to load random numbers. Please try again."
+    "errorRandom": "Unable to load random numbers. Please try again.",
+    "errorLoadFavorite": "Unable to load this favorite. It may have been removed or you may not have access."
   },
   "archive": {
     "title": "Generated image archive",
-    "empty": "The archive will be available after the first day."
+    "empty": "The archive will be available after the first day.",
+    "currentMonth": "This month",
+    "previousMonths": "Previous months",
+    "daysCount": "{count, plural, one {# image} other {# images}}"
   },
   "art": {
     "title": "Image for {date}",
@@ -145,7 +149,8 @@
     "storyTruchet": "Controls: 3 (palette + tile size, line width). From the batch: one draw per tile for rotation (0° or 90°). If the total tile count is below ~800, an extra draw per tile decides a rare glow overlay.",
     "storyJulia": "Controls: 3 (palette + max iterations, zoom). From the batch: exactly the first 4 values — two for the real and imaginary parts of c, two for a small perturbation.",
     "storyNewton": "Controls: 4 (palette + polynomial degree, max iterations, zoom). From the batch: exactly 2×degree successive values for initial root positions in the complex plane (degree 3–7 → 6 to 14 draws).",
-    "storyApollonian": "Apollonian gasket: repeatedly add a circle tangent to three existing ones (Descartes’ theorem and complex-number centers). Starts from the classic −1, 2, 2, 3 curvature quadruple; the first 12 uint16 values gently perturb bends and centers. BFS expands triples until max circle count or minimum radius. Colour uses depth plus a pattern from the batch. Background on the geometry: https://www.malinc.se/math/geometry/apolloniangasketen.php"
+    "storyApollonian": "Apollonian gasket: repeatedly add a circle tangent to three existing ones (Descartes’ theorem and complex-number centers). Starts from the classic −1, 2, 2, 3 curvature quadruple; the first 12 uint16 values gently perturb bends and centers. BFS expands triples until max circle count or minimum radius. Colour uses depth plus a pattern from the batch. Background on the geometry: https://www.malinc.se/math/geometry/apolloniangasketen.php",
+    "errorLoadFavorite": "Unable to load this favorite. It may have been removed or you may not have access."
   },
   "qrngReveal": {
     "toggle": "Quantum numbers that created this image",

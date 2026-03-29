@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArtCanvas } from "@/components/ArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
@@ -10,6 +11,7 @@ import {
   NUM_SCENARIOS,
 } from "@/lib/scenarios";
 import { getTodayBelgrade } from "@/lib/date";
+import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
 
 const REQUIRED_COUNT = 1000;
 
@@ -25,13 +27,65 @@ function parseValues(text: string): number[] | null {
   return values;
 }
 
-export default function CreateArtPage() {
+function CreateArtPageInner() {
   const [input, setInput] = useState("");
   const [values, setValues] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const t = useTranslations("createArt");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const favoriteId = searchParams.get("favorite");
+
+  useEffect(() => {
+    if (!favoriteId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/favorites/${favoriteId}`);
+        const data = (await res.json()) as {
+          favorite?: { values?: unknown; scenarioName?: string | null };
+        };
+        if (!alive || !res.ok || !data.favorite) {
+          if (alive) {
+            setError(t("errorLoadFavorite"));
+            router.replace("/create-art");
+          }
+          return;
+        }
+        const raw = data.favorite.values;
+        const vals = Array.isArray(raw)
+          ? raw
+          : typeof raw === "string"
+            ? (JSON.parse(raw) as number[])
+            : [];
+        if (vals.length !== REQUIRED_COUNT) {
+          if (alive) {
+            setError(t("errorLoadFavorite"));
+            router.replace("/create-art");
+          }
+          return;
+        }
+        if (parseFavoriteScenarioToPhilosophyId(data.favorite.scenarioName) !== null) {
+          if (alive) router.replace(`/algorithmic?favorite=${favoriteId}`);
+          return;
+        }
+        if (!alive) return;
+        setInput(vals.join(", "));
+        setValues(vals);
+        router.replace("/create-art");
+      } catch {
+        if (alive) {
+          setError(t("errorLoadFavorite"));
+          router.replace("/create-art");
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [favoriteId, router, t]);
 
   function handleGenerate() {
     setError(null);
@@ -175,5 +229,13 @@ export default function CreateArtPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function CreateArtPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" />}>
+      <CreateArtPageInner />
+    </Suspense>
   );
 }
