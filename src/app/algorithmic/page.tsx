@@ -425,15 +425,6 @@ function AlgorithmicPageInner() {
               >
                 {t("loadToday")}
               </button>
-              {values && (
-                <button
-                  type="button"
-                  onClick={handleRegenerate}
-                  className="w-full px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors text-sm"
-                >
-                  {t("regenerate")}
-                </button>
-              )}
             </div>
 
             {error && (
@@ -586,6 +577,16 @@ function AlgorithmicPageInner() {
                     min={0.5} max={2} step={0.1} decimals={1}
                     onChange={(v) => setApollonianParams((p) => ({ ...p, lineWidth: v }))} />
                 </>
+              )}
+
+              {values && (
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors text-sm"
+                >
+                  {t("regenerate")}
+                </button>
               )}
             </div>
 
