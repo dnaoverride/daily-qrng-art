@@ -167,13 +167,4 @@ export function renderNewton(
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(tempCanvas as HTMLCanvasElement, 0, 0, W, H);
   }
-
-  // Kvantni potpis — koreni u donjem uglu
-  const [r0, g0, b0] = colors[0]!;
-  ctx.fillStyle = `rgba(${r0},${g0},${b0},0.45)`;
-  ctx.font = "11px monospace";
-  const rootStr = roots
-    .map((root) => `(${root.re.toFixed(2)}, ${root.im.toFixed(2)}i)`)
-    .join("  ");
-  ctx.fillText(`z^${degree}: ${rootStr}`, 12, H - 12);
 }

@@ -120,10 +120,4 @@ export function renderJulia(
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(tempCanvas as HTMLCanvasElement, 0, 0, W, H);
   }
-
-  // Overlay info: prikaži c parametar u uglu kao "quantum signature"
-  const [r, g, b] = colors[0]!;
-  ctx.fillStyle = `rgba(${r},${g},${b},0.4)`;
-  ctx.font = "11px monospace";
-  ctx.fillText(`c = ${finalCRe.toFixed(4)} + ${finalCIm.toFixed(4)}i`, 12, H - 12);
 }

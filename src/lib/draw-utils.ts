@@ -9,6 +9,33 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
+/** Elipsa preko scale+arc — pouzdanije od ctx.ellipse na nekim Node/Skia canvas backendima. */
+export function fillStrokeEllipse(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  fillStyle: string,
+  strokeStyle: string,
+  lineWidthDevicePx: number
+): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(rx, ry);
+  ctx.beginPath();
+  ctx.arc(0, 0, 1, 0, Math.PI * 2);
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+  ctx.strokeStyle = strokeStyle;
+  ctx.lineWidth = lineWidthDevicePx / Math.max(rx, ry);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Širina po kojoj ridgePoints troši QRNG — mora biti ista bez obzira na stvarno `w` da bi thumb (npr. 600px) i puni canvas (1200px) davali istu sliku. */
+const RIDGE_STREAM_W = 1200;
+
 export function ridgePoints(
   stream: QRNGStream,
   w: number,
@@ -19,8 +46,9 @@ export function ridgePoints(
   detailScale = 0.35,
   anchorStep = 50
 ): { x: number; y: number }[] {
+  const streamW = RIDGE_STREAM_W;
   const anchors: number[] = [];
-  const numAnchors = Math.floor(w / anchorStep) + 3;
+  const numAnchors = Math.floor(streamW / anchorStep) + 3;
   for (let i = 0; i < numAnchors; i++) {
     anchors.push(stream.next_f());
   }
@@ -30,7 +58,7 @@ export function ridgePoints(
   }
 
   const pts: { x: number; y: number }[] = [];
-  for (let x = 0; x <= w + step; x += step) {
+  for (let x = 0; x <= streamW + step; x += step) {
     const ai = Math.floor(x / anchorStep);
     const t = (x % anchorStep) / anchorStep;
     const v0 = anchors[ai % anchors.length]!;
@@ -48,7 +76,8 @@ export function ridgePoints(
     const y = Math.floor(
       yBase - (v - 0.5) * amplitude + detail * amplitude * detailScale
     );
-    pts.push({ x, y });
+    const outX = Math.min(w, Math.floor((x * w) / streamW));
+    pts.push({ x: outX, y });
   }
   return pts;
 }

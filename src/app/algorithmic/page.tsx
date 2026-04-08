@@ -347,15 +347,48 @@ function AlgorithmicPageInner() {
 
   return (
     <div className="min-h-screen bg-zinc-950">
+      {/* Layout van Tailwind responsive — plain CSS da sigurno radi na desktopu (Turbopack / v4) */}
       <style>{`
-        .algo-layout { display:flex; flex-direction:column; gap:1.5rem; }
-        .algo-sidebar { width:100%; flex-shrink:0; }
-        .algo-main    { flex:1 1 0%; display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
-        .algo-section { width:100%; max-width:56rem; margin-left:auto; margin-right:auto; }
-        @media (min-width:600px) {
-          .algo-layout  { flex-direction:row; }
-          .algo-sidebar { width:20rem; }
-          .algo-section { margin-left:0; margin-right:0; }
+        .algo-art-workspace {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 1.5rem;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .algo-art-sidebar {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          width: 100%;
+          flex-shrink: 0;
+          box-sizing: border-box;
+        }
+        .algo-art-main {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          flex: 1 1 0%;
+          min-width: 0;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        @media (min-width: 48rem) {
+          .algo-art-workspace {
+            flex-direction: row !important;
+            align-items: flex-start;
+            gap: 2rem;
+          }
+          .algo-art-sidebar {
+            width: 20rem;
+            max-width: 20rem;
+          }
+          .algo-art-main {
+            width: auto;
+            flex: 1 1 0%;
+            min-width: 0;
+          }
         }
       `}</style>
       <main className="pt-20 pb-16 px-4 max-w-7xl mx-auto">
@@ -404,9 +437,8 @@ function AlgorithmicPageInner() {
           </div>
         </div>
 
-        <div className="flex flex-col [@media(min-width:640px)]:flex-row gap-6">
-          {/* Mobilni: slajderi → slika → QRNG priča (uvek ispod platna). Desktop: panel | slika+priča */}
-          <aside className="algo-sidebar space-y-6">
+        <div className="algo-art-workspace">
+          <aside className="algo-art-sidebar">
             {/* Akcioni dugmići */}
             <div className="space-y-2">
               <button
@@ -623,9 +655,9 @@ function AlgorithmicPageInner() {
             )}
           </aside>
 
-          <div className="algo-main">
-            <div className="algo-section">
-              <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+          <div className="algo-art-main">
+            <div className="w-full">
+              <div className="relative w-full rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                 <canvas
                   ref={canvasRef}
                   width={W}
@@ -649,13 +681,13 @@ function AlgorithmicPageInner() {
             </div>
 
             {values && (
-              <div className="algo-section">
+              <div className="w-full">
                 <QRNGReveal values={values} className="max-w-none mx-0" />
               </div>
             )}
 
             <section
-              className="algo-section space-y-3"
+              className="w-full space-y-3"
               aria-labelledby="algorithmic-story-heading"
             >
               <h2

@@ -3,7 +3,7 @@
  */
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
-import { ridgePoints, drawSunGlow } from "../draw-utils";
+import { ridgePoints, drawSunGlow, fillStrokeEllipse } from "../draw-utils";
 
 export function renderDesert(
   ctx: CanvasRenderingContext2D,
@@ -82,15 +82,16 @@ export function renderDesert(
             0.45,
             0.28 + 0.1 * stream.next_f()
           );
-          ctx.fillStyle = rgbString(segCol);
-          ctx.beginPath();
-          ctx.ellipse(cx, y - segH / 2, segW / 2, segH / 2, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = rgbString(
-            hslToRgb(cactusHue, 0.4, 0.18)
+          fillStrokeEllipse(
+            ctx,
+            cx,
+            y - segH / 2,
+            Math.max(0.5, segW / 2),
+            Math.max(0.5, segH / 2),
+            rgbString(segCol),
+            rgbString(hslToRgb(cactusHue, 0.4, 0.18)),
+            1
           );
-          ctx.lineWidth = 1;
-          ctx.stroke();
           y -= segH;
         }
       }

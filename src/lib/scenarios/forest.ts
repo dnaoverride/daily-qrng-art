@@ -4,7 +4,7 @@
  */
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
-import { drawSunGlow } from "../draw-utils";
+import { drawSunGlow, fillStrokeEllipse } from "../draw-utils";
 
 export function renderForest(
   ctx: CanvasRenderingContext2D,
@@ -261,21 +261,98 @@ export function renderForest(
   }
 
   if (!isNight && stream.next_f() < 0.5) {
-    const sqX = stream.next_int(80, w - 80);
-    const sqY = horizonY + Math.floor((h - horizonY) * (0.4 + 0.35 * stream.next_f()));
-    ctx.fillStyle = rgbString(hslToRgb(28 + stream.next_int(0, 15), 0.45, 0.28));
-    ctx.beginPath();
-    ctx.ellipse(sqX, sqY, 14, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(sqX + 12, sqY - 4, 10, 6, 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgb(0,0,0)";
-    ctx.beginPath();
-    ctx.arc(sqX + 10, sqY - 6, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(sqX + 16, sqY - 6, 2, 0, Math.PI * 2);
-    ctx.fill();
+    const numCritters = stream.next_int(1, 3);
+    for (let k = 0; k < numCritters; k++) {
+      const bushyTail = stream.next_f() < 0.5;
+      const sqX = stream.next_int(80, w - 80);
+      const sqY = horizonY + Math.floor((h - horizonY) * (0.4 + 0.35 * stream.next_f()));
+      const furHue = 28 + stream.next_int(0, 15);
+      const bodyFill = rgbString(hslToRgb(furHue, 0.45, 0.28));
+      const tailStrokeBrown = rgbString(hslToRgb(furHue, 0.4, 0.18));
+      const earFill = rgbString(hslToRgb(furHue, 0.45, 0.22));
+      const triangleEars = stream.next_f() < 0.5;
+
+      const attachX = sqX - 12;
+      const attachY = sqY;
+      if (bushyTail) {
+        for (let i = 0; i < 4; i++) {
+          const t = i / 3;
+          const ang = Math.PI * 1.05 + t * 0.38;
+          const dist = 6 + i * 8;
+          const tx = attachX + Math.cos(ang) * dist;
+          const ty = attachY + Math.sin(ang) * dist;
+          const rx = Math.max(1.2, 8 - i * 1.2);
+          const ry = Math.max(1, 5.5 - i * 0.9);
+          fillStrokeEllipse(
+            ctx,
+            tx,
+            ty,
+            rx,
+            ry,
+            rgbString(hslToRgb(furHue, 0.45, 0.24 + i * 0.02)),
+            tailStrokeBrown,
+            0.75
+          );
+        }
+      } else {
+        ctx.save();
+        ctx.strokeStyle = rgbString(hslToRgb(340, 0.38, 0.7));
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(attachX, attachY);
+        ctx.quadraticCurveTo(attachX - 10, attachY - 10, attachX - 6, attachY - 18);
+        ctx.quadraticCurveTo(attachX + 4, attachY - 24, attachX - 3, attachY - 30);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.fillStyle = bodyFill;
+      ctx.beginPath();
+      ctx.ellipse(sqX, sqY, 14, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(sqX + 12, sqY - 4, 10, 6, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      const hx = sqX + 12;
+      const hy = sqY - 4;
+      ctx.fillStyle = earFill;
+      if (triangleEars) {
+        ctx.beginPath();
+        ctx.moveTo(hx - 3, hy - 9);
+        ctx.lineTo(hx - 13, hy - 2);
+        ctx.lineTo(hx - 2, hy + 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(hx + 5, hy - 10);
+        ctx.lineTo(hx + 15, hy - 3);
+        ctx.lineTo(hx + 4, hy);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        const er = 6;
+        ctx.beginPath();
+        ctx.moveTo(hx - 9 - er, hy - 3);
+        ctx.arc(hx - 9, hy - 3, er, Math.PI, 0, false);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(hx + 9 - er, hy - 3);
+        ctx.arc(hx + 9, hy - 3, er, Math.PI, 0, false);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "rgb(0,0,0)";
+      ctx.beginPath();
+      ctx.arc(sqX + 10, sqY - 6, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(sqX + 16, sqY - 6, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }

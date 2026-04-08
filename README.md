@@ -97,6 +97,69 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
+## Algoritmički art (`/algorithmic`) — layout u `<style>`
+
+**Zašto:** Na Next.js 16 + Turbopack + Tailwind v4, responsive utility klase (`md:flex-row` itd.) za ovu stranu ponekad **ne daju očekivani desktop layout** (panel i platno ostaju jedan ispod drugog). Zato je raspored rešen **čistim CSS-om** u ugrađenom `<style>` bloku u [`src/app/algorithmic/page.tsx`](src/app/algorithmic/page.tsx), ne kroz Tailwind breakpoint-e za tu osu.
+
+**Ponašanje:**
+
+- **Uski ekran:** kolona — prvo sidebar (dugmad + parametri), ispod desna kolona (platno, QRNG otkrivanje, priča).
+- **≥ 48rem (768px):** red — **levo** fiksni sidebar `20rem`, **desno** elastična kolona (`flex: 1 1 0%`, `min-width: 0`) sa platnom i tekstom ispod.
+
+**Korišćene klase:** `algo-art-workspace` (spoljašnji flex kontejner), `algo-art-sidebar` (`<aside>`), `algo-art-main` (desna kolona).
+
+**CSS (kopija logike — izvor istine je u `page.tsx`):**
+
+```css
+.algo-art-workspace {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.algo-art-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.algo-art-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (min-width: 48rem) {
+  .algo-art-workspace {
+    flex-direction: row !important;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+  .algo-art-sidebar {
+    width: 20rem;
+    max-width: 20rem;
+  }
+  .algo-art-main {
+    width: auto;
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+}
+```
+
+**U JSX-u** spoljašnji wrapper koristi `className="algo-art-workspace"`, parametarski panel `className="algo-art-sidebar"`, blok sa platnom i pričom `className="algo-art-main"`. `flex-direction: row !important` na desktopu namerno pojačava prioritet da drugi stilovi ne vrate kolonu.
+
+**Napomena:** Ako menjaš raspored, prvo ažuriraj `<style>` u `algorithmic/page.tsx`, zatim ovaj odeljak u README da ostanu usklađeni.
+
+---
+
 ## Projektna struktura
 
 ```
@@ -105,6 +168,7 @@ src/
 │   ├── page.tsx              # Početna — današnji art
 │   ├── layout.tsx            # Root layout + Providers (SessionProvider)
 │   ├── create-art/page.tsx   # Igraonica — unesi 1000 brojeva, generiši, preuzmi PNG, snimi u omiljene
+│   ├── algorithmic/page.tsx # Algoritmički art — layout u <style> (vidi sekciju u README)
 │   ├── art/[date]/page.tsx   # Art po datumu
 │   ├── archive/page.tsx      # Arhiva
 │   ├── login/page.tsx        # Prijava / registracija
@@ -290,6 +354,10 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-03-29
+
+- **README** — Nova sekcija „Algoritmički art (`/algorithmic`) — layout u `<style>`”: objašnjenje zašto responsive layout ide kroz ugrađeni `<style>` u [`src/app/algorithmic/page.tsx`](src/app/algorithmic/page.tsx), kopija CSS-a (`.algo-art-workspace` / `.algo-art-sidebar` / `.algo-art-main`), napomena da izvor istine ostaje u `page.tsx`. U stablu projekta dodata stavka `algorithmic/page.tsx`.
 
 ### 2026-03-05
 
