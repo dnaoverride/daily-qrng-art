@@ -13,9 +13,9 @@ flush();
 
 define('POOL_MIN', 500);   // minimalan broj neiskorišćenih setova u bazi
 define('DB_HOST',  'auth-db1575.hstgr.io');
-define('DB_NAME',  'u565895409_mydb');   // ← popuni
-define('DB_USER',  'u565895409_qnrg');   // ← popuni
-define('DB_PASS',  'R1cc0chet124816');   // ← popuni
+define('DB_NAME',  'u565895409_qrng');   // ← popuni
+define('DB_USER',  'u565895409_qrng');   // ← popuni
+define('DB_PASS',  '');   // ← popuni
 
 echo "[STEP 1] Connecting to DB: " . DB_HOST . " / " . DB_NAME . "\n";
 flush();
