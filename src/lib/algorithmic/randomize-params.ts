@@ -22,6 +22,8 @@ export interface RandomizeOptions {
   currentPhilosophy: PhilosophyId;
   currentParams: AlgoParams;
   values: number[];
+  /** Inkrementira se po kliku da svaki randomize ne čita iste QRNG vrednosti. */
+  tick?: number;
 }
 
 function pickPalette(stream: QRNGStream, current: Palette): Palette {
@@ -153,7 +155,10 @@ export function randomizeParams(opts: RandomizeOptions): {
   philosophy: PhilosophyId;
   params: AlgoParams;
 } {
-  const stream = new QRNGStream(opts.values);
+  const tick = opts.tick ?? 0;
+  const streamValues =
+    tick > 0 ? deriveVariantValues(opts.values, tick) : opts.values;
+  const stream = new QRNGStream(streamValues);
   const philosophy = opts.keepPhilosophy
     ? opts.currentPhilosophy
     : PHILOSOPHIES[Math.floor(stream.next_f() * PHILOSOPHIES.length)]!.id;

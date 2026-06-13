@@ -123,6 +123,7 @@ function AlgorithmicPageInner() {
   const animFrameRef = useRef<number | null>(null);
   const flowStateRef = useRef<FlowFieldState | null>(null);
   const loopStartRef = useRef<number>(0);
+  const randomizeTickRef = useRef(0);
   const isAnimatingRef = useRef(false);
 
   const [philosophy, setPhilosophy] = useState<PhilosophyId>("flow-field");
@@ -219,9 +220,10 @@ function AlgorithmicPageInner() {
   function renderStaticToCanvas(
     ctx: CanvasRenderingContext2D,
     vals: number[],
-    p: PhilosophyId
+    p: PhilosophyId,
+    params?: AlgoParams
   ) {
-    renderAlgorithmicToContext(ctx, p, vals, getParamsForPhilosophy(p), {
+    renderAlgorithmicToContext(ctx, p, vals, params ?? getParamsForPhilosophy(p), {
       width: W,
       height: H,
       flowFieldWarmupFrames: 120,
@@ -242,21 +244,25 @@ function AlgorithmicPageInner() {
     }
   }
 
-  function renderStatic(vals: number[], p: PhilosophyId) {
+  function renderStatic(vals: number[], p: PhilosophyId, params?: AlgoParams) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     stopAnimation();
-    renderStaticToCanvas(ctx, vals, p);
+    renderStaticToCanvas(ctx, vals, p, params);
   }
 
-  function renderCurrent(vals: number[], p: PhilosophyId = philosophy) {
+  function renderCurrent(
+    vals: number[],
+    p: PhilosophyId = philosophy,
+    params?: AlgoParams
+  ) {
     if (p === "flow-field") {
-      startFlowFieldAnimation(vals, ffParams);
+      startFlowFieldAnimation(vals, (params ?? ffParams) as FlowFieldParams);
     } else {
-      renderStatic(vals, p);
+      renderStatic(vals, p, params);
     }
   }
 
@@ -409,15 +415,19 @@ function AlgorithmicPageInner() {
   function handleRandomizeStyle() {
     if (!values) return;
     setError(null);
+    randomizeTickRef.current += 1;
     const result = randomizeParams({
       keepPhilosophy: lockPhilosophy,
       keepPalette: lockPalette,
       currentPhilosophy: philosophy,
       currentParams: getCurrentParams(),
       values,
+      tick: randomizeTickRef.current,
     });
     applyParamState(applyPresetToState(buildPreset(result.philosophy, result.params, values)));
-    requestAnimationFrame(() => renderCurrent(values, result.philosophy));
+    requestAnimationFrame(() =>
+      renderCurrent(values, result.philosophy, result.params)
+    );
   }
 
   async function handleCopyCode() {
