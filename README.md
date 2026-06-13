@@ -158,6 +158,15 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 **Napomena:** Ako menjaš raspored, prvo ažuriraj `<style>` u `algorithmic/page.tsx`, zatim ovaj odeljak u README da ostanu usklađeni.
 
+### LUMEN-inspirisane funkcije (studio)
+
+- **Share preset (`QAL1.` kod):** `/algorithmic?code=...` — philosophy, parametri i 1000 QRNG vrednosti.
+- **Randomize style:** nasumični parametri uz lock filozofije/palete.
+- **Hi-res PNG export:** 1200×675, 2400×1350, 3840×2160 (offscreen render).
+- **Set export:** 4–12 varijacija istog stila u ZIP-u.
+- **WebM loop (flow-field):** deterministički loop preko `loopPhase`.
+- **Favorites `algoPreset`:** pun snapshot preset-a u bazi (kolona `algoPreset` JSON).
+
 ---
 
 ## Projektna struktura
@@ -266,7 +275,7 @@ NEXTAUTH_URL="http://localhost:9500"
 
 - **AUTH_SECRET** — generiši sa `openssl rand -base64 32`
 - **DATABASE_URL** — format za MySQL: `mysql://user:pass@host:port/dbname`
-- **NEXTAUTH_URL** — u produkciji postavi na realan domen (npr. `https://qrng-art.dnasoftwaresolutions.com`)
+- **NEXTAUTH_URL** — u produkciji postavi na realan domen (npr. `https://qrng-art.com`)
 
 ### 5. Inicijalizacija baze (Drizzle)
 
@@ -379,8 +388,8 @@ Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis prom
 - **Svi scenariji** — Sunce/mesec: konzistentna veličina (sun 22–36 px, moon 14–26 px).
 - **Jezero** — Deblo obalskog drveća crta se posle krošnje (kao Šuma).
 - **Jezero** — Vrba i listač: L-system inspirisano rekurzivno grananje (tree-lsystem.ts).
-- **Auth + Favorites** — Prisma 5, NextAuth (Credentials), bcryptjs. Korisnici: registracija, prijava, profil, snimanje omiljenih, javno deljenje `/f/[token]`.
-- **README** — Detaljna sekcija Pokretanje (prerequisites, .env, Prisma migrate), npm skripte, pregled novih paketa (Prisma, NextAuth, bcryptjs, @napi-rs/canvas, next-intl), ažurirana struktura projekta i API tabela.
+- **Auth + Favorites** — Drizzle + NextAuth (Credentials), bcryptjs. Korisnici: registracija, prijava, profil, snimanje omiljenih, javno deljenje `/f/[token]`.
+- **README** — Detaljna sekcija Pokretanje (preduslovi, `.env`, Drizzle init), npm skripte, pregled novih paketa (Drizzle, NextAuth, bcryptjs, @napi-rs/canvas, next-intl), ažurirana struktura projekta i API tabela.
 
 ### 2026-03-07 — Optimizacija resursa (Hostinger fix)
 

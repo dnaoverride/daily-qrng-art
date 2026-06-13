@@ -37,6 +37,7 @@ export const favorites = mysqlTable(
     title: varchar("title", { length: 191 }).default("Bez naziva"),
     values: json("values").notNull().$type<number[]>(),
     scenarioName: varchar("scenarioName", { length: 191 }),
+    algoPreset: json("algoPreset").$type<Record<string, unknown> | null>(),
     isPublic: boolean("isPublic").notNull().default(false),
     shareToken: varchar("shareToken", { length: 191 }).unique(),
     createdAt: datetime("createdAt", { fsp: 3 }).notNull(),

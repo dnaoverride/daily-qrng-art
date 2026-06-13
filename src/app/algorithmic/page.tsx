@@ -39,15 +39,32 @@ import {
   initFlowFieldCanvas,
   type FlowFieldState,
 } from "@/lib/algorithmic/flow-field";
-import { renderWaveInterference } from "@/lib/algorithmic/wave-interference";
-import { renderVoronoi } from "@/lib/algorithmic/voronoi";
-import { renderLSystem } from "@/lib/algorithmic/l-system";
-import { renderCellularAutomata } from "@/lib/algorithmic/cellular-automata";
-import { renderTruchet } from "@/lib/algorithmic/truchet";
-import { renderJulia } from "@/lib/algorithmic/julia";
-import { renderNewton } from "@/lib/algorithmic/newton";
-import { renderApollonian } from "@/lib/algorithmic/apollonian";
 import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
+import {
+  buildPreset,
+  decodePreset,
+  encodePreset,
+  presetShareUrl,
+  type AlgoPreset,
+} from "@/lib/algorithmic/preset-code";
+import {
+  applyPresetToState,
+  type AlgoParamState,
+} from "@/lib/algorithmic/preset-state";
+import { randomizeParams } from "@/lib/algorithmic/randomize-params";
+import {
+  renderAlgorithmicToContext,
+} from "@/lib/algorithmic/render-algorithmic";
+import {
+  EXPORT_PRESETS,
+  exportAlgorithmicPng,
+  type ExportPresetId,
+} from "@/lib/algorithmic/export-png";
+import { exportVariationSetZip } from "@/lib/algorithmic/export-set";
+import {
+  exportFlowFieldWebm,
+  supportsWebmExport,
+} from "@/lib/algorithmic/export-video";
 
 const W = 1200;
 const H = 675;
@@ -101,9 +118,11 @@ function AlgorithmicPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const favoriteId = searchParams.get("favorite");
+  const codeParam = searchParams.get("code");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const flowStateRef = useRef<FlowFieldState | null>(null);
+  const loopStartRef = useRef<number>(0);
   const isAnimatingRef = useRef(false);
 
   const [philosophy, setPhilosophy] = useState<PhilosophyId>("flow-field");
@@ -123,6 +142,31 @@ function AlgorithmicPageInner() {
   const [apollonianParams, setApollonianParams] = useState<ApollonianParams>({
     ...DEFAULT_APOLLONIAN,
   });
+
+  const [lockPhilosophy, setLockPhilosophy] = useState(true);
+  const [lockPalette, setLockPalette] = useState(false);
+  const [exportPresetId, setExportPresetId] = useState<ExportPresetId>("hd");
+  const [setExportCount, setSetExportCount] = useState(6);
+  const [shareInput, setShareInput] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  function applyParamState(state: AlgoParamState) {
+    setPhilosophy(state.philosophy);
+    setFfParams(state.ffParams);
+    setWaveParams(state.waveParams);
+    setVoronoiParams(state.voronoiParams);
+    setLSystemParams(state.lSystemParams);
+    setCellularParams(state.cellularParams);
+    setTruchetParams(state.truchetParams);
+    setJuliaParams(state.juliaParams);
+    setNewtonParams(state.newtonParams);
+    setApollonianParams(state.apollonianParams);
+  }
+
+  function currentPreset(vals: number[]): AlgoPreset {
+    return buildPreset(philosophy, getCurrentParams(), vals);
+  }
 
   function getCurrentParams(): AlgoParams {
     switch (philosophy) {
@@ -154,18 +198,48 @@ function AlgorithmicPageInner() {
     if (!ctx) return;
 
     stopAnimation();
-    const state = initFlowField(vals, params);
+    const state = initFlowField(vals, params, 0);
     flowStateRef.current = state;
-    initFlowFieldCanvas(ctx);
+    initFlowFieldCanvas(ctx, W, H);
+    loopStartRef.current = performance.now();
     isAnimatingRef.current = true;
     setIsAnimating(true);
 
-    function frame() {
+    const loopMs = 4000;
+
+    function frame(now: number) {
       if (!isAnimatingRef.current) return;
-      drawFlowFieldFrame(ctx!, flowStateRef.current!);
+      const phase = ((now - loopStartRef.current) % loopMs) / loopMs;
+      drawFlowFieldFrame(ctx!, flowStateRef.current!, W, H, phase);
       animFrameRef.current = requestAnimationFrame(frame);
     }
     animFrameRef.current = requestAnimationFrame(frame);
+  }
+
+  function renderStaticToCanvas(
+    ctx: CanvasRenderingContext2D,
+    vals: number[],
+    p: PhilosophyId
+  ) {
+    renderAlgorithmicToContext(ctx, p, vals, getParamsForPhilosophy(p), {
+      width: W,
+      height: H,
+      flowFieldWarmupFrames: 120,
+    });
+  }
+
+  function getParamsForPhilosophy(p: PhilosophyId): AlgoParams {
+    switch (p) {
+      case "flow-field": return ffParams;
+      case "wave": return waveParams;
+      case "voronoi": return voronoiParams;
+      case "l-system": return lSystemParams;
+      case "cellular-automata": return cellularParams;
+      case "truchet": return truchetParams;
+      case "julia": return juliaParams;
+      case "newton": return newtonParams;
+      case "apollonian": return apollonianParams;
+    }
   }
 
   function renderStatic(vals: number[], p: PhilosophyId) {
@@ -175,19 +249,7 @@ function AlgorithmicPageInner() {
     if (!ctx) return;
 
     stopAnimation();
-
-    switch (p) {
-      case "flow-field":
-        break;
-      case "wave":              renderWaveInterference(ctx, vals, waveParams); break;
-      case "voronoi":           renderVoronoi(ctx, vals, voronoiParams); break;
-      case "l-system":          renderLSystem(ctx, vals, lSystemParams); break;
-      case "cellular-automata": renderCellularAutomata(ctx, vals, cellularParams); break;
-      case "truchet":           renderTruchet(ctx, vals, truchetParams); break;
-      case "julia":             renderJulia(ctx, vals, juliaParams); break;
-      case "newton":            renderNewton(ctx, vals, newtonParams); break;
-      case "apollonian":        renderApollonian(ctx, vals, apollonianParams); break;
-    }
+    renderStaticToCanvas(ctx, vals, p);
   }
 
   function renderCurrent(vals: number[], p: PhilosophyId = philosophy) {
@@ -198,6 +260,30 @@ function AlgorithmicPageInner() {
     }
   }
 
+  function loadPreset(preset: AlgoPreset) {
+    applyParamState(applyPresetToState(preset));
+    setValues(preset.values);
+    requestAnimationFrame(() => {
+      if (preset.philosophy === "flow-field") {
+        startFlowFieldAnimation(preset.values, preset.params as FlowFieldParams);
+      } else {
+        renderStatic(preset.values, preset.philosophy);
+      }
+    });
+  }
+
+  useEffect(() => {
+    if (!codeParam || favoriteId) return;
+    const preset = decodePreset(decodeURIComponent(codeParam));
+    if (!preset) {
+      setError(t("errorInvalidCode"));
+      return;
+    }
+    loadPreset(preset);
+    router.replace("/algorithmic");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [codeParam]);
+
   useEffect(() => {
     if (!favoriteId) return;
     let alive = true;
@@ -205,7 +291,11 @@ function AlgorithmicPageInner() {
       try {
         const res = await fetch(`/api/favorites/${favoriteId}`);
         const data = (await res.json()) as {
-          favorite?: { values?: unknown; scenarioName?: string | null };
+          favorite?: {
+            values?: unknown;
+            scenarioName?: string | null;
+            algoPreset?: unknown;
+          };
         };
         if (!alive || !res.ok || !data.favorite) {
           if (alive) {
@@ -227,6 +317,15 @@ function AlgorithmicPageInner() {
           }
           return;
         }
+
+        const storedPreset = data.favorite.algoPreset as AlgoPreset | null | undefined;
+        if (storedPreset?.philosophy && storedPreset.params) {
+          if (!alive) return;
+          loadPreset({ ...storedPreset, values: vals });
+          router.replace("/algorithmic");
+          return;
+        }
+
         const pid = parseFavoriteScenarioToPhilosophyId(data.favorite.scenarioName);
         if (!pid) {
           if (alive) router.replace(`/create-art?favorite=${favoriteId}`);
@@ -249,7 +348,7 @@ function AlgorithmicPageInner() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per favoriteId; renderCurrent intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [favoriteId, router, t]);
 
   useEffect(() => {
@@ -307,15 +406,111 @@ function AlgorithmicPageInner() {
     if (values) renderCurrent(values);
   }
 
-  function handleDownloadPng() {
+  function handleRandomizeStyle() {
+    if (!values) return;
+    setError(null);
+    const result = randomizeParams({
+      keepPhilosophy: lockPhilosophy,
+      keepPalette: lockPalette,
+      currentPhilosophy: philosophy,
+      currentParams: getCurrentParams(),
+      values,
+    });
+    applyParamState(applyPresetToState(buildPreset(result.philosophy, result.params, values)));
+    requestAnimationFrame(() => renderCurrent(values, result.philosophy));
+  }
+
+  async function handleCopyCode() {
+    if (!values) return;
+    const code = encodePreset(currentPreset(values));
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      window.prompt(t("shareCode"), code);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  async function handleCopyLink() {
+    if (!values) return;
+    const url = presetShareUrl(currentPreset(values));
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt(t("shareLink"), url);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  function handleLoadShareCode() {
+    setError(null);
+    const preset = decodePreset(shareInput.trim());
+    if (!preset) {
+      setError(t("errorInvalidCode"));
+      return;
+    }
+    loadPreset(preset);
+    setShareInput("");
+  }
+
+  async function handleDownloadPng() {
+    if (!values) return;
     if (isAnimating) stopAnimation();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `qrng-algorithmic-${philosophy}-${Date.now()}.png`;
-    a.click();
+    setExportBusy(true);
+    try {
+      await exportAlgorithmicPng(
+        philosophy,
+        values,
+        getCurrentParams(),
+        exportPresetId,
+        `qrng-algorithmic-${philosophy}-${exportPresetId}.png`
+      );
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  async function handleExportSet() {
+    if (!values) return;
+    if (isAnimating) stopAnimation();
+    setExportBusy(true);
+    try {
+      const preset = EXPORT_PRESETS.find((p) => p.id === exportPresetId) ?? EXPORT_PRESETS[0];
+      await exportVariationSetZip(
+        philosophy,
+        values,
+        getCurrentParams(),
+        setExportCount,
+        preset.width,
+        preset.height,
+        `qrng-set-${philosophy}.zip`
+      );
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  async function handleExportVideo() {
+    if (!values || philosophy !== "flow-field") return;
+    if (isAnimating) stopAnimation();
+    setExportBusy(true);
+    try {
+      await exportFlowFieldWebm({
+        values,
+        params: ffParams,
+        width: W,
+        height: H,
+        fps: 30,
+        loopSeconds: 4,
+        filename: `qrng-flow-field-loop.webm`,
+      });
+    } catch {
+      setError(t("errorVideoExport"));
+    } finally {
+      setExportBusy(false);
+    }
   }
 
   function handleToggleAnimation() {
@@ -444,7 +639,7 @@ function AlgorithmicPageInner() {
               <button
                 type="button"
                 onClick={handleRandom}
-                disabled={loading}
+                disabled={loading || exportBusy}
                 className="w-full px-4 py-2 rounded-lg bg-zinc-100 text-zinc-900 font-medium hover:opacity-90 transition-opacity disabled:opacity-50 text-sm"
               >
                 {loading ? t("loading") : t("random")}
@@ -452,12 +647,45 @@ function AlgorithmicPageInner() {
               <button
                 type="button"
                 onClick={handleLoadToday}
-                disabled={loading}
+                disabled={loading || exportBusy}
                 className="w-full px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors disabled:opacity-50 text-sm"
               >
                 {t("loadToday")}
               </button>
+              {values && (
+                <button
+                  type="button"
+                  onClick={handleRandomizeStyle}
+                  disabled={exportBusy}
+                  className="w-full px-4 py-2 rounded-lg border border-violet-700 text-violet-300 font-medium hover:bg-violet-950 transition-colors disabled:opacity-50 text-sm"
+                >
+                  {t("randomizeStyle")}
+                </button>
+              )}
             </div>
+
+            {values && (
+              <div className="flex gap-3 text-xs text-zinc-400">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lockPhilosophy}
+                    onChange={(e) => setLockPhilosophy(e.target.checked)}
+                    className="rounded border-zinc-600"
+                  />
+                  {t("lockPhilosophy")}
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lockPalette}
+                    onChange={(e) => setLockPalette(e.target.checked)}
+                    className="rounded border-zinc-600"
+                  />
+                  {t("lockPalette")}
+                </label>
+              </div>
+            )}
 
             {error && (
               <p className="text-sm text-red-400">{error}</p>
@@ -633,24 +861,103 @@ function AlgorithmicPageInner() {
               </button>
             )}
 
+            {values && (
+              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-2">
+                <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  {t("shareTitle")}
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 text-xs hover:bg-zinc-800"
+                  >
+                    {shareCopied ? t("copied") : t("copyCode")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 text-xs hover:bg-zinc-800"
+                  >
+                    {t("copyLink")}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={shareInput}
+                  onChange={(e) => setShareInput(e.target.value)}
+                  placeholder={t("pasteCodePlaceholder")}
+                  className="w-full px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={handleLoadShareCode}
+                  className="w-full px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 text-xs hover:bg-zinc-800"
+                >
+                  {t("loadCode")}
+                </button>
+              </div>
+            )}
+
             {/* Sačuvaj / PNG */}
             {values && (
               <div className="space-y-2">
                 <SaveFavoriteButton
                   values={values}
                   scenarioName={`algo:${philosophy}`}
+                  algoPreset={currentPreset(values)}
                 />
+                <div className="space-y-1">
+                  <label className="text-xs text-zinc-400">{t("exportResolution")}</label>
+                  <select
+                    value={exportPresetId}
+                    onChange={(e) => setExportPresetId(e.target.value as ExportPresetId)}
+                    className="w-full bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded-lg px-2 py-1.5"
+                  >
+                    {EXPORT_PRESETS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
                   onClick={handleDownloadPng}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors text-sm"
+                  disabled={exportBusy}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 font-medium hover:bg-zinc-800 transition-colors text-sm disabled:opacity-50"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  PNG
+                  {exportBusy ? t("exporting") : t("downloadPng")}
                 </button>
+                <div className="flex gap-2 items-center">
+                  <label className="text-xs text-zinc-400 shrink-0">{t("setCount")}</label>
+                  <input
+                    type="number"
+                    min={4}
+                    max={12}
+                    value={setExportCount}
+                    onChange={(e) => setSetExportCount(Number(e.target.value))}
+                    className="w-16 bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleExportSet}
+                    disabled={exportBusy}
+                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {t("exportSet")}
+                  </button>
+                </div>
+                {philosophy === "flow-field" && supportsWebmExport() && (
+                  <button
+                    type="button"
+                    onClick={handleExportVideo}
+                    disabled={exportBusy}
+                    className="w-full px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {t("exportVideo")}
+                  </button>
+                )}
               </div>
             )}
           </aside>

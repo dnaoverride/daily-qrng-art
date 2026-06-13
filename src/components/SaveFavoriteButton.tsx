@@ -5,12 +5,15 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+import type { AlgoPreset } from "@/lib/algorithmic/preset-code";
+
 interface SaveFavoriteButtonProps {
   values: number[];
   scenarioName?: string | null;
+  algoPreset?: AlgoPreset | null;
 }
 
-export function SaveFavoriteButton({ values, scenarioName }: SaveFavoriteButtonProps) {
+export function SaveFavoriteButton({ values, scenarioName, algoPreset }: SaveFavoriteButtonProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const t = useTranslations("favorites");
@@ -39,7 +42,7 @@ export function SaveFavoriteButton({ values, scenarioName }: SaveFavoriteButtonP
       const res = await fetch("/api/favorites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ values, title, scenarioName, isPublic }),
+        body: JSON.stringify({ values, title, scenarioName, algoPreset, isPublic }),
       });
       if (!res.ok) {
         const data = await res.json() as { error?: string };

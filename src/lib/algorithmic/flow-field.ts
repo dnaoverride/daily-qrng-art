@@ -2,10 +2,9 @@ import { QRNGStream } from "../qrng";
 import type { FlowFieldParams, RGBA } from "./types";
 import { getPaletteColors } from "./types";
 
-const W = 1200;
-const H = 675;
+const DEFAULT_W = 1200;
+const DEFAULT_H = 675;
 
-// Grid za vektorsko polje
 const COLS = 24;
 const ROWS = 14;
 
@@ -17,66 +16,110 @@ interface Particle {
   colorIdx: number;
   age: number;
   maxAge: number;
+  respawnSeed: number;
 }
 
 export interface FlowFieldState {
-  field: Float32Array;   // uglovi za svaki čvor mreže (COLS * ROWS)
+  baseField: Float32Array;
   particles: Particle[];
-  canvas: OffscreenCanvas | null;
   frameCount: number;
   colors: RGBA[];
   params: FlowFieldParams;
+  respawnStream: QRNGStream;
+  width: number;
+  height: number;
 }
 
 export function initFlowField(
   values: number[],
-  params: FlowFieldParams
+  params: FlowFieldParams,
+  initialPhase = 0
 ): FlowFieldState {
   const stream = new QRNGStream(values);
+  const respawnStream = new QRNGStream(values);
 
-  // Inicijalizacija vektorskog polja iz QRNG vrednosti
-  const field = new Float32Array(COLS * ROWS);
+  const baseField = new Float32Array(COLS * ROWS);
   for (let i = 0; i < COLS * ROWS; i++) {
-    // Ugao između 0 i 2π, skaliran sa QRNG vrednostima
-    field[i] = stream.next_f() * Math.PI * 2;
+    baseField[i] = stream.next_f() * Math.PI * 2;
   }
 
   const colors = getPaletteColors(params.palette);
-
-  // Inicijalizacija čestica — pozicije iz QRNG vrednosti
   const particles: Particle[] = [];
+
   for (let i = 0; i < params.particles; i++) {
     particles.push({
-      x: stream.next_f() * W,
-      y: stream.next_f() * H,
+      x: stream.next_f() * DEFAULT_W,
+      y: stream.next_f() * DEFAULT_H,
       vx: 0,
       vy: 0,
       colorIdx: i % colors.length,
       age: Math.floor(stream.next_f() * 120),
       maxAge: 80 + Math.floor(stream.next_f() * 120),
+      respawnSeed: i,
     });
   }
 
-  return { field, particles, canvas: null, frameCount: 0, colors, params };
+  const state: FlowFieldState = {
+    baseField,
+    particles,
+    frameCount: 0,
+    colors,
+    params,
+    respawnStream,
+    width: DEFAULT_W,
+    height: DEFAULT_H,
+  };
+
+  if (initialPhase > 0) {
+    applyPhaseToField(state, initialPhase);
+  }
+
+  return state;
+}
+
+function applyPhaseToField(state: FlowFieldState, phase: number): Float32Array {
+  const offset = phase * Math.PI * 2;
+  const field = new Float32Array(COLS * ROWS);
+  for (let i = 0; i < COLS * ROWS; i++) {
+    field[i] = state.baseField[i]! + offset;
+  }
+  return field;
+}
+
+function respawnParticle(p: Particle, stream: QRNGStream, w: number, h: number): void {
+  p.x = stream.next_f() * w;
+  p.y = stream.next_f() * h;
+  p.vx = 0;
+  p.vy = 0;
+  p.age = 0;
+  p.maxAge = 80 + Math.floor(stream.next_f() * 120);
 }
 
 export function drawFlowFieldFrame(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  state: FlowFieldState
+  state: FlowFieldState,
+  w = DEFAULT_W,
+  h = DEFAULT_H,
+  loopPhase?: number
 ): void {
-  const { field, particles, colors, params } = state;
+  const { particles, colors, params } = state;
+  state.width = w;
+  state.height = h;
 
-  // Blago potamnjenje traga svakog frejma
+  const field =
+    loopPhase !== undefined
+      ? applyPhaseToField(state, loopPhase)
+      : applyPhaseToField(state, (state.frameCount % 360) / 360);
+
   ctx.fillStyle = `rgba(5, 5, 15, ${params.trailAlpha})`;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, w, h);
 
-  const cellW = W / COLS;
-  const cellH = H / ROWS;
+  const cellW = w / COLS;
+  const cellH = h / ROWS;
   const speed = params.speed;
   const tw = params.trailWidth;
 
   for (const p of particles) {
-    // Nađi čvor mreže za trenutnu poziciju čestice
     const col = Math.floor(p.x / cellW);
     const row = Math.floor(p.y / cellH);
     const idx = Math.min(row, ROWS - 1) * COLS + Math.min(col, COLS - 1);
@@ -91,17 +134,8 @@ export function drawFlowFieldFrame(
     p.y += p.vy * speed;
     p.age++;
 
-    // Restart čestice kad izađe iz okvira ili postane stara
-    if (
-      p.x < 0 || p.x > W ||
-      p.y < 0 || p.y > H ||
-      p.age > p.maxAge
-    ) {
-      p.x = Math.random() * W;
-      p.y = Math.random() * H;
-      p.vx = 0;
-      p.vy = 0;
-      p.age = 0;
+    if (p.x < 0 || p.x > w || p.y < 0 || p.y > h || p.age > p.maxAge) {
+      respawnParticle(p, state.respawnStream, w, h);
       continue;
     }
 
@@ -120,8 +154,10 @@ export function drawFlowFieldFrame(
 }
 
 export function initFlowFieldCanvas(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  w = DEFAULT_W,
+  h = DEFAULT_H
 ): void {
   ctx.fillStyle = "rgb(5, 5, 15)";
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, w, h);
 }

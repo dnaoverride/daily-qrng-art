@@ -39,6 +39,7 @@ export async function POST(req: Request) {
     values?: unknown;
     title?: string;
     scenarioName?: string;
+    algoPreset?: unknown;
     isPublic?: boolean;
   };
 
@@ -55,6 +56,10 @@ export async function POST(req: Request) {
     values: body.values as number[],
     title: body.title?.trim() || "Bez naziva",
     scenarioName: body.scenarioName ?? null,
+    algoPreset:
+      body.algoPreset && typeof body.algoPreset === "object"
+        ? (body.algoPreset as Record<string, unknown>)
+        : null,
     isPublic: body.isPublic ?? false,
     shareToken,
     createdAt: new Date(),

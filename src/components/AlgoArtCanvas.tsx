@@ -14,66 +14,25 @@ import {
   DEFAULT_NEWTON,
   DEFAULT_APOLLONIAN,
   type PhilosophyId,
+  type AlgoParams,
 } from "@/lib/algorithmic/types";
 import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
-import { initFlowField, drawFlowFieldFrame } from "@/lib/algorithmic/flow-field";
-import { renderWaveInterference } from "@/lib/algorithmic/wave-interference";
-import { renderVoronoi } from "@/lib/algorithmic/voronoi";
-import { renderLSystem } from "@/lib/algorithmic/l-system";
-import { renderCellularAutomata } from "@/lib/algorithmic/cellular-automata";
-import { renderTruchet } from "@/lib/algorithmic/truchet";
-import { renderJulia } from "@/lib/algorithmic/julia";
-import { renderNewton } from "@/lib/algorithmic/newton";
-import { renderApollonian } from "@/lib/algorithmic/apollonian";
+import { renderAlgorithmicToContext } from "@/lib/algorithmic/render-algorithmic";
 
 const W = 1200;
 const H = 675;
 
-function renderAlgorithmic(
-  ctx: CanvasRenderingContext2D,
-  philosophyId: PhilosophyId,
-  values: number[]
-): void {
-  switch (philosophyId) {
-    case "flow-field": {
-      const state = initFlowField(values, DEFAULT_FLOW_FIELD);
-      // Render slike na offscreen i kopiramo jedan statični frame
-      const offscreen = new OffscreenCanvas(W, H);
-      const offCtx = offscreen.getContext("2d");
-      if (!offCtx) return;
-      // Renderuj nekoliko frame-ova da čestice imaju trag
-      for (let i = 0; i < 120; i++) {
-        drawFlowFieldFrame(offCtx, state);
-      }
-      ctx.drawImage(offscreen, 0, 0);
-      break;
-    }
-    case "wave":
-      renderWaveInterference(ctx, values, DEFAULT_WAVE);
-      break;
-    case "voronoi":
-      renderVoronoi(ctx, values, DEFAULT_VORONOI);
-      break;
-    case "l-system":
-      renderLSystem(ctx, values, DEFAULT_L_SYSTEM);
-      break;
-    case "cellular-automata":
-      renderCellularAutomata(ctx, values, DEFAULT_CELLULAR);
-      break;
-    case "truchet":
-      renderTruchet(ctx, values, DEFAULT_TRUCHET);
-      break;
-    case "julia":
-      renderJulia(ctx, values, DEFAULT_JULIA);
-      break;
-    case "newton":
-      renderNewton(ctx, values, DEFAULT_NEWTON);
-      break;
-    case "apollonian":
-      renderApollonian(ctx, values, DEFAULT_APOLLONIAN);
-      break;
-  }
-}
+const DEFAULT_PARAMS: Record<PhilosophyId, AlgoParams> = {
+  "flow-field": DEFAULT_FLOW_FIELD,
+  wave: DEFAULT_WAVE,
+  voronoi: DEFAULT_VORONOI,
+  "l-system": DEFAULT_L_SYSTEM,
+  "cellular-automata": DEFAULT_CELLULAR,
+  truchet: DEFAULT_TRUCHET,
+  julia: DEFAULT_JULIA,
+  newton: DEFAULT_NEWTON,
+  apollonian: DEFAULT_APOLLONIAN,
+};
 
 interface AlgoArtCanvasProps {
   values: number[];
@@ -81,12 +40,6 @@ interface AlgoArtCanvasProps {
   className?: string;
 }
 
-/**
- * Smart canvas koji automatski bira renderer na osnovu scenarioName.
- * - "algo:newton" / "algo:flow-field" → algoritamski renderer
- * - "Algo: Newton fraktal" (stari format) → isti, backward-compat
- * - sve ostalo → renderArt (landscape)
- */
 export function AlgoArtCanvas({ values, scenarioName, className = "" }: AlgoArtCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -99,7 +52,11 @@ export function AlgoArtCanvas({ values, scenarioName, className = "" }: AlgoArtC
     const philosophyId = parseFavoriteScenarioToPhilosophyId(scenarioName);
 
     if (philosophyId) {
-      renderAlgorithmic(ctx, philosophyId, values);
+      renderAlgorithmicToContext(ctx, philosophyId, values, DEFAULT_PARAMS[philosophyId], {
+        width: W,
+        height: H,
+        flowFieldWarmupFrames: 120,
+      });
     } else {
       const stream = new QRNGStream(values);
       renderArt(ctx, stream, W, H);
