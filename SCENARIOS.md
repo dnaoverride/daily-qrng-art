@@ -53,15 +53,18 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ## 4. Detaljan pregled po scenariju
 
-### 0. Pejzaž (`landscape.ts`)
+### 0. Pejzaž (`landscape.ts`) — v2
 
-- **Varijacije**: `sunrise` (25%), `day` (25%), `sunset` (25%), `night` (25%)
-- **Redosled crtanja**: 1) nebo (3-stop linear gradient) → 2) zvezde (samo noć) → 3) tri sloja brda (ridgePoints) → 4) sunce/mesec (drawSunGlow) → 5) oblaci (samo dan)
+> v1 (do `RENDER_V2_FROM`): sunrise/day/sunset/night, plavo nebo, 3 sloja zelenih/sivih brda (ridgePoints) sa snegom i crnom ivicom, sunce/mesec (drawSunGlow), beli oblaci od krugova. Zamrznut u `scenarios/v1/landscape.ts`.
+
+- **Varijacije**: 6 paleta — alpine-day, alpenglow, sunset-orange, night, blue-hour-mist, autumn-highlands; hue ±8
+- **Redosled crtanja**: 1) nebo → 2) zvezde (noć) → (hooks.sky) → 3) sunce/mesec → (hooks.body) → 4) oblaci → 5) daleki venac → 6) glavni masiv → izmaglica → 7) more oblaka (30%) → 8) šumovita podbrđa → 9) livada + staza (45%) + cveće → 10) koliba (30%) → 11) ptice (35%)
 - **Parametri**:
-  - Brda: 3 sloja, amplitude ~160–70 po dubini, rough 0.55–0.7
-  - Zvezde: 250–600, r 1–2px, svetlost 140–255
-  - Oblaci: 6–14 oblaka, 6–14 blobova po oblaku
-  - Sunce: pozicija (w×0.25–0.75, h×0.12–0.34), radius 50–120
+  - Horizont: h × 0.50–0.62; sunce x = w × 0.12–0.88, r = 24–44 × s (mesec 16–28 × s)
+  - Daleki venac: 5–8 vrhova, visina horizont × 0.12–0.30; sneg 40% visine
+  - Glavni masiv: 2–4 vrha, visina horizont × 0.45–0.80, padine 0.75–1.25 × visina; + pomoćni vrh 45–70%; sneg 32% visine (±20%)
+  - Podbrđa: horizont + (h−horizont) × 0.42, amplituda 25–55 × s; livada od × 0.55
+- **Posebnosti**: strana senke prati sunce; obris vrha se zatvara na podnožju (zajednička podloga ispod); QRNG za odluke, `prngFromStream` za geometriju
 
 ---
 
@@ -278,5 +281,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Pustinja (v2) | Prepisana: 6 paleta, asimetrične dune sa osvetljenom i senovitom stranom, talasasto podnožje, jaranice, mese, karavan, saguaro, oaza, Mlečni put noću. |
 | 2026-11-19 | Šuma (v2) | Prepisana kao proplanak sa pogledom na šumovitu dolinu: 6 paleta (uklj. jesen i zimu), 4 sloja brda u magli, velike jelke i listopadna stabla sa dvobojnim krošnjama, zraci, srna, svici. |
 | 2026-11-19 | Plaža (v2) | Prepisana kao tropska plaža: 6 paleta, kumulusi, zakrivljena obala sa plićinom, mokrim peskom i penom, palme sa punim listovima i dugim liskama, ostrvo, jedrilica, suncobran, školjke, galebovi. |
+| 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

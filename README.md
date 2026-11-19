@@ -40,7 +40,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
-| 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | sunrise/day/sunset/night, planine, oblaci, sunce/mesec |
+| 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | v2: dramatični planinski vrhovi u low-poly stilu — 6 paleta (alpski dan, alpenglow, zalazak, noć, plavi sat, jesen), osvetljena/senovita strana po grebenu, snežne kape, more oblaka, podbrđa, alpska livada, staza, koliba |
 | 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | v2: tropska plaža — 6 paleta (podne, laguna, zalazak, pastelno jutro, mesečina, oblačno), zakrivljena obala sa penom i plićinom, palme sa liskama, ostrvo/jedrilica/suncobran/školjke |
 | 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | v2: 8 paleta (uklj. plavi sat), sunce na različitim visinama, oblaci obasjani odozdo, svetlosna staza, silueta (obala/jedrilica/svetionik), ptice |
 | 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | v2: 6 paleta (podne, zlatne dune, saharski zalazak, ljubičasti sumrak, noć sa Mlečnim putem, crvene stene), asimetrične dune sa svetlom i senkom, mese, karavan, oaza, saguaro |
@@ -53,7 +53,14 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ## Važne odluke i ispravke
 
-### Pejzaž
+### Pejzaž (v2, od 2026-11-19)
+
+- **Koncept:** dramatični planinski vrhovi u fasetiranom (low-poly) stilu — razlikuje se od jezera (planine + odraz) i šume (dolina).
+- **Palete:** 6 — alpine-day, alpenglow (ružičasti vrhovi u zoru), sunset-orange, night (mesec, zvezde), blue-hour-mist, autumn-highlands; hue ±8.
+- **Vrhovi:** daleki venac (5–8, u izmaglici) + glavni masiv (2–4 vrha + pomoćni vrh na ramenu), niži se crtaju prvi. Svaki vrh: osvetljena strana, nazubljen greben ka senovitoj strani (strana prati sunce), snežna kapa sa nazubljenom donjom ivicom (sneg u senci u svojoj boji), blage sporedne fasete. Obris se zatvara na liniji podnožja, ispod je zajednička podloga (prva verzija je imala vertikalne „zidove" ispod vrhova).
+- **Niže:** izmaglica na dnu masiva, more oblaka (inverzija) 30%, šumovita podbrđa sa jelkama, alpska livada sa cvećem i travkama, vijugava staza 45%, koliba sa dimom 30% (noću upaljen prozor), ptice 35%.
+
+### Pejzaž (v1)
 
 - Nebo nikad zelena: avoidGreen za hue 85–165. Plava (day/night) ili narandžasto/crvenkasto (sunrise/sunset)
 - Oblaci beli ili svetlo sivi
@@ -504,6 +511,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Pejzaž v2: low-poly planinski vrhovi (grana `claude`)
+
+- **`src/lib/landscape.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/landscape.ts`): 6 paleta (uklj. alpenglow i jesenju visoravan), daleki venac i glavni masiv sa fasetiranim vrhovima (osvetljena/senovita strana po nazubljenom grebenu, snežne kape), more oblaka, šumovita podbrđa, alpska livada sa cvećem, vijugava staza, koliba sa dimom, ptice. Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — vertikalni „zidovi" i pravougaonici ispod vrhova (obris je išao do dna slike) → obris se zatvara na podnožju + zajednička podloga; sporedne fasete stišane.
+- **Verifikacija** — pregled 12 datuma + puna veličina + thumbnail; render 35–46 ms. v1 hash identičan originalu za dan sa pejzažom (2026-11-13). `tsc` i ESLint prolaze.
+- **README / SCENARIOS** — sekcija „Pejzaž (v2)", tabela scenarija, opis i changelog.
 
 ### 2026-11-19 — Plaža v2: tropska plaža sa penom, plićinom i palmama (grana `claude`)
 
