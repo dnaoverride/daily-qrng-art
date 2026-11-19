@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal } from "./QRNGReveal";
 import { SaveFavoriteButton } from "./SaveFavoriteButton";
-import { SCENARIO_NAMES, NUM_SCENARIOS } from "@/lib/scenarios";
+import { scenarioNameFor } from "@/lib/scenarios";
+import { renderVersionForDate } from "@/lib/render-version";
 
 interface ArtPageContentProps {
   date: string;
@@ -42,10 +43,7 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
     );
   }
 
-  const scenarioName =
-    values.length >= 4
-      ? SCENARIO_NAMES[((values[0]! ^ values[1]! ^ values[2]! ^ values[3]!) >>> 0) % NUM_SCENARIOS] ?? "Pejzaž"
-      : null;
+  const scenarioName = scenarioNameFor(values, renderVersionForDate(date));
 
   return (
     <div>

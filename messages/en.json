@@ -224,5 +224,10 @@
       "glitch": "Quantum glitch"
     },
     "hint": "Rare sky event — appears on about 30% of days"
+  },
+  "scene": {
+    "place": {
+      "belgrade": "Belgrade"
+    }
   }
 }

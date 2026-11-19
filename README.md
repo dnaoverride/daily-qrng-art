@@ -12,12 +12,14 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, rezultat se deli sa 8 i dobija se indeks scenarija (0–7). Time se postiže ravnomernija distribucija između scenarija.
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 9** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % NUM_SCENARIOS;
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 9
 ```
+
+`scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
 
 ### QRNGStream
 
@@ -36,7 +38,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
-## Scenariji (8)
+## Scenariji (8 u v1, 9 u v2)
 
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
@@ -48,6 +50,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | v2: maglina u 6 paleta, zvezde sa zracima, galaksija, 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom, atmosferom, prstenovima i mesecima; „sistem" ili „krupni plan" |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | v2: pogled sa proplanka na šumovitu dolinu — 6 paleta (proleće, leto, jesen, zlatni sat, noć sa svitcima, zima), 4 sloja brda u magli, velika drveta sa dvobojnim krošnjama, zraci, srna |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
+| 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad sa znamenitostima i pravim odrazom; QRNG bira grad (za sada Beograd), 6 doba dana; ime grada ispod slike |
 
 ---
 
@@ -76,6 +79,14 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Gradovi (samo v2, od 2026-11-19)
+
+- **Koncept:** pogled preko reke na grad; registar gradova `CITIES` (ključ, težina, `decide`, `draw`) — QRNG bira grad po težinama. Za sada **Beograd**; Pariz i Rim slede.
+- **Beograd — znamenitosti** (QRNG bira, bar 2 u srednjem planu): Hram Svetog Save 75% (dominantan, kupola + ugaone kule + zlatni krstovi), Ušće kule 60%, Beograđanka 45% (tamna kula sa „krunom"), Kula Beograd 40%, Avalski toranj na brdu u daljini 50%, Kalemegdan sa zidinama, drvećem i Pobednikom 55%, Most na Adi (pilon + lepeza kablova) 40%. Oko njih generički grad: socijalistički blokovi, starogradske zgrade sa kosim krovovima, crkveni tornjevi sa baroknim šiljkom.
+- **Palete:** 6 — day, golden, sunset, blue-hour, night (mesec, zvezde), winter-fog; noću i u plavom satu osvetljeni Hram, zidine, most i Ušće, upaljeni prozori.
+- **Reka:** pravi odraz cele gornje polovine (kao jezero); geometrija grada iz zasebnog PRNG-a sa fiksnim seed-om po slici, pa su normalan prolaz i odraz identični. Splav sa lampicama 35%.
+- **Ime grada ispod slike:** novi opcioni hook `hooks.meta({ place })` ([`sky-events.ts`](src/lib/sky-events.ts)) → `RenderResult.meta.place` → [`ArtCanvas`](src/components/ArtCanvas.tsx) dodaje „· Beograd" (prevod `messages/*.json` → `scene.place.*`).
 
 ### Plaža (v2, od 2026-11-19)
 
@@ -518,6 +529,20 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Novi scenario: Gradovi (Beograd) + broj scenarija po verziji (grana `claude`)
+
+- **`src/lib/scenarios/cities.ts`** — NOVO (scenario 8, samo v2): pogled preko reke na grad sa pravim odrazom, 6 paleta, registar gradova sa težinama. Beograd: Hram Svetog Save, Ušće kule, Beograđanka, Kula Beograd, Avalski toranj, Kalemegdan sa Pobednikom, Most na Adi, generički grad, splav. Dimenzije relativne (`s = w/1200`).
+- **`src/lib/scenarios/router.ts`** — `NUM_SCENARIOS_V1 = 8` (zamrznuto), `NUM_SCENARIOS_V2 = 9`, `scenarioCount(version)`, `scenarioIndexFor(values, version)`; v2 bira `mix % 9`; `RenderResult.meta` (ime mesta). `NUM_SCENARIOS` ostaje kao alias za v1 (kompatibilnost).
+- **`src/lib/scenarios/index.ts`** — `SCENARIO_NAMES[8] = "Gradovi"`, `scenarioNameFor(values, version)`.
+- **`src/components/ArtPageContent.tsx`, `src/app/create-art/page.tsx`** — ime scenarija za omiljene se računa po verziji renderera (ranije uvek `% 8`).
+- **`src/lib/sky-events.ts`** — `SceneMeta` i opcioni `hooks.meta`.
+- **`src/components/ArtCanvas.tsx`** — ispod slike „Slika za {datum} · {grad}" kad scenario prijavi mesto.
+- **`messages/sr.json`, `messages/en.json`** — `scene.place.belgrade` (Beograd / Belgrade).
+- **Posledica** — v2 dani su preraspoređeni po 9 scenarija (svaki ~11% na 4000 dana); lokalno Beograd pada na 2026-11-06 i 2026-11-15. v1 se ne menja.
+- **Podešavanje** — znamenitosti premale → Hram 1.45×, ostale 1.15–1.2×; Kalemegdan je bio „svetla kutija" → više brdo, niske zidine u boji kamena; Avala uvećana; senka Hrama je bila pravougaonik preko kupole → senka tela + polovina kupole klipovana na oblik.
+- **Verifikacija** — pregled 12 datuma + puna veličina (dan i noć) + thumbnail; render 34–50 ms. v1 hash identičan za 10 novembarskih datuma (svih 8 scenarija). `tsc` i ESLint prolaze (jedno postojeće upozorenje u `ArtPageContent`).
+- **README / SCENARIOS** — izbor scenarija po verziji, tabela scenarija, sekcija „Gradovi".
 
 ### 2026-11-19 — Kosmos v2: magline, tipovi planeta, krupni plan (grana `claude`) — svih 8 scenarija prerađeno
 

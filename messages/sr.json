@@ -224,5 +224,10 @@
       "glitch": "Kvantni glitch"
     },
     "hint": "Retki nebeski događaj — pojavljuje se u oko 30% dana"
+  },
+  "scene": {
+    "place": {
+      "belgrade": "Beograd"
+    }
   }
 }

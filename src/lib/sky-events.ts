@@ -30,9 +30,17 @@ export interface CelestialBody {
   kind: "sun" | "moon";
 }
 
+/** Dodatne informacije o sceni za prikaz (npr. ime grada). */
+export interface SceneMeta {
+  /** Ključ mesta za prevod (messages → scene.place.*), npr. "belgrade". */
+  place?: string;
+}
+
 export interface SceneHooks {
   sky(info: SkyInfo): void;
   body(b: CelestialBody): void;
+  /** Opciono: scenario javlja meta podatke (ime mesta). Ne utiče na crtanje. */
+  meta?(m: SceneMeta): void;
 }
 
 export const NO_HOOKS: SceneHooks = { sky: () => {}, body: () => {} };

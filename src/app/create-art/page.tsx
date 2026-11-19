@@ -6,12 +6,13 @@ import { useTranslations } from "next-intl";
 import { ArtCanvas } from "@/components/ArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
 import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
-import {
-  SCENARIO_NAMES,
-  NUM_SCENARIOS,
-} from "@/lib/scenarios";
+import { scenarioNameFor } from "@/lib/scenarios";
 import { getTodayBelgrade } from "@/lib/date";
-import { renderVersionForTimestamp, type RenderVersion } from "@/lib/render-version";
+import {
+  currentRenderVersion,
+  renderVersionForTimestamp,
+  type RenderVersion,
+} from "@/lib/render-version";
 import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
 
 const REQUIRED_COUNT = 1000;
@@ -155,13 +156,7 @@ function CreateArtPageInner() {
     a.click();
   }
 
-  const scenarioName =
-    values && values.length >= 4
-      ? SCENARIO_NAMES[
-          ((values[0]! ^ values[1]! ^ values[2]! ^ values[3]!) >>> 0) %
-            NUM_SCENARIOS
-        ] ?? "Pejzaž"
-      : null;
+  const scenarioName = scenarioNameFor(values, renderVersion ?? currentRenderVersion());
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">

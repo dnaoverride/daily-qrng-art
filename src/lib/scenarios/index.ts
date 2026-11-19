@@ -1,4 +1,17 @@
-export { renderArt, NUM_SCENARIOS, type RenderResult } from "./router";
+import type { RenderVersion } from "../render-version";
+import { scenarioIndexFor } from "./router";
+
+export {
+  renderArt,
+  NUM_SCENARIOS,
+  NUM_SCENARIOS_V1,
+  NUM_SCENARIOS_V2,
+  scenarioCount,
+  scenarioIndexFor,
+  type RenderResult,
+} from "./router";
+
+/** Imena scenarija (indeks 0–7 isti u v1 i v2; 8+ samo v2). */
 export const SCENARIO_NAMES: Record<number, string> = {
   0: "Pejzaž",
   1: "Plaža",
@@ -8,4 +21,11 @@ export const SCENARIO_NAMES: Record<number, string> = {
   5: "Kosmos",
   6: "Šuma",
   7: "Jezero",
+  8: "Gradovi",
 };
+
+/** Ime scenarija za brojeve i verziju renderera (za omiljene i prikaz). */
+export function scenarioNameFor(values: readonly number[] | null | undefined, version: RenderVersion): string | null {
+  if (!values || values.length < 4) return null;
+  return SCENARIO_NAMES[scenarioIndexFor(values, version)] ?? "Pejzaž";
+}

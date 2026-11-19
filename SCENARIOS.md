@@ -21,7 +21,8 @@ Svaki v2 scenario mora pozvati `hooks.sky({ horizonY, light })` odmah posle neba
 Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a:
 
 ```
-(v0 ^ v1 ^ v2 ^ v3) % 8  →  jednaka šansa (12.5%) za svaki scenarij
+v1:  (v0 ^ v1 ^ v2 ^ v3) % 8  →  12.5% po scenariju (zamrznuto)
+v2:  (v0 ^ v1 ^ v2 ^ v3) % 9  →  ~11.1% po scenariju (raste sa novim scenarijima)
 ```
 
 ---
@@ -54,6 +55,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | maglina, zvezde sa zracima, galaksija, 5 tipova planeta, prstenovi, meseci, krupni plan |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | proplanak i šumovita dolina u magli, jelke i listopadna stabla, zraci, srna, svici |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | planinsko jezero sa pravim odrazom, sneg, šuma na obali, magla, mol/čamac/trska |
+| 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad (Beograd: Hram, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan, Most na Adi), pravi odraz, splav |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -191,6 +193,17 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ---
 
+### 8. Gradovi (`cities.ts`) — samo v2
+
+- **Registar gradova** `CITIES`: `{ key, weight, decide(stream), draw(c, rand, d) }`; QRNG bira grad po težinama; `hooks.meta({ place: key })` → ime grada ispod slike. Za sada samo Beograd.
+- **Varijacije**: 6 paleta — day, golden, sunset, blue-hour, night, winter-fog; hue ±8; `floodlight` (plavi sat, noć) osvetljava znamenitosti; udeo upaljenih prozora po paleti 0–0.75
+- **Redosled crtanja**: gornja polovina [nebo → zvezde → (hooks.sky) → sunce/mesec → (hooks.body) → grad → izmaglica] → ista gornja polovina preslikana u reku → boja vode → talasići → splav
+- **Beograd** (redosled u `draw`): Avala na brdu (daleko) → daleki red zgrada → srednji red + znamenitosti u slotovima (Hram 1.45×, Ušće 1.2×, Beograđanka 1.2×, Kula Beograd 1.15×) → Kalemegdan na bližoj obali (levo/desno) → Most na Adi (suprotna strana) → linija obale
+- **Parametri**: horizont (obala) h × 0.56–0.66; sunce r = 22–40 × s (mesec 16–26 × s); verovatnoće znamenitosti Hram 75%, Ušće 60%, Beograđanka 45%, Kula 40%, Avala 50%, Kalemegdan 55%, most 40% (bar 2 u srednjem planu); splav 35%
+- **Posebnosti**: geometrija grada iz `mulberry32(citySeed)` → identična u oba prolaza (odraz); novi grad = novi `CityDef` u `CITIES` + prevod `scene.place.<key>`
+
+---
+
 ## 5. Matrica: efekti po scenariju (v2)
 
 | Efekat | Pejzaž | Plaža | Zalazak | Pustinja | Noćni grad | Kosmos | Šuma | Jezero |
@@ -295,5 +308,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
 | 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
 | 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
+| 2026-11-19 | Gradovi (novo, v2) | Scenario 8: pogled preko reke na Beograd (Hram Svetog Save, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan sa Pobednikom, Most na Adi), pravi odraz, splav, 6 paleta; ime grada ispod slike. v2 bira `% 9`. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

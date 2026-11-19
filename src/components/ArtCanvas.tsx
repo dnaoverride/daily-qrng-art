@@ -57,8 +57,10 @@ export function ArtCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [rarity, setRarity] = useState<RarityResult | null>(null);
+  const [place, setPlace] = useState<string | null>(null);
   const tArt = useTranslations("art");
   const tRarity = useTranslations("rarity");
+  const tScene = useTranslations("scene");
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -70,6 +72,7 @@ export function ArtCanvas({
     const stream = new QRNGStream(values);
     const result = renderArt(ctx, stream, W, H, version);
     setRarity(result.rarity);
+    setPlace(result.meta.place ?? null);
     setReady(true);
     onCanvasReady?.(canvas);
   }, [values, version, onCanvasReady]);
@@ -87,9 +90,11 @@ export function ArtCanvas({
         className="w-full max-w-4xl h-auto rounded-lg shadow-xl"
         style={{ aspectRatio: `${W} / ${H}` }}
       />
-      {date && ready && (
+      {ready && (date || place) && (
         <p className="mt-2 text-sm text-zinc-500 text-center">
-          {tArt("title", { date })}
+          {date && tArt("title", { date })}
+          {date && place && " · "}
+          {place && tScene(`place.${place}`)}
         </p>
       )}
       {ready && rarity && rarity.tier !== "common" && rarity.event && (
