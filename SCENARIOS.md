@@ -93,15 +93,19 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 3. Pustinja (`desert.ts`)
+### 3. Pustinja (`desert.ts`) — v2
 
-- **Varijacije**: fiksno toplo pustinjsko podne
-- **Redosled crtanja**: 1) nebo (3-stop, toplo žuto/narandžasto/ružičasto) → 2) sunce (drawSunGlow) → 3) pesak (ravna podloga) → 4) dune (4 sloja ridgePoints)
+> v1 (do `RENDER_V2_FROM`): toplo nebo (žuto/narandžasto/ružičasto), ravna podloga, 4 sloja oblih dina (ridgePoints), 45% kaktusi od elipsi ili palma. Zamrznut u `scenarios/v1/desert.ts`.
+
+- **Varijacije**: 6 paleta — noon, golden-dunes, sahara-sunset, dusk-violet, night, red-rock; hue ±8
+- **Redosled crtanja**: 1) nebo → 2) Mlečni put + zvezde (noć) → (hooks.sky) → 3) sunce/mesec → (hooks.body) → 4) toplotna izmaglica → 5) mese → 6) za svaki sloj: telo (gradijent) → senke strmih strana (klip na telo) → jaranice → svetla linija grebena → (oaza na srednjem sloju) → 7) karavan / kaktusi
 - **Parametri**:
-  - Dune: amplitude 45–80, rough 0.9, detailScale 0.06, anchorStep 60
-  - Prva duna može da prelazi horizont (yBase = horizonY - 25 + 35)
-  - Vegetacija (45% verovatnoće): 1–3 kaktusa (segmentirano) ili 1 palma (oaza)
-- **Posebnosti**: 4 dune; opciono kaktusi/palme
+  - Horizont: h × 0.42–0.56; sunce x = w × 0.12–0.88, r = 24–48 × s (mesec 16–28 × s); u sumraku nisko (horizont × 0.6–0.9)
+  - Slojevi: 4–5; podnožje horizont + (h−horizont) × (0.12 + 0.95 t); visina dina (h−horizont) × (0.18 + 0.35 t); haze 0.6 × (1−t); talasanje podnožja 5–15 × s
+  - Dune: 3–5 po sloju; blaga strana 2.6–4.4 × visina, strma 0.9–1.4 × visina
+  - Mese (butte): 1–3, svaka u svom delu širine; širina 70–220 × s (max pola slota), visina 60–150 × s; litica 25–40% visine; senka neprovidna, klipovana na obris (red-rock 100%, ostale 25–30%)
+  - Prednji plan: karavan 3–6 kamila 25%, saguaro 1–3 30%, oaza 15%
+- **Posebnosti**: strana svetla prati sunce (`lightDir`); QRNG za odluke, `prngFromStream` za geometriju
 
 ---
 
@@ -263,5 +267,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Noćni grad (v2) | Prepisan: 6 paleta, 3 sloja zgrada sa izmaglicom, 6 tipova krovova, prozori po spratovima, crvena svetla (35% visokih), pun mesec/srp, oblaci, reka sa odrazima ili ulica sa svetiljkama. |
 | 2026-11-19 | Svi (v2) | Rarity hook-ovi: `hooks.sky(...)` posle neba (horizont + dan/sumrak/noć) i `hooks.body(...)` posle sunca/meseca u svih 8 scenarija. Retki događaji (duga, zvezde padalice, kometa, polarna svetlost, pomračenje, krvavi mesec, glitch) — vidi README → Rarity sistem. Obični dani nepromenjeni. |
 | 2026-11-19 | Jezero (v2) | Prepisano kao planinsko jezero: 6 paleta, planine sa nazubljenim grebenom i snegom, šuma na obali, pravi odraz u vodi, talasići, odsjaj, magla, mol/čamac/trska. |
+| 2026-11-19 | Pustinja (v2) | Prepisana: 6 paleta, asimetrične dune sa osvetljenom i senovitom stranom, talasasto podnožje, jaranice, mese, karavan, saguaro, oaza, Mlečni put noću. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

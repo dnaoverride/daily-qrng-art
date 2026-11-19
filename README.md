@@ -43,7 +43,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | sunrise/day/sunset/night, planine, oblaci, sunce/mesec |
 | 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | plavo nebo, sunce, more, pesak (ridgePoints), palme |
 | 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | v2: 8 paleta (uklj. plavi sat), sunce na različitim visinama, oblaci obasjani odozdo, svetlosna staza, silueta (obala/jedrilica/svetionik), ptice |
-| 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | toplo nebo, dune (ridgePoints), base sand fill |
+| 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | v2: 6 paleta (podne, zlatne dune, saharski zalazak, ljubičasti sumrak, noć sa Mlečnim putem, crvene stene), asimetrične dune sa svetlom i senkom, mese, karavan, oaza, saguaro |
 | 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | v2: 6 paleta, 3 sloja zgrada u izmaglici, raznovrsni krovovi, prozori po spratovima, pun mesec/srp, reka sa odrazima ili ulica sa svetiljkama |
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | planete, zvezde (crtaju se pre planeta) |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | dan/noć, drveće (stablo + krošnja), ptice/sove/šišmiši/veverica |
@@ -99,7 +99,15 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - Noć (25%): sove (1–2) ili šišmiši (1–3)
 - Dan: opciono veverica (50% šansa)
 
-### Pustinja
+### Pustinja (v2, od 2026-11-19)
+
+- **Palete:** 6 — noon, golden-dunes, sahara-sunset, dusk-violet, night (mesec + Mlečni put), red-rock (mese uvek); hue ±8.
+- **Dune:** asimetrične (barhan) — blaga osvetljena strana okrenuta suncu (kosinusna kriva), strma senovita strana na suprotnoj; strana svetla po poziciji sunca (`lightDir`). Senka pokriva samo strmu stranu (prva verzija je pravila dugačke dijagonalne „oštrice" do dna slike).
+- **Slojevi:** 4–5, dalji mešani sa bojom horizonta; 3–5 dina po sloju; podnožje sloja blago talasasto (prva verzija je imala savršeno ravne trake između dina); svetla linija samo duž stvarnih grebena; jaranice od vetra na bližim slojevima.
+- **Detalji:** toplotna izmaglica na horizontu; mese/butte (po paleti, visina 60–150 × s): ravan blago neravan vrh, strma litica, konkavna siparna padina, neprovidna senka klipovana na obris, svaka mesa u svom delu širine (bez preklapanja); karavan kamila na grebenu 2. sloja 25%; saguaro kaktusi (stablo + 1–3 grane, osvetljena ivica, senka na pesku) 30%; oaza sa jezercetom i palmama u udolini srednjeg sloja 15%.
+- **Noć:** Mlečni put — dijagonalna traka mekog sjaja + 700 sitnih zvezda + vrlo diskretne prašinaste pruge.
+
+### Pustinja (v1)
 
 - Base sand fill pre crtanja dina da zelena iz prethodnog scenarija ne probija
 - Dune oble (ridgePoints sa roughness, detailScale) — ne oštre/račvaste
@@ -479,6 +487,14 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Pustinja v2: asimetrične dune sa svetlom i senkom (grana `claude`)
+
+- **`src/lib/scenarios/desert.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 6 paleta, 4–5 slojeva asimetričnih dina (osvetljena blaga i senovita strma strana prema položaju sunca), talasasto podnožje slojeva, svetle linije na grebenima, jaranice od vetra, toplotna izmaglica, mese, karavan kamila na grebenu, saguaro kaktusi, oaza, Mlečni put noću. Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — senke su bile dugačke dijagonalne „oštrice" do dna slike → ograničene na strmu stranu dine; mese su bile preniske (lebdele kao ploče) i preklopljene mese su davale „odsečene" stepenice na vrhu (poluprovidna senka van obrisa) → novi oblik butte, senka klipovana na obris, bez preklapanja; ravne trake između dina noću → talasasto podnožje + više dina po sloju + svetla linija samo na grebenima; tamne pruge Mlečnog puta ličile na mrlje → mnogo diskretnije.
+- **Provera retkosti** — 3 od 12 pregledanih pustinja bile su epske; na 4000 dana svaki scenario ima ~20 / 8 / 2% (nema korelacije scenarija i nivoa retkosti), znači slučajnost.
+- **Verifikacija** — pregled 12 datuma + 2 u punoj veličini + thumbnail; render 33–67 ms. v1 hash identičan originalu (`ba738be`) i za datume sa pustinjom (2026-11-05, 08, 14, 17). `tsc` i ESLint prolaze.
+- **README / SCENARIOS** — sekcija „Pustinja (v2)", tabela scenarija, opis i changelog.
 
 ### 2026-11-19 — Jezero v2: planinsko jezero sa pravim odrazom (grana `claude`)
 
