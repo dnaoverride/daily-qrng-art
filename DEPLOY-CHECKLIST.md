@@ -65,13 +65,13 @@ U **hPanel > Deployments > Environment Variables** dodaj:
 | `AUTH_SECRET` | `openssl rand -base64 32` ili [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) | Obavezno novi za produkciju |
 | `NEXTAUTH_SECRET` | isto kao `AUTH_SECRET` | Preporučeno zbog Auth.js kompatibilnosti |
 | `NEXTAUTH_URL` | `https://qrng-art.com` | Bez trailing slash-a |
-| `NEXT_PUBLIC_RENDER_V2_FROM` | `YYYY-MM-DD` (datum deploy-a render v2) | Bez nje sve ostaje v1 (`2099-01-01`). Vidi korak 2a. |
+| `NEXT_PUBLIC_RENDER_V2_FROM` | *(opciono)* `YYYY-MM-DD` | Bez nje: `2000-01-01` → cela arhiva u v2. Postaviti samo ako treba vratiti stare datume na v1. Vidi korak 2a. |
 
 ### 2a. Render v2 (pri spajanju grane `claude` u `main`)
 
-- [ ] Izaberi datum prelaska = **dan deploy-a ili sutrašnji dan** (nikako datum u prošlosti — prošle slike bi se promenile)
-- [ ] Postavi `NEXT_PUBLIC_RENDER_V2_FROM` u Hostinger Environment Variables **pre** build-a (vrednost se inline-uje u build)
-- [ ] Posle deploy-a: arhiva pre tog datuma izgleda isto kao ranije, slika od tog datuma je v2
+- [ ] **Odluka 2026-11-19: cela arhiva prelazi na v2** (podrazumevano `2000-01-01` u `src/lib/render-version.ts`) — env promenljiva nije potrebna
+- [ ] Ako u Hostinger Environment Variables postoji stara `NEXT_PUBLIC_RENDER_V2_FROM`, obriši je ili postavi na `2000-01-01` **pre** build-a (vrednost se inline-uje u build)
+- [ ] Posle deploy-a: sve slike u arhivi (i thumbnailovi, URL `&r=2.x`) su v2; stari OG preview-i na društvenim mrežama mogu ostati keširani kod njih
 - [ ] Ne menjati ništa u `src/lib/scenarios/v1/`
 - [ ] Ako je izgled v2 menjan od poslednjeg deploy-a: povećaj v2 u `RENDER_REVISION` (`src/lib/render-version.ts`), da browser/CDN ne služe stare thumbnailove
 

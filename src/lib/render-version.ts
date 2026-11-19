@@ -11,8 +11,9 @@
  *   datum >= RENDER_V2_FROM → v2
  *
  * RENDER_V2_FROM se čita iz NEXT_PUBLIC_RENDER_V2_FROM (inline-uje se u build).
- * Podrazumevano je daleka budućnost, pa produkcija ostaje na v1 dok se pri
- * deploy-u eksplicitno ne postavi datum prelaska (vidi DEPLOY-CHECKLIST.md).
+ * Podrazumevano je 2000-01-01 → SVI datumi (cela arhiva, thumbnailovi, OG, favoriti)
+ * crtaju se u v2 (odluka 2026-11-19: sajt skoro nije korišćen, cela arhiva prelazi
+ * na v2). v1 kod ostaje u repou; datum prelaska se može ponovo pomeriti env promenljivom.
  */
 import { getTodayBelgrade } from "./date";
 
@@ -20,7 +21,7 @@ export type RenderVersion = 1 | 2;
 
 export const LATEST_RENDER_VERSION: RenderVersion = 2;
 
-const DEFAULT_V2_FROM = "2099-01-01";
+const DEFAULT_V2_FROM = "2000-01-01";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const RENDER_V2_FROM: string = (() => {

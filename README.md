@@ -12,11 +12,11 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 9** (raste sa novim scenarijima).
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 10** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 9
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 10
 ```
 
 `scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
@@ -38,7 +38,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
-## Scenariji (8 u v1, 9 u v2)
+## Scenariji (8 u v1, 10 u v2)
 
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
@@ -51,6 +51,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | v2: pogled sa proplanka na šumovitu dolinu — 6 paleta (proleće, leto, jesen, zlatni sat, noć sa svitcima, zima), 4 sloja brda u magli, velika drveta sa dvobojnim krošnjama, zraci, srna |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
 | 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad sa znamenitostima i pravim odrazom; QRNG bira grad (Beograd 35%, Pariz 32.5%, Rim 32.5%), 6 doba dana; ime grada ispod slike |
+| 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | 6 paleta (tropski greben, duboko plavo, kelp, zalazak, ponor sa bioluminiscencijom, laguna), zraci, kaustike, greben (razgranati/lepezasti/mozak-korali, sunđeri, sase, kelp), jata i tropske ribe, kornjača, meduze, udičarka; podvodni retki događaji |
 
 ---
 
@@ -79,6 +80,12 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Podvodni svet (samo v2, od 2026-11-19)
+
+- **Palete:** 6 — tropical-reef, deep-blue, kelp-forest (95% kelpa), sunset-surface (toplo svetlo odozgo), abyss (tamno, bioluminiscencija: svetleće meduze i sase, plankton, riba-udičarka), lagoon-shallow; hue ±10. Raspodela paleta ravnomerna (~16% na 596 podvodnih dana).
+- **Slojevi:** voda (svetlo pri površini → dubina), talasasta površina odozdo 45% (ne u ponoru), zraci sa površine, oble daleke stene u 2 sloja, retki događaji, daleko jato, peščano dno sa kaustikama, greben sortiran po dubini (razgranati, lepezasti i mozak-korali, cevasti sunđeri, morske sase, kelp; 18–29 korala, veći bliže), jato duž krive + 2–6 tropskih riba, kornjača 25%, meduze (35%, u ponoru 90%), udičarka (ponor 50%), sidro sa lancem 15%, mehurići.
+- **Rarity:** nema neba ni sunca → `hooks.sky({ horizonY: h, light: "underwater" })` (raža / kit / kraken), bez `hooks.body`.
 
 ### Gradovi (samo v2, od 2026-11-19)
 
@@ -191,7 +198,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **v2** — aktivni kod u [`src/lib/scenarios/*.ts`](src/lib/scenarios/), `src/lib/landscape.ts`, `draw-utils.ts`… Sva vizuelna poboljšanja i novi scenariji idu ovde.
 - [`src/lib/render-version.ts`](src/lib/render-version.ts) određuje verziju **po datumu** (Europe/Belgrade):
   - datum `< RENDER_V2_FROM` → v1, datum `>= RENDER_V2_FROM` → v2
-  - `RENDER_V2_FROM` dolazi iz `NEXT_PUBLIC_RENDER_V2_FROM`; ako nije postavljen, podrazumevano je `2099-01-01` → **produkcija ostaje na v1** dok se pri deploy-u ne postavi datum prelaska (vidi [DEPLOY-CHECKLIST.md](DEPLOY-CHECKLIST.md)).
+  - `RENDER_V2_FROM` dolazi iz `NEXT_PUBLIC_RENDER_V2_FROM`; ako nije postavljen, podrazumevano je **`2000-01-01` → cela arhiva (svi datumi, thumbnailovi, OG, favoriti) je v2**. Odluka 2026-11-19: sajt skoro nije korišćen, pa nema razloga čuvati stari izgled. v1 kod ostaje u repou; ako zatreba, env promenljivom se datum prelaska može pomeriti unapred (vidi [DEPLOY-CHECKLIST.md](DEPLOY-CHECKLIST.md)).
 - `renderArt(ctx, stream, w, h, version)` u [`router.ts`](src/lib/scenarios/router.ts) — bez `version` crta najnoviju (v2).
 
 ### Rarity sistem — retki nebeski događaji (samo v2)
@@ -205,6 +212,8 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | Redak | zvezde padalice | duga | duga |
 | Epski | polarna svetlost (55%, ako ima horizont) / kometa | kometa | dupla duga |
 | Legendaran (30% glitch) | krvavi mesec | pomračenje Sunca | pomračenje Sunca |
+
+**Pod vodom** (`light: "underwater"`, scenario Podvodni svet): redak = **raža**, epski = **kit** (grbavac u daljini), legendaran = **kraken** (pipci iz dubine, iza grebena) ili 30% glitch. Crtaju se odmah u `sky()` (ispred dalekih stena, iza grebena).
 
 Ako scena nema odgovarajuće telo (npr. kosmos nema mesec ni sunce za pomračenje), legendarni događaj postaje **kvantni glitch** (trake piksela pomerene levo/desno + razdvojen crveni kanal).
 
@@ -437,14 +446,14 @@ DATABASE_URL="mysql://qrng_user:tvoja_lozinka@localhost:3306/qrng_db"
 # Opciono — apsolutni URL sajta (za OG slike, share linkove)
 NEXTAUTH_URL="http://localhost:9500"
 
-# Opciono — od kog datuma se crta render v2 (YYYY-MM-DD). Bez ovoga: 2099-01-01 (sve v1)
-NEXT_PUBLIC_RENDER_V2_FROM="2026-11-01"
+# Opciono — od kog datuma se crta render v2 (YYYY-MM-DD). Bez ovoga: 2000-01-01 (sve v2)
+NEXT_PUBLIC_RENDER_V2_FROM="2000-01-01"
 ```
 
 - **AUTH_SECRET** — generiši sa `openssl rand -base64 32`
 - **DATABASE_URL** — format za MySQL: `mysql://user:pass@host:port/dbname`
 - **NEXTAUTH_URL** — u produkciji postavi na realan domen (npr. `https://qrng-art.com`)
-- **NEXT_PUBLIC_RENDER_V2_FROM** — datum prelaska na render v2 (vidi [Verzionisanje renderera](#verzionisanje-renderera-render-v1--v2)). U `.env.development` je `2026-11-01`, pa se lokalno novembar crta u v2, a starije u v1 (lako poređenje u arhivi).
+- **NEXT_PUBLIC_RENDER_V2_FROM** — opciono, datum prelaska na render v2 (vidi [Verzionisanje renderera](#verzionisanje-renderera-render-v1--v2)). Podrazumevano i u `.env.development`: `2000-01-01` (sve v2).
 
 ### 5. Inicijalizacija baze (Drizzle)
 
@@ -532,6 +541,25 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Cela arhiva prelazi na render v2 (grana `claude`)
+
+- **Odluka** — sajt skoro nije korišćen, pa nema razloga čuvati stari (v1) izgled starih datuma: svi datumi, thumbnailovi, OG slike i favoriti crtaju se u v2.
+- **`src/lib/render-version.ts`** — `DEFAULT_V2_FROM` sa `2099-01-01` na `2000-01-01`. Produkcija posle spajanja automatski ide na v2, bez env promenljive. v1 kod (`scenarios/v1/`) ostaje u repou kao osiguranje.
+- **`.env.development`** — `NEXT_PUBLIC_RENDER_V2_FROM=2000-01-01`.
+- **Keš** — thumbnail URL za stare datume prelazi sa `&r=1` na `&r=2.1`, pa browser/CDN ne služe stare slike.
+- **Poznato** — favoriti sačuvani ranije imaju upisano ime scenarija po staroj (v1) raspodeli; slika se sada crta u v2, pa ime u profilu može da se ne poklapa sa slikom (zanemarljivo — skoro nema korisnika).
+- **README / DEPLOY-CHECKLIST** — ažurirani opis podrazumevane vrednosti i korak 2a (env promenljiva više nije potrebna).
+
+### 2026-11-19 — Novi scenario: Podvodni svet + podvodni retki događaji (grana `claude`)
+
+- **`src/lib/scenarios/underwater.ts`** — NOVO (scenario 9, samo v2): 6 paleta (uklj. ponor sa bioluminiscencijom i šumu kelpa), površina odozdo, zraci, kaustike, greben (razgranati, lepezasti i mozak-korali, sunđeri, sase, kelp), jata i tropske ribe, kornjača, meduze, riba-udičarka, sidro, plankton, mehurići. Dimenzije relativne (`s = w/1200`).
+- **`src/lib/sky-events.ts`, `src/lib/rarity.ts`** — `SkyLight` dobija `"underwater"`; novi događaji `manta` (raža, redak), `whale` (kit, epski), `kraken` (legendaran; 30% glitch).
+- **`src/lib/scenarios/router.ts`, `index.ts`** — `NUM_SCENARIOS_V2 = 10`, `SCENARIO_NAMES[9] = "Podvodni svet"`.
+- **`src/components/ArtCanvas.tsx`, `messages/*.json`** — oznake: Raža / Manta ray, Kit / Whale, Kraken.
+- **Podešavanje** — kraken je bio tanke crvene linije → debeli senčeni pipci sa pijavkama; pipci odsečeni (klip na dno, pa preko njih tamne stene) → događaji posle dalekih stena, klip na celu visinu; greben redak i sitan → 18–29 korala, veći bliže; daleke stene kao stepenasti obris grada → oble stene.
+- **Posledica** — v2 dani preraspoređeni po 10 scenarija (~10% svaki); lokalno podvodni svet: 2026-11-04, 11-17, 11-26.
+- **Verifikacija** — pregled 12 datuma + puna veličina (ponor sa krakenom, laguna) + thumbnail; render 33–90 ms; raspodela paleta ravnomerna. v1 hash nepromenjen. `tsc` i ESLint prolaze.
 
 ### 2026-11-19 — Gradovi: Pariz i Rim (grana `claude`)
 
