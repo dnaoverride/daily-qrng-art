@@ -12,11 +12,11 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 11** (raste sa novim scenarijima).
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 12** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 11
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 12
 ```
 
 `scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
@@ -38,7 +38,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
-## Scenariji (8 u v1, 11 u v2)
+## Scenariji (8 u v1, 12 u v2)
 
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
@@ -53,6 +53,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad sa znamenitostima i pravim odrazom; QRNG bira grad (Beograd 35%, Pariz 32.5%, Rim 32.5%), 6 doba dana; ime grada ispod slike |
 | 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | 6 paleta (tropski greben, duboko plavo, kelp, zalazak, ponor sa bioluminiscencijom, laguna), zraci, kaustike, greben (razgranati/lepezasti/mozak-korali, sunđeri, sase, kelp), jata i tropske ribe, kornjača, meduze, udičarka; podvodni retki događaji |
 | 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | 6 paleta (zlatni/crveni zalazak, podne, jutarnja izmaglica, noć sa Mlečnim putem, kišna sezona), ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre (siluete u zalasku i noću, u boji danju), Kilimandžaro, visoka trava |
+| 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | regioni Vojvodina (suncokret/žito, salaš sa đermom, topole), Provansa (lavanda, kamena kuća, čempresi), Toskana (brežuljci-krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba; ime regiona ispod slike |
 
 ---
 
@@ -81,6 +82,13 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Polja i ravnica (samo v2, od 2026-11-19)
+
+- **Regioni** (QRNG po težinama, ime ispod slike preko `hooks.meta`): **Vojvodina 40%** (suncokret ili žito; drvoredi topola, salaš sa đermom, dudom i plastom sena), **Provansa 30%** (lavanda ili suncokret; planina u daljini, kamena kuća sa čempresima i maslinom), **Toskana 30%** (brežuljci-krpljenac ili vinograd; kuća na brdu sa vijugavim putem i drvoredom čempresa).
+- **Nebo:** 6 paleta — morning-mist, noon, golden, sunset, blue-hour (mesec, zvezde, osvetljeni prozori), summer-storm (tamni kumulusi, zavesa kiše); boja svetla (`tint`) i zatamnjenje (`dim`) se primenjuju na tlo, useve i kuće.
+- **Polje:** redovi useva kao klinovi ka tački nestajanja (suncokret, lavanda, vinograd sa kočićima); žito bez redova — zlatno polje sa tragovima traktora, talasima vetra i okruglim balama sena (55%); Toskana — krpe različitih useva sa kosim, zakrivljenim međama i brazdama.
+- **Prvi plan:** veliki suncokreti (glava okrenuta ka suncu), žbunovi lavande, klasje sa bulkama, loza sa grožđem.
 
 ### Savana (samo v2, od 2026-11-19)
 
@@ -548,6 +556,15 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Novi scenario: Polja i ravnica (Vojvodina, Provansa, Toskana) (grana `claude`)
+
+- **`src/lib/scenarios/fields.ts`** — NOVO (scenario 11, samo v2): 3 regiona sa težinama 40 / 30 / 30, 6 paleta neba (uklj. letnju oluju i plavi sat), redovi useva u perspektivi (suncokret, lavanda, vinograd), žito sa tragovima traktora i balama sena, toskanski brežuljci-krpljenac, salaš sa đermom, provansalska kamena kuća, toskanska kuća na brdu sa putem i čempresima, prvi plan (suncokreti, lavanda, klasje i bulke, loza). Dimenzije relativne (`s = w/1200`).
+- **`src/lib/scenarios/router.ts`, `index.ts`** — `NUM_SCENARIOS_V2 = 12`, `SCENARIO_NAMES[11] = "Polja"`.
+- **`messages/sr.json`, `messages/en.json`** — `scene.place.vojvodina`, `provence` (Provansa / Provence), `tuscany` (Toskana / Tuscany).
+- **Podešavanje** — toskanske krpe su bile pravougaonici sa vertikalnim ivicama i horizontalnim trakama senke → kose zakrivljene međe, bez traka; prazno žito → tragovi traktora + okrugle bale sena.
+- **Posledica** — v2 dani preraspoređeni po 12 scenarija (~8% svaki); lokalno polja: 2026-11-21, 11-28.
+- **Verifikacija** — pregled 12 datuma + puna veličina (Toskana, Vojvodina sa balama) + thumbnail; regioni na 150 dana: 39 / 32 / 29%. v1 hash nepromenjen. `tsc` i ESLint prolaze.
 
 ### 2026-11-19 — Novi scenario: Savana (grana `claude`)
 

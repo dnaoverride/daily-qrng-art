@@ -23,11 +23,12 @@ import { renderLake } from "./lake";
 import { renderCities } from "./cities";
 import { renderUnderwater } from "./underwater";
 import { renderSavanna } from "./savanna";
+import { renderFields } from "./fields";
 
 /** Broj scenarija u v1 (zamrznuto — ne menjati). */
 export const NUM_SCENARIOS_V1 = 8;
 /** Broj scenarija u v2 (raste sa novim scenarijima). */
-export const NUM_SCENARIOS_V2 = 11;
+export const NUM_SCENARIOS_V2 = 12;
 /** @deprecated koristi scenarioCount(version) — zadržano zbog kompatibilnosti (v1 broj). */
 export const NUM_SCENARIOS = NUM_SCENARIOS_V1;
 
@@ -120,6 +121,9 @@ function renderArtV2(
       break;
     case 10:
       renderSavanna(ctx, stream, w, h, hooks);
+      break;
+    case 11:
+      renderFields(ctx, stream, w, h, hooks);
       break;
     default:
       renderLandscape(ctx, stream, w, h, hooks);

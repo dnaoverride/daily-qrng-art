@@ -232,7 +232,10 @@
     "place": {
       "belgrade": "Belgrade",
       "paris": "Paris",
-      "rome": "Rome"
+      "rome": "Rome",
+      "vojvodina": "Vojvodina",
+      "provence": "Provence",
+      "tuscany": "Tuscany"
     }
   }
 }

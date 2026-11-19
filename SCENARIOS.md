@@ -22,7 +22,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ```
 v1:  (v0 ^ v1 ^ v2 ^ v3) % 8  →  12.5% po scenariju (zamrznuto)
-v2:  (v0 ^ v1 ^ v2 ^ v3) % 11  →  ~9.1% po scenariju (raste sa novim scenarijima)
+v2:  (v0 ^ v1 ^ v2 ^ v3) % 12  →  ~8.3% po scenariju (raste sa novim scenarijima)
 ```
 
 ---
@@ -58,6 +58,7 @@ v2:  (v0 ^ v1 ^ v2 ^ v3) % 11  →  ~9.1% po scenariju (raste sa novim scenariji
 | 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad, pravi odraz; Beograd (Hram, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan, Most na Adi, splav), Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, mansarde, most, bateau-mouche), Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije) |
 | 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | greben, kelp, jata i tropske ribe, kornjača, meduze, udičarka, zraci i kaustike; ponor sa bioluminiscencijom |
 | 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku i noću |
+| 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | Vojvodina / Provansa / Toskana: redovi useva u perspektivi, žito sa balama, brežuljci-krpljenac, salaš sa đermom, kamena kuća, put sa čempresima |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -226,6 +227,15 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ---
 
+### 11. Polja i ravnica (`fields.ts`) — samo v2
+
+- **Regioni** `REGIONS` (težine): Vojvodina 40 (suncokret 50% / žito 50%), Provansa 30 (lavanda 75% / suncokret 25%), Toskana 30 (krpljenac 60% / vinograd 40%); `hooks.meta({ place })`
+- **Nebo**: 6 paleta — morning-mist, noon, golden, sunset, blue-hour, summer-storm; `shade()` = mešanje sa `tint` + zatamnjenje `dim`
+- **Redosled crtanja**: 1) nebo + zvezde → (hooks.sky) → 2) sunce/mesec → (hooks.body) → 3) kumulusi (+ zavesa kiše u oluji) → 4) daleki pejzaž (topole i šumarci / planina + brežuljci / brežuljci) → 5) polje (redovi ka tački nestajanja ili krpljenac) → 6) kuća regiona (80%) → 7) prvi plan → 8) ptice
+- **Parametri**: horizont h × 0.42–0.54; tačka nestajanja x = w × 0.25–0.75; redovi 34 (vinograd 26), raspon 2.6 w; 2600 tačaka vrhova redova; bale 6–15 (55%); krpljenac 4 sloja brda, međe nagnute ±110 × s
+
+---
+
 ## 5. Matrica: efekti po scenariju (v2)
 
 | Efekat | Pejzaž | Plaža | Zalazak | Pustinja | Noćni grad | Kosmos | Šuma | Jezero |
@@ -330,6 +340,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
 | 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
 | 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
+| 2026-11-19 | Polja (novo, v2) | Scenario 11: Vojvodina (suncokret/žito, salaš sa đermom, topole, bale), Provansa (lavanda, kamena kuća), Toskana (krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba. v2 bira `% 12`. |
 | 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |
