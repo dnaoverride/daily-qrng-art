@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: false,
   async headers() {
+    // Samo produkcija: tamo su imena chunk-ova content-hash-ovana, pa je immutable bezbedan.
+    // U dev-u (Turbopack) imena NISU hash sadržaja — immutable bi zaglavio stari JS u browseru.
+    if (process.env.NODE_ENV !== "production") return [];
     return [
       {
         source: "/_next/static/:path*",

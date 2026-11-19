@@ -44,7 +44,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | plavo nebo, sunce, more, pesak (ridgePoints), palme |
 | 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | v2: 8 paleta (uklj. plavi sat), sunce na različitim visinama, oblaci obasjani odozdo, svetlosna staza, silueta (obala/jedrilica/svetionik), ptice |
 | 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | toplo nebo, dune (ridgePoints), base sand fill |
-| 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | tamno nebo, zvezde, mesec, zgrade-siluete, prozori |
+| 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | v2: 6 paleta, 3 sloja zgrada u izmaglici, raznovrsni krovovi, prozori po spratovima, pun mesec/srp, reka sa odrazima ili ulica sa svetiljkama |
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | planete, zvezde (crtaju se pre planeta) |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | dan/noć, drveće (stablo + krošnja), ptice/sove/šišmiši/veverica |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | nebo, voda 2/3, brda-traka, refleks, ptice |
@@ -75,7 +75,18 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - Nebo plavo (hue 200–240)
 - More plavo-tirkiz gradijent
 
-### Noćni grad
+### Noćni grad (v2, od 2026-11-19)
+
+- **Palete:** 6 (midnight, neon-violet, teal, smog-amber, winter, indigo) — svaka ima boju svetlosnog zagađenja pri horizontu, topla i hladna svetla prozora i udeo hladnih prozora.
+- **Grad u 3 sloja:** dalji slojevi mešani sa bojom horizonta (0.62 / 0.35 / 0) + izmaglica između slojeva → dubina.
+- **Krovovi:** ravni (sa kućicom), stepenasti, toranj sa antenom, kupola, kosi, vodotoranj; ~12% zgrada je 1.6× viša.
+- **Prozori:** mreža po spratovima; 25% spratova potpuno mračno, ostali sa različitim udelom upaljenih; topli/hladni po zgradi.
+- **Crvena svetla:** samo srednji i bliži sloj, ~35% visokih zgrada (prva verzija ih je imala na svim zgradama — previše).
+- **Mesec:** pun (sa blagim „morima") ili srp (45%), meki sjaj; tanki oblaci obasjani mesecom (45%).
+- **Reka (50%):** prigušeni odrazi zgrada + vertikalne isprekidane crtice od svetala + odsjaj meseca. **Bez reke:** ulica sa toplim sjajem i svetiljkama (stub + lampa + krug svetla).
+- **QRNG vs PRNG:** odluke (paleta, reka, horizont, gustina, mesec) iz QRNG-a; zgrade, prozori, zvezde iz `prngFromStream`.
+
+### Noćni grad (v1)
 
 - Popunjavanje podloge ispod horizonta tamnom bojom (`fillRect`) da ne probija boja prethodnog scenarija (npr. zelena iz Šume)
 
@@ -145,7 +156,7 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
 **Keš thumbnail/OG slika — `RENDER_REVISION`:** `/api/og-image` kešira u memoriji (LRU), a odgovor ima `max-age=3600, s-maxage=86400` (browser/CDN). Da se posle izmene izgleda ne služi stara slika:
 
 - `RENDER_REVISION` u [`render-version.ts`](src/lib/render-version.ts) (`{ 1: "1", 2: "2.1" }`) ulazi u ključ memorijskog keša, a [`ArchiveThumbnail`](src/components/ArchiveThumbnail.tsx) dodaje `&r=<revizija>` u URL, pa browser i CDN dobijaju novi URL.
-- **Pravilo:** pri svakoj vizuelnoj izmeni v2 koja ide na produkciju povećaj v2 reviziju (`2.1` → `2.2` …). v1 se nikad ne menja.
+- **Pravilo:** pri svakoj vizuelnoj izmeni v2 koja ide na produkciju povećaj v2 reviziju (`2.1` → `2.2` …). v1 se nikad ne menja. Dok v2 nije prvi put deploy-ovan, revizija ostaje `2.1`.
 - **Development:** bez ikakvog keša (`Cache-Control: no-store`, bez LRU), pa se izmene renderera odmah vide u arhivi.
 
 **Poznato ograničenje:** favorit sačuvan danas iz *stare* arhivske slike (v1 datum) prikazuje se u v2, jer favorit ne pamti datum slike, samo datum snimanja. Rešava se kolonom `renderVersion` u `Favorite` tabeli kad bude potrebno.
@@ -434,6 +445,20 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Dev: browser keširao stari JavaScript (grana `claude`)
+
+- **Problem** — posle izmene noćnog grada thumbnailovi (server) su bili novi, a `/art/[date]` (crta browser) i dalje star. Uzrok: `next.config.ts` je slao `Cache-Control: public, max-age=31536000, immutable` za `/_next/static/*` i u developmentu. Turbopack u dev-u ne koristi content-hash u imenima chunk-ova (npr. `src_4dbc9eb1._.js`), pa je browser zadržavao stari kod do godinu dana.
+- **`next.config.ts`** — `headers()` vraća immutable header samo kad je `NODE_ENV === "production"` (tamo su chunk-ovi hash-ovani, keš je ispravan). U dev-u Next sada šalje `no-store, must-revalidate`.
+- **Napomena** — chunk-ovi koje je browser već keširao pre ove izmene traže jednom hard reload (Ctrl+Shift+R) ili „Clear browsing data → Cached images and files".
+
+### 2026-11-19 — Noćni grad v2 (grana `claude`)
+
+- **`src/lib/scenarios/city-night.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 6 noćnih paleta sa svetlosnim zagađenjem, 3 sloja zgrada sa atmosferskom perspektivom i izmaglicom, 6 tipova krovova, prozori u mreži po spratovima (topli/hladni), crvena svetla na delu visokih zgrada, pun mesec ili srp, tanki oblaci, reka sa odrazima i odsjajima svetala ili ulica sa svetiljkama. Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — crvena svetla ograničena na srednji/bliži sloj i ~35% visokih zgrada; jači odsjaji u reci; ulične svetiljke dobile stub i krug svetla na tlu (bile su pravilne kugle).
+- **Verifikacija** — pregled 12 datuma + puna veličina (reka i ulica) + thumbnail; render 32–52 ms. v1 hash identičan originalnom kodu (`ba738be`) i za datume sa noćnim gradom (2026-11-06, 2026-11-09). `tsc` i ESLint prolaze.
+- **`RENDER_REVISION`** — ostaje `2.1`: v2 još nije bio na produkciji, pa nema starih thumbnailova u kešu.
+- **README / SCENARIOS** — sekcija „Noćni grad (v2)", tabela scenarija, opis scenarija i changelog.
 
 ### 2026-11-19 — Thumbnailovi u arhivi prate izmene renderera (grana `claude`)
 
