@@ -206,5 +206,23 @@
     "backHome": "← Back to home",
     "errorWrongCredentials": "Wrong email or password.",
     "errorRegister": "Registration error."
+  },
+  "rarity": {
+    "tier": {
+      "rare": "Rare",
+      "epic": "Epic",
+      "legendary": "Legendary"
+    },
+    "event": {
+      "meteors": "Shooting stars",
+      "rainbow": "Rainbow",
+      "comet": "Comet",
+      "aurora": "Aurora",
+      "doubleRainbow": "Double rainbow",
+      "eclipse": "Solar eclipse",
+      "bloodMoon": "Blood moon",
+      "glitch": "Quantum glitch"
+    },
+    "hint": "Rare sky event — appears on about 30% of days"
   }
 }

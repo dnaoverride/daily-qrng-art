@@ -5,12 +5,14 @@ import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints, drawSunGlow } from "../draw-utils";
 import { drawRecursiveBranch, DECIDUOUS_PARAMS } from "../tree-lsystem";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 export function renderLake(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const horizonY = Math.floor(h * (0.32 + 0.06 * stream.next_f()));
   const isNight = stream.next_f() < 0.3;
@@ -25,6 +27,7 @@ export function renderLake(
   skyGrad.addColorStop(1, rgbString(skyBot));
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, w, horizonY);
+  hooks.sky({ horizonY, light: isNight ? "night" : "day" });
 
   const sunX = Math.floor(w * (0.3 + 0.4 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.25 + 0.2 * stream.next_f()));
@@ -34,6 +37,7 @@ export function renderLake(
   const glowColor: RGB = isNight ? [235, 240, 255] : [255, 248, 220];
   const coreColor: RGB = isNight ? [245, 248, 255] : [255, 252, 240];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 16);
+  hooks.body({ x: sunX, y: sunY, r: sunR, kind: isNight ? "moon" : "sun" });
 
   const numBirds = stream.next_int(2, 6);
   ctx.save();

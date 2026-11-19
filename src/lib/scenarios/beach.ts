@@ -5,6 +5,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints, drawSunGlow } from "../draw-utils";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 function drawPalmFronds(
   ctx: CanvasRenderingContext2D,
@@ -56,7 +57,8 @@ export function renderBeach(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const skyHue = 200 + stream.next_int(0, 40);
   const horizonY = Math.floor(h * (0.45 + 0.15 * stream.next_f()));
@@ -70,6 +72,7 @@ export function renderBeach(
   skyGrad.addColorStop(1, rgbString(skyBot));
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, w, horizonY);
+  hooks.sky({ horizonY, light: "day" });
 
   const sunX = Math.floor(w * (0.3 + 0.4 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.25 + 0.2 * stream.next_f()));
@@ -77,6 +80,7 @@ export function renderBeach(
   const glowColor: RGB = [255, 220, 180];
   const coreColor: RGB = [255, 248, 220];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 17);
+  hooks.body({ x: sunX, y: sunY, r: sunR, kind: "sun" });
 
   const seaTop = hslToRgb(195 + stream.next_int(0, 15), 0.65, 0.38);
   const seaMid = hslToRgb(185 + stream.next_int(0, 20), 0.6, 0.3);

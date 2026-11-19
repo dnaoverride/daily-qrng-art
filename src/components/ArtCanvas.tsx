@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
+import type { RarityEvent, RarityResult, RarityTier } from "@/lib/rarity";
 import {
   currentRenderVersion,
   renderVersionForDate,
@@ -11,6 +13,24 @@ import {
 
 const W = 1200;
 const H = 675;
+
+/** Ključ prevoda (messages → rarity.event.*) za događaj. */
+const EVENT_KEY: Record<RarityEvent, string> = {
+  meteors: "meteors",
+  rainbow: "rainbow",
+  comet: "comet",
+  aurora: "aurora",
+  "double-rainbow": "doubleRainbow",
+  eclipse: "eclipse",
+  "blood-moon": "bloodMoon",
+  glitch: "glitch",
+};
+
+const TIER_STYLE: Record<Exclude<RarityTier, "common">, string> = {
+  rare: "border-sky-500/40 bg-sky-500/10 text-sky-300",
+  epic: "border-violet-500/40 bg-violet-500/10 text-violet-300",
+  legendary: "border-amber-400/50 bg-amber-400/10 text-amber-300",
+};
 
 interface ArtCanvasProps {
   values: number[];
@@ -36,6 +56,9 @@ export function ArtCanvas({
     renderVersion ?? (date ? renderVersionForDate(date) : currentRenderVersion());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
+  const [rarity, setRarity] = useState<RarityResult | null>(null);
+  const tArt = useTranslations("art");
+  const tRarity = useTranslations("rarity");
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -45,7 +68,8 @@ export function ArtCanvas({
     if (!ctx) return;
 
     const stream = new QRNGStream(values);
-    renderArt(ctx, stream, W, H, version);
+    const result = renderArt(ctx, stream, W, H, version);
+    setRarity(result.rarity);
     setReady(true);
     onCanvasReady?.(canvas);
   }, [values, version, onCanvasReady]);
@@ -65,7 +89,18 @@ export function ArtCanvas({
       />
       {date && ready && (
         <p className="mt-2 text-sm text-zinc-500 text-center">
-          Slika za {date}
+          {tArt("title", { date })}
+        </p>
+      )}
+      {ready && rarity && rarity.tier !== "common" && rarity.event && (
+        <p className="mt-2 flex justify-center">
+          <span
+            title={tRarity("hint")}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-medium ${TIER_STYLE[rarity.tier]}`}
+          >
+            <span aria-hidden>✦</span>
+            {tRarity(`tier.${rarity.tier}`)} · {tRarity(`event.${EVENT_KEY[rarity.event]}`)}
+          </span>
         </p>
       )}
     </div>

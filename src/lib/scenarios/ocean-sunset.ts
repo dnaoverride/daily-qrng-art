@@ -13,6 +13,7 @@ import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints } from "../draw-utils";
 import { prngFromStream, type Rand } from "../prng";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 interface SunsetPalette {
   name: string;
@@ -118,7 +119,8 @@ export function renderOceanSunset(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const s = w / 1200;
 
@@ -200,6 +202,9 @@ export function renderOceanSunset(
     const ch = (8 + 22 * stream.next_f()) * s;
     drawLitCloud(ctx, rand, cx, cy, cw, ch, sunX, sunY, w, cloudLit, cloudShade, warmth);
   }
+
+  hooks.sky({ horizonY, light: pal.sunBelow ? "night" : "dusk" });
+  if (!pal.sunBelow) hooks.body({ x: sunX, y: sunY, r: sunR, kind: "sun" });
 
   // ---- 5. Izmaglica na horizontu ----
   const hazeH = h * 0.06;

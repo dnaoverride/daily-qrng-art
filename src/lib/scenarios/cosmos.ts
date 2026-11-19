@@ -3,6 +3,7 @@
  */
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString } from "../color";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 const PLANET_COLOR_TYPES: {
   hueMin: number;
@@ -93,7 +94,8 @@ export function renderCosmos(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const bgTop = hslToRgb(250 + stream.next_int(0, 30), 0.55, 0.045);
   const bgBot = hslToRgb(270 + stream.next_int(0, 25), 0.45, 0.02);
@@ -102,6 +104,8 @@ export function renderCosmos(
   bgGrad.addColorStop(1, rgbString(bgBot));
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, w, h);
+  // Svemir: nema horizonta ni sunca/meseca za pomračenje → legendarno = glitch
+  hooks.sky({ horizonY: h, light: "night", hasHorizon: false });
 
   const sunX = stream.next_int(w * 0.15, w * 0.85);
   const sunY = stream.next_int(h * 0.1, h * 0.4);

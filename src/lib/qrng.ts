@@ -27,6 +27,11 @@ export class QRNGStream {
     return this.state;
   }
 
+  /** Sirovih 1000 vrednosti (samo čitanje; ne pomera stream). Koristi rarity sistem. */
+  getValues(): readonly number[] {
+    return this.values;
+  }
+
   next_u16(): number {
     if (this.i < this.values.length) {
       const v = this.values[this.i]! & 0xffff;

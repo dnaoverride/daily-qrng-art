@@ -5,12 +5,14 @@
 import type { QRNGStream } from "./qrng";
 import { hslToRgb, rgbString, type RGB } from "./color";
 import { ridgePoints, drawSunGlow } from "./draw-utils";
+import { NO_HOOKS, type SceneHooks } from "./sky-events";
 
 export function renderLandscape(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const sceneRoll = stream.next_f();
   const scene =
@@ -88,6 +90,7 @@ export function renderLandscape(
   }
 
   const horizon = Math.floor(h * (0.53 + 0.07 * stream.next_f()));
+  hooks.sky({ horizonY: horizon, light: scene === "night" ? "night" : scene === "day" ? "day" : "dusk" });
   // Zeleno (šuma) ili tamno siva (kamenje) — zelena dominantna (90%)
   const mountainsStyle = stream.next_f() < 0.9 ? "green" : "stone";
 
@@ -194,6 +197,7 @@ export function renderLandscape(
     scene === "night" ? 5 : 8,
     scene === "night" ? 0.06 : 0.09
   );
+  hooks.body({ x: cx, y: cy, r: radius, kind: scene === "night" ? "moon" : "sun" });
 
   if (scene !== "night") {
     const clouds = stream.next_int(6, 14);

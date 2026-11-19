@@ -5,12 +5,14 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { drawSunGlow, fillStrokeEllipse } from "../draw-utils";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 export function renderForest(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const isNight = stream.next_f() < 0.25;
   const isSunset = !isNight && stream.next_f() < 0.35;
@@ -28,6 +30,7 @@ export function renderForest(
   skyGrad.addColorStop(1, rgbString(skyBot));
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, w, horizonY);
+  hooks.sky({ horizonY, light: isNight ? "night" : isSunset ? "dusk" : "day" });
 
   const sunX = Math.floor(w * (0.2 + 0.6 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.15 + 0.3 * stream.next_f()));
@@ -37,6 +40,7 @@ export function renderForest(
   const glowColor: RGB = isNight ? [235, 240, 255] : [255, 240, 200];
   const coreColor: RGB = isNight ? [245, 248, 255] : [255, 250, 230];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, isNight ? 10 : 16);
+  hooks.body({ x: sunX, y: sunY, r: sunR, kind: isNight ? "moon" : "sun" });
 
   if (isNight) {
     const stars = stream.next_int(200, 400);

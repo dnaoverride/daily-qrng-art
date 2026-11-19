@@ -12,6 +12,10 @@ Analiza svih scenarija: šta se može iscrtati, koji efekti postoje, parametri i
 
 Od 2026-11-19 postoje dve verzije: **v1** (zamrznuta, `src/lib/scenarios/v1/`, sve slike pre `RENDER_V2_FROM`) i **v2** (aktivna, `src/lib/scenarios/*.ts`). Opisi u ovom dokumentu važe za v2; v1 je stanje od 2026-11-18. Detalji u [README](README.md#verzionisanje-renderera-render-v1--v2).
 
+### Rarity hook-ovi (v2)
+
+Svaki v2 scenario mora pozvati `hooks.sky({ horizonY, light })` odmah posle neba i `hooks.body({ x, y, r, kind })` posle sunca/meseca. `light`: pejzaž po sceni (sunrise/sunset = dusk), plaža i pustinja = day, šuma = day/dusk/night, jezero = day/night, zalazak = dusk (plavi sat = night), noćni grad = night, kosmos = night bez horizonta.
+
 ### Izbor scenarija
 
 Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a:
@@ -252,5 +256,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Svi (v2) | Post-fx sloj (`src/lib/post-fx.ts`) posle svakog scenarija: S-kontrast, split-tone (5 parova), vinjeta, film grain. Troši 7 QRNG vrednosti posle scene. |
 | 2026-11-19 | Zalazak (v2) | Prepisan: 8 paleta (uklj. plavi sat), sunce na različitim visinama sa mekim sjajem, oblaci obasjani odozdo, izmaglica, refleks neba u vodi, svetlosna staza u perspektivi, siluete (obala/jedrilica/svetionik), ptice. Detalji iz `prng.ts`. |
 | 2026-11-19 | Noćni grad (v2) | Prepisan: 6 paleta, 3 sloja zgrada sa izmaglicom, 6 tipova krovova, prozori po spratovima, crvena svetla (35% visokih), pun mesec/srp, oblaci, reka sa odrazima ili ulica sa svetiljkama. |
+| 2026-11-19 | Svi (v2) | Rarity hook-ovi: `hooks.sky(...)` posle neba (horizont + dan/sumrak/noć) i `hooks.body(...)` posle sunca/meseca u svih 8 scenarija. Retki događaji (duga, zvezde padalice, kometa, polarna svetlost, pomračenje, krvavi mesec, glitch) — vidi README → Rarity sistem. Obični dani nepromenjeni. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

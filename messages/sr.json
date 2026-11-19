@@ -206,5 +206,23 @@
     "count": "{count} uint16 vrednosti",
     "copied": "Kopirano!",
     "copyJson": "Kopiraj JSON"
+  },
+  "rarity": {
+    "tier": {
+      "rare": "Retko",
+      "epic": "Epsko",
+      "legendary": "Legendarno"
+    },
+    "event": {
+      "meteors": "Zvezde padalice",
+      "rainbow": "Duga",
+      "comet": "Kometa",
+      "aurora": "Polarna svetlost",
+      "doubleRainbow": "Dupla duga",
+      "eclipse": "Pomračenje Sunca",
+      "bloodMoon": "Krvavi mesec",
+      "glitch": "Kvantni glitch"
+    },
+    "hint": "Retki nebeski događaj — pojavljuje se u oko 30% dana"
   }
 }

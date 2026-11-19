@@ -13,6 +13,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 type HSL = [number, number, number];
 
@@ -121,7 +122,8 @@ export function renderCityNight(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const s = w / 1200;
 
@@ -232,6 +234,9 @@ export function renderCityNight(
       ctx.fill();
     }
   }
+
+  hooks.sky({ horizonY: groundY, light: "night" });
+  hooks.body({ x: moonX, y: moonY, r: moonR, kind: "moon" });
 
   // ---- 5. Zgrade u 3 sloja (dalji → bliži) ----
   const layers = [

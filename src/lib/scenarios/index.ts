@@ -1,4 +1,4 @@
-export { renderArt, NUM_SCENARIOS } from "./router";
+export { renderArt, NUM_SCENARIOS, type RenderResult } from "./router";
 export const SCENARIO_NAMES: Record<number, string> = {
   0: "Pejzaž",
   1: "Plaža",

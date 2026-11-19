@@ -4,12 +4,14 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints, drawSunGlow, fillStrokeEllipse } from "../draw-utils";
+import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 export function renderDesert(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,
-  h: number
+  h: number,
+  hooks: SceneHooks = NO_HOOKS
 ): void {
   const horizonY = Math.floor(h * (0.48 + 0.1 * stream.next_f()));
 
@@ -22,6 +24,7 @@ export function renderDesert(
   skyGrad.addColorStop(1, rgbString(skyBot));
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, w, horizonY);
+  hooks.sky({ horizonY, light: "day" });
 
   const sunX = Math.floor(w * (0.4 + 0.35 * stream.next_f()));
   const sunY = Math.floor(horizonY * (0.25 + 0.25 * stream.next_f()));
@@ -29,6 +32,7 @@ export function renderDesert(
   const glowColor: RGB = [255, 200, 140];
   const coreColor: RGB = [255, 235, 200];
   drawSunGlow(ctx, sunX, sunY, sunR, glowColor, coreColor, 14);
+  hooks.body({ x: sunX, y: sunY, r: sunR, kind: "sun" });
 
   const sandHue = 35 + stream.next_int(0, 20);
   const baseSand = hslToRgb(sandHue, 0.4, 0.38);

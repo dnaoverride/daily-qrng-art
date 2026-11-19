@@ -132,6 +132,29 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
   - `RENDER_V2_FROM` dolazi iz `NEXT_PUBLIC_RENDER_V2_FROM`; ako nije postavljen, podrazumevano je `2099-01-01` → **produkcija ostaje na v1** dok se pri deploy-u ne postavi datum prelaska (vidi [DEPLOY-CHECKLIST.md](DEPLOY-CHECKLIST.md)).
 - `renderArt(ctx, stream, w, h, version)` u [`router.ts`](src/lib/scenarios/router.ts) — bez `version` crta najnoviju (v2).
 
+### Rarity sistem — retki nebeski događaji (samo v2)
+
+**Nivo retkosti** — [`src/lib/rarity.ts`](src/lib/rarity.ts): FNV-1a hash nad svih 1000 brojeva → 70% običan, 20% redak, 8% epski, 2% legendaran (provereno na 1500 dana: 68 / 21 / 8.6 / 2%). Ne troši `QRNGStream`, pa **obični dani izgledaju piksel-identično** kao bez rarity sistema.
+
+**Događaj zavisi od scene** — [`src/lib/sky-events.ts`](src/lib/sky-events.ts):
+
+| Nivo | Noć | Sumrak | Dan |
+|---|---|---|---|
+| Redak | zvezde padalice | duga | duga |
+| Epski | polarna svetlost (55%, ako ima horizont) / kometa | kometa | dupla duga |
+| Legendaran (30% glitch) | krvavi mesec | pomračenje Sunca | pomračenje Sunca |
+
+Ako scena nema odgovarajuće telo (npr. kosmos nema mesec ni sunce za pomračenje), legendarni događaj postaje **kvantni glitch** (trake piksela pomerene levo/desno + razdvojen crveni kanal).
+
+**Hook-ovi u scenarijima** — svaki v2 scenario prima opcioni `hooks: SceneHooks`:
+
+- `hooks.sky({ horizonY, light, hasHorizon })` — odmah posle neba, **pre prednjeg plana**, pa su duga/kometa/polarna svetlost iza drveća, zgrada i planina (klipovano na `y < horizonY`).
+- `hooks.body({ x, y, r, kind })` — posle sunca/meseca; pomračenje i krvavi mesec crtaju se posle scene, pre post-fx-a.
+
+`renderArt` vraća `RenderResult { version, scenarioIndex, rarity }`. [`ArtCanvas`](src/components/ArtCanvas.tsx) ispod slike prikazuje oznaku (npr. „✦ Epsko · Kometa"), prevodi su u `messages/*.json` → `rarity`.
+
+**Novi scenario:** pozvati `hooks.sky(...)` posle neba i `hooks.body(...)` posle sunca/meseca — bez toga dobija samo legendarni glitch.
+
 ### Post-fx sloj (samo v2)
 
 [`src/lib/post-fx.ts`](src/lib/post-fx.ts) — poziva se na kraju `renderArt` za v2, posle scenarija. Jedan prolaz kroz piksele (`getImageData`/`putImageData`), **bez `ctx.filter` i composite modova**, da browser i server (`@napi-rs/canvas`) daju isti rezultat.
@@ -277,6 +300,8 @@ src/
 │   ├── render-version.ts       # Verzija renderera po datumu (v1 zamrznut / v2 aktivan)
 │   ├── post-fx.ts              # v2 post-fx: kontrast, split-tone, vinjeta, grain
 │   ├── prng.ts                 # mulberry32 + prngFromStream (sitni detalji u v2)
+│   ├── rarity.ts               # nivo retkosti iz hash-a 1000 brojeva
+│   ├── sky-events.ts           # hook-ovi scenarija + crtanje retkih događaja
 │   └── scenarios/
 │       ├── router.ts, index.ts # renderArt(..., version) — v2 + dispatch na v1
 │       ├── beach.ts, ocean-sunset.ts, desert.ts
@@ -445,6 +470,19 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Rarity sistem: retki nebeski događaji (grana `claude`)
+
+- **`src/lib/rarity.ts`** — NOVO: `valuesHash` (FNV-1a), `rarityTier` (2% / 8% / 20% / 70%), `rarityRand`. Ne troši `QRNGStream`.
+- **`src/lib/sky-events.ts`** — NOVO: `SceneHooks` (`sky`, `body`), `createSceneHooks` + crtanje: zvezde padalice, duga, dupla duga (sa Aleksandrovom trakom), kometa (prašinasti + jonski rep), polarna svetlost (zavese u 2–3 trake), pomračenje Sunca (korona, streameri, dijamantski prsten, potamnjena scena), krvavi mesec, kvantni glitch.
+- **Scenariji v2** (`landscape.ts`, `beach`, `desert`, `forest`, `lake`, `cosmos`, `ocean-sunset`, `city-night`) — opcioni parametar `hooks`, poziv `hooks.sky(...)` posle neba i `hooks.body(...)` posle sunca/meseca. Bez događaja slika je nepromenjena.
+- **`src/lib/scenarios/router.ts`** — `renderArt` vraća `RenderResult { version, scenarioIndex, rarity }`; v2 pravi hook-ove, posle scene `finish()` (legendarni), pa post-fx.
+- **`src/lib/qrng.ts`** — samo novi getter `getValues()` (ne menja stream; v1 nepromenjen).
+- **`src/components/ArtCanvas.tsx`** — oznaka retkosti ispod slike (boja po nivou); caption „Slika za {date}" sada iz prevoda (`art.title`) umesto fiksnog srpskog teksta.
+- **`messages/sr.json`, `messages/en.json`** — nova sekcija `rarity` (nivoi, događaji, hint).
+- **Podešavanje** — zvezde padalice u svetlom sumraku (šuma) se nisu videle → u sumraku redak događaj je duga, zvezde padalice samo noću.
+- **Verifikacija** — 1500 dana: raspodela 68 / 21 / 8.6 / 2%; 42 obična dana piksel-identična v2 pre izmene; pregledan primer svakog događaja; v1 nepromenjen. `tsc` i ESLint prolaze. Lokalno (novembar = v2): duga 2., 5. i 10. 11., zvezde padalice 24. 11., glitch 21. 11., pomračenje 29. 11.
+- **README** — sekcija „Rarity sistem", struktura projekta.
 
 ### 2026-11-19 — Dev: browser keširao stari JavaScript (grana `claude`)
 
