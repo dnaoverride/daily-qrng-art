@@ -81,7 +81,7 @@ Novi fajl `src/lib/post-fx.ts`, poziva se na kraju `renderArt`:
 4. **Bloom/halo oko sunca i meseca** koji prelazi preko siluete (sada je oštro odsečeno).
 5. **Color grading**: blagi split-tone (topli highlights, hladne senke), sa parametrima iz palete.
 
-### 4.2 Kurirane palete
+### 4.2 Kurirane palete — 🟡 započeto 2026-11-19 (8 paleta u zalasku; ostali scenariji slede)
 - Biblioteka od 30–50 ručno izabranih harmoničnih paleta (`src/lib/palettes.ts`), svaka sa 5–7 boja i ulogama (`skyTop`, `skyBottom`, `sun`, `far`, `mid`, `near`, `accent`).
 - QRNG bira paletu, a zatim pravi male pomake hue/lightness (±5–8%) da nijedna slika ne bude identična.
 - Postojeća pravila iz README (nebo nikad zeleno, sunce toplo…) postaju svojstva palete umesto `if`-ova.
@@ -100,7 +100,7 @@ QRNG bira stil nezavisno od scenarija, pa 8 scenarija × 5 stilova = 40 vizuelni
 
 ### 4.4 Konkretno po scenariju
 
-**Zalazak nad vodom** ([ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts)), najhitnije:
+**Zalazak nad vodom** ([ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts)) — ✅ urađeno 2026-11-19 (v2):
 - paleta iz biblioteke umesto fiksnih hue-ova,
 - oblaci obasjani odozdo (topla donja ivica, tamna gornja),
 - sunce delimično ispod horizonta, iznad ili pokriveno oblacima,

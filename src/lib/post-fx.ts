@@ -13,6 +13,7 @@
  * Parametri se biraju iz QRNG stream-a POSLE scenarija, pa ne utiču na samu scenu.
  */
 import type { QRNGStream } from "./qrng";
+import { mulberry32 } from "./prng";
 
 type Tint = readonly [number, number, number];
 
@@ -49,18 +50,6 @@ export function pickPostFxParams(stream: QRNGStream): PostFxParams {
     contrast: 0.12 + 0.12 * stream.next_f(),
     tone: SPLIT_TONES[stream.next_int(0, SPLIT_TONES.length - 1)]!,
     seed: seed || 1,
-  };
-}
-
-/** mulberry32 — brz deterministički PRNG za grain (ne troši QRNG). */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 

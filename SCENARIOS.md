@@ -73,14 +73,19 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 2. Zalazak (`ocean-sunset.ts`)
+### 2. Zalazak (`ocean-sunset.ts`) — v2
 
-- **Varijacije**: fiksno zalazak nad vodom
-- **Redosled crtanja**: 1) nebo (4-stop gradient: toplo → ljubičasto → plavo → tamno) → 2) sunce na horizontu (drawSunGlow) → 3) voda (4-stop sa refleksom) → 4) talasi (5–12 ridgePoints stroke linija)
+> v1 (do `RENDER_V2_FROM`): fiksni 4-stop gradijent (hue 15–35 / 290–320 / 250–270 / 240), sunce uvek na horizontu, fiksna voda, 5–12 linija talasa. Zamrznut u `scenarios/v1/ocean-sunset.ts`.
+
+- **Varijacije**: 8 paleta — classic, golden, pastel, crimson, tropical, lilac, smoky-amber, blue-hour (sunce ispod horizonta + zvezde); hue ±8, lightness ±0.04
+- **Redosled crtanja**: 1) nebo (4 stopa iz palete) → 2) zvezde (samo blue-hour) → 3) sunce: radijalni sjaj (9–14 r) + jezgro sa gradijentom, klipovano iznad horizonta → 4) oblaci (0–9) obasjani odozdo → 5) izmaglica na horizontu → 6) voda (refleks neba → duboka boja) → 7) svetlosna staza → 8) linije talasa → 9) silueta → 10) ptice
 - **Parametri**:
-  - Nebo: hue 15–35, 290–320, 250–270, 240
-  - Talasi: amplitude 8–20, stroke rgba(255,255,255,0.4)
-- **Posebnosti**: sunce tačno na Y=horizonY, jaki refleks u vodi (15% stopa)
+  - Horizont: h × 0.50–0.62
+  - Sunce: x = w × 0.25–0.75, r = 26–56 × s, visina −0.5 r … +2.5 r (`pow(f, 1.4)` → češće nisko)
+  - Oblaci: širina w × 0.12–0.42, visina 8–30 × s, 9–16 elipsi sa tanjim krajevima; dva sloja (svetli srp + telo pomereno za 0.22 ch)
+  - Staza: 260–420 odsjaja, širina staze r × (1.2 + 5.5 t), gušće pri horizontu
+  - Siluete: obala 30% (ridgePoints, spušta se ka moru), jedrilica 22%, svetionik na steni 12%; ptice 40% (2–7)
+- **Posebnosti**: QRNG troši samo odluke; detalji iz `prngFromStream`; dimenzije × `s = w/1200`
 
 ---
 
@@ -238,5 +243,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-03-05 | Šuma | Fix: nebo uvek plavo ili crvenkasto (zalazak); uklonjena zelena nijansa neba (accentHue 65–100). |
 | 2026-11-19 | Svi | Uvedeno verzionisanje renderera: trenutni scenariji zamrznuti kao **v1** u `src/lib/scenarios/v1/` (arhiva pre `RENDER_V2_FROM`). Sve dalje izmene u ovoj tabeli odnose se na **v2** (`src/lib/scenarios/*.ts`), osim ako nije drugačije navedeno. Vizuelno bez promene. |
 | 2026-11-19 | Svi (v2) | Post-fx sloj (`src/lib/post-fx.ts`) posle svakog scenarija: S-kontrast, split-tone (5 parova), vinjeta, film grain. Troši 7 QRNG vrednosti posle scene. |
+| 2026-11-19 | Zalazak (v2) | Prepisan: 8 paleta (uklj. plavi sat), sunce na različitim visinama sa mekim sjajem, oblaci obasjani odozdo, izmaglica, refleks neba u vodi, svetlosna staza u perspektivi, siluete (obala/jedrilica/svetionik), ptice. Detalji iz `prng.ts`. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).
