@@ -221,7 +221,10 @@
       "doubleRainbow": "Dupla duga",
       "eclipse": "Pomračenje Sunca",
       "bloodMoon": "Krvavi mesec",
-      "glitch": "Kvantni glitch"
+      "glitch": "Kvantni glitch",
+      "manta": "Raža",
+      "whale": "Kit",
+      "kraken": "Kraken"
     },
     "hint": "Retki nebeski događaj — pojavljuje se u oko 30% dana"
   },

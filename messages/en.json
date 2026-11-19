@@ -221,7 +221,10 @@
       "doubleRainbow": "Double rainbow",
       "eclipse": "Solar eclipse",
       "bloodMoon": "Blood moon",
-      "glitch": "Quantum glitch"
+      "glitch": "Quantum glitch",
+      "manta": "Manta ray",
+      "whale": "Whale",
+      "kraken": "Kraken"
     },
     "hint": "Rare sky event — appears on about 30% of days"
   },

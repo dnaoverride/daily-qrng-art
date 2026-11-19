@@ -22,7 +22,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ```
 v1:  (v0 ^ v1 ^ v2 ^ v3) % 8  →  12.5% po scenariju (zamrznuto)
-v2:  (v0 ^ v1 ^ v2 ^ v3) % 9  →  ~11.1% po scenariju (raste sa novim scenarijima)
+v2:  (v0 ^ v1 ^ v2 ^ v3) % 10  →  ~10% po scenariju (raste sa novim scenarijima)
 ```
 
 ---
@@ -56,6 +56,7 @@ v2:  (v0 ^ v1 ^ v2 ^ v3) % 9  →  ~11.1% po scenariju (raste sa novim scenariji
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | proplanak i šumovita dolina u magli, jelke i listopadna stabla, zraci, srna, svici |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | planinsko jezero sa pravim odrazom, sneg, šuma na obali, magla, mol/čamac/trska |
 | 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad, pravi odraz; Beograd (Hram, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan, Most na Adi, splav), Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, mansarde, most, bateau-mouche), Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije) |
+| 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | greben, kelp, jata i tropske ribe, kornjača, meduze, udičarka, zraci i kaustike; ponor sa bioluminiscencijom |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -207,6 +208,15 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ---
 
+### 9. Podvodni svet (`underwater.ts`) — samo v2
+
+- **Varijacije**: 6 paleta — tropical-reef, deep-blue, kelp-forest, sunset-surface, abyss, lagoon-shallow; hue ±10
+- **Redosled crtanja**: 1) voda (3 stopa) → 2) površina odozdo (45%, ne ponor) → 3) zraci (6–12) → 4) daleke oble stene (2 sloja) → (hooks.sky, `light: "underwater"`, horizonY = h) → 5) daleko jato → 6) pesak + kaustike → 7) greben/kelp/sidro sortirano po y → 8) jato + tropske ribe, kornjača, meduze, udičarka → 9) plankton (ponor) + mehurići
+- **Parametri**: dno h × 0.72–0.84; korali 18–29, razmera 0.85 + 1.6 t (t = dubina u pesku), vrste: razgranati 30%, lepezasti 18%, mozak 17%, sunđeri 17%, sase 18%; kelp do 26 × udeo palete; jato 30–70; tropske 2–6
+- **Retki događaji**: raža (redak), kit (epski), kraken (legendaran) / 30% glitch — iza grebena, ispred dalekih stena
+
+---
+
 ## 5. Matrica: efekti po scenariju (v2)
 
 | Efekat | Pejzaž | Plaža | Zalazak | Pustinja | Noćni grad | Kosmos | Šuma | Jezero |
@@ -311,6 +321,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
 | 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
 | 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
+| 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |
 | 2026-11-19 | Gradovi (novo, v2) | Scenario 8: pogled preko reke na Beograd (Hram Svetog Save, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan sa Pobednikom, Most na Adi), pravi odraz, splav, 6 paleta; ime grada ispod slike. v2 bira `% 9`. |
 

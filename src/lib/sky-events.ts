@@ -14,7 +14,7 @@
 import { rarityRand, rarityTier, type RarityEvent, type RarityResult, type RarityTier } from "./rarity";
 import type { Rand } from "./prng";
 
-export type SkyLight = "day" | "dusk" | "night";
+export type SkyLight = "day" | "dusk" | "night" | "underwater";
 
 export interface SkyInfo {
   horizonY: number;
@@ -85,6 +85,15 @@ export function createSceneHooks(
         case "aurora":
           drawAurora(ctx, rand, w, i.horizonY, s);
           break;
+        case "manta":
+          drawManta(ctx, rand, w, i.horizonY, s);
+          break;
+        case "whale":
+          drawWhale(ctx, rand, w, i.horizonY, s);
+          break;
+        case "kraken":
+          drawKraken(ctx, rand, w, i.horizonY, s);
+          break;
       }
       ctx.restore();
     },
@@ -116,6 +125,12 @@ export function createSceneHooks(
 }
 
 function chooseEvent(tier: RarityTier, i: SkyInfo, pick: number): RarityEvent {
+  // Pod vodom: sopstveni događaji (crtaju se odmah, iza grebena)
+  if (i.light === "underwater") {
+    if (tier === "rare") return "manta";
+    if (tier === "epic") return "whale";
+    return pick < 0.3 ? "glitch" : "kraken";
+  }
   const night = i.light === "night";
   const day = i.light === "day";
   // Zvezde padalice samo noću (u svetlom sumraku se ne vide); danju i u sumraku duga
@@ -358,6 +373,135 @@ function drawBloodMoon(ctx: CanvasRenderingContext2D, b: CelestialBody): void {
   ctx.beginPath();
   ctx.arc(b.x, b.y, r * 1.02, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// ---------------------------------------------------------------------------
+// Podvodni događaji (sky() poziv sa light: "underwater"; horizonY = dno vode)
+// ---------------------------------------------------------------------------
+
+/** Raža: velika silueta u srednjoj vodi, krila u blagom zamahu, dug rep. */
+function drawManta(ctx: CanvasRenderingContext2D, rand: Rand, w: number, depthY: number, s: number): void {
+  const x = w * (0.2 + 0.6 * rand());
+  const y = depthY * (0.2 + 0.3 * rand());
+  const k = s * (1.2 + 0.8 * rand());
+  const dir = rand() < 0.5 ? -1 : 1;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir, 1);
+  ctx.rotate(-0.12);
+  ctx.fillStyle = "rgba(15,25,45,0.55)";
+  ctx.beginPath();
+  ctx.moveTo(40 * k, 0);
+  ctx.quadraticCurveTo(10 * k, -12 * k, -15 * k, -55 * k);
+  ctx.quadraticCurveTo(-22 * k, -10 * k, -35 * k, 0);
+  ctx.quadraticCurveTo(-22 * k, 10 * k, -15 * k, 55 * k);
+  ctx.quadraticCurveTo(10 * k, 12 * k, 40 * k, 0);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(15,25,45,0.5)";
+  ctx.lineWidth = 2 * k;
+  ctx.beginPath();
+  ctx.moveTo(-34 * k, 0);
+  ctx.quadraticCurveTo(-60 * k, 4 * k, -85 * k, -2 * k);
+  ctx.stroke();
+  // Rogovi (cefalična peraja)
+  ctx.lineWidth = 3 * k;
+  ctx.beginPath();
+  ctx.moveTo(38 * k, -4 * k);
+  ctx.lineTo(46 * k, -7 * k);
+  ctx.moveTo(38 * k, 4 * k);
+  ctx.lineTo(46 * k, 7 * k);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Kit (grbavac): velika tamna silueta sa dugim prsnim perajima, u daljini. */
+function drawWhale(ctx: CanvasRenderingContext2D, rand: Rand, w: number, depthY: number, s: number): void {
+  const x = w * (0.25 + 0.5 * rand());
+  const y = depthY * (0.25 + 0.25 * rand());
+  const k = s * (2.2 + 0.8 * rand());
+  const dir = rand() < 0.5 ? -1 : 1;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir, 1);
+  ctx.rotate(-0.08);
+  ctx.fillStyle = "rgba(10,20,40,0.45)";
+  ctx.beginPath();
+  ctx.moveTo(70 * k, 0);
+  ctx.quadraticCurveTo(60 * k, -18 * k, 10 * k, -20 * k);
+  ctx.quadraticCurveTo(-40 * k, -18 * k, -70 * k, -4 * k);
+  ctx.lineTo(-90 * k, -16 * k);
+  ctx.lineTo(-86 * k, 0);
+  ctx.lineTo(-92 * k, 14 * k);
+  ctx.lineTo(-70 * k, 4 * k);
+  ctx.quadraticCurveTo(-30 * k, 16 * k, 20 * k, 16 * k);
+  ctx.quadraticCurveTo(60 * k, 14 * k, 70 * k, 0);
+  ctx.fill();
+  // Dugo prsno peraje
+  ctx.beginPath();
+  ctx.moveTo(30 * k, 10 * k);
+  ctx.quadraticCurveTo(10 * k, 40 * k, -15 * k, 48 * k);
+  ctx.quadraticCurveTo(5 * k, 30 * k, 18 * k, 10 * k);
+  ctx.fill();
+  // Svetliji stomak (žlebovi)
+  ctx.strokeStyle = "rgba(180,200,220,0.12)";
+  ctx.lineWidth = 1.2 * k;
+  for (let i = 0; i < 6; i++) {
+    ctx.beginPath();
+    ctx.moveTo(60 * k - i * 4 * k, 6 * k + i * 1.4 * k);
+    ctx.lineTo(10 * k - i * 3 * k, 13 * k + i * 0.6 * k);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Kraken: debeli pipci koji izranjaju iz dubine sa strana, senčeni, sa pijavkama. */
+function drawKraken(ctx: CanvasRenderingContext2D, rand: Rand, w: number, depthY: number, s: number): void {
+  const n = 4 + Math.floor(rand() * 3);
+  for (let i = 0; i < n; i++) {
+    const fromLeft = i % 2 === 0;
+    const bx = fromLeft ? w * (0.0 + 0.28 * rand()) : w * (0.72 + 0.28 * rand());
+    const by = depthY + 60 * s;
+    const len = depthY * (0.7 + 0.35 * rand());
+    const wdt = (28 + rand() * 18) * s;
+    const curl = (fromLeft ? 1 : -1) * (0.5 + 0.7 * rand());
+    const pts: [number, number, number][] = [];
+    const steps = 60;
+    let px = bx;
+    let py = by;
+    for (let k = 0; k <= steps; k++) {
+      const t = k / steps;
+      const ang = -Math.PI / 2 + curl * (0.35 * Math.sin(t * Math.PI * 1.3) + 1.9 * t * t * t);
+      pts.push([px, py, wdt * (1 - t * 0.93)]);
+      px += Math.cos(ang) * (len / steps);
+      py += Math.sin(ang) * (len / steps);
+    }
+    // Telo: tamnija senka pa svetlije telo pomereno (zaobljenost)
+    for (const [cx, cy, r] of pts) {
+      ctx.fillStyle = "rgba(70,15,40,0.95)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const [cx, cy, r] of pts) {
+      ctx.fillStyle = "rgba(165,50,80,0.95)";
+      ctx.beginPath();
+      ctx.arc(cx - (fromLeft ? r * 0.25 : -r * 0.25), cy - r * 0.15, r * 0.72, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Pijavke na unutrašnjoj strani
+    for (let k = 2; k < pts.length - 4; k += 3) {
+      const [cx, cy, r] = pts[k]!;
+      const sx = cx + (fromLeft ? r * 0.55 : -r * 0.55);
+      ctx.fillStyle = "rgba(245,190,195,0.85)";
+      ctx.beginPath();
+      ctx.arc(sx, cy, Math.max(1.2, r * 0.26), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(120,30,55,0.9)";
+      ctx.beginPath();
+      ctx.arc(sx, cy, Math.max(0.6, r * 0.11), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 }
 
 /** Kvantni glitch: horizontalne trake pomerene levo/desno + razdvojen crveni kanal. */

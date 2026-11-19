@@ -21,11 +21,12 @@ import { renderCosmos } from "./cosmos";
 import { renderForest } from "./forest";
 import { renderLake } from "./lake";
 import { renderCities } from "./cities";
+import { renderUnderwater } from "./underwater";
 
 /** Broj scenarija u v1 (zamrznuto — ne menjati). */
 export const NUM_SCENARIOS_V1 = 8;
 /** Broj scenarija u v2 (raste sa novim scenarijima). */
-export const NUM_SCENARIOS_V2 = 9;
+export const NUM_SCENARIOS_V2 = 10;
 /** @deprecated koristi scenarioCount(version) — zadržano zbog kompatibilnosti (v1 broj). */
 export const NUM_SCENARIOS = NUM_SCENARIOS_V1;
 
@@ -112,6 +113,9 @@ function renderArtV2(
       break;
     case 8:
       renderCities(ctx, stream, w, h, hooks);
+      break;
+    case 9:
+      renderUnderwater(ctx, stream, w, h, hooks);
       break;
     default:
       renderLandscape(ctx, stream, w, h, hooks);

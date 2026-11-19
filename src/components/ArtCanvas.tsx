@@ -24,6 +24,9 @@ const EVENT_KEY: Record<RarityEvent, string> = {
   eclipse: "eclipse",
   "blood-moon": "bloodMoon",
   glitch: "glitch",
+  manta: "manta",
+  whale: "whale",
+  kraken: "kraken",
 };
 
 const TIER_STYLE: Record<Exclude<RarityTier, "common">, string> = {

@@ -18,7 +18,10 @@ export type RarityEvent =
   | "double-rainbow" // dupla duga
   | "eclipse" // pomračenje Sunca
   | "blood-moon" // krvavi mesec
-  | "glitch"; // kvantni glitch
+  | "glitch" // kvantni glitch
+  | "manta" // raža (pod vodom)
+  | "whale" // kit (pod vodom)
+  | "kraken"; // kraken (pod vodom)
 
 export interface RarityResult {
   tier: RarityTier;
