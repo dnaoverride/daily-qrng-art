@@ -227,7 +227,9 @@
   },
   "scene": {
     "place": {
-      "belgrade": "Belgrade"
+      "belgrade": "Belgrade",
+      "paris": "Paris",
+      "rome": "Rome"
     }
   }
 }

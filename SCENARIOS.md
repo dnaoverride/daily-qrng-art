@@ -55,7 +55,7 @@ v2:  (v0 ^ v1 ^ v2 ^ v3) % 9  →  ~11.1% po scenariju (raste sa novim scenariji
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | maglina, zvezde sa zracima, galaksija, 5 tipova planeta, prstenovi, meseci, krupni plan |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | proplanak i šumovita dolina u magli, jelke i listopadna stabla, zraci, srna, svici |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | planinsko jezero sa pravim odrazom, sneg, šuma na obali, magla, mol/čamac/trska |
-| 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad (Beograd: Hram, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan, Most na Adi), pravi odraz, splav |
+| 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad, pravi odraz; Beograd (Hram, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan, Most na Adi, splav), Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, mansarde, most, bateau-mouche), Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije) |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -195,10 +195,13 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ### 8. Gradovi (`cities.ts`) — samo v2
 
-- **Registar gradova** `CITIES`: `{ key, weight, decide(stream), draw(c, rand, d) }`; QRNG bira grad po težinama; `hooks.meta({ place: key })` → ime grada ispod slike. Za sada samo Beograd.
+- **Registar gradova** `CITIES`: `{ key, weight, decide(stream), draw(c, rand, d), boat? }`; QRNG bira grad po težinama (Beograd 35, Pariz 32.5, Rim 32.5); `hooks.meta({ place: key })` → ime grada ispod slike.
 - **Varijacije**: 6 paleta — day, golden, sunset, blue-hour, night, winter-fog; hue ±8; `floodlight` (plavi sat, noć) osvetljava znamenitosti; udeo upaljenih prozora po paleti 0–0.75
 - **Redosled crtanja**: gornja polovina [nebo → zvezde → (hooks.sky) → sunce/mesec → (hooks.body) → grad → izmaglica] → ista gornja polovina preslikana u reku → boja vode → talasići → splav
 - **Beograd** (redosled u `draw`): Avala na brdu (daleko) → daleki red zgrada → srednji red + znamenitosti u slotovima (Hram 1.45×, Ušće 1.2×, Beograđanka 1.2×, Kula Beograd 1.15×) → Kalemegdan na bližoj obali (levo/desno) → Most na Adi (suprotna strana) → linija obale
+- **Pariz** (redosled): Monmartr + Sacré-Cœur (55%, daleko) → dalji Haussmann red (izmaglica) → bliži Haussmann red (boja bliskog plana) → Notre-Dame (55%) u polovini suprotnoj od Ajfelove kule → Ajfelova kula (85%, 1.3×) → kej → kameni most (60%, 5–7 lukova); plovilo bateau-mouche
+- **Rim** (redosled): dalji rimski red → kupola Sv. Petra (75%, 1.25×) → srednji red → Koloseum (70%) → Anđeoska tvrđava (45%) → 2–6 pinija (60%) / čempresa → kej → Anđeoski most (50%, 3–5 lukova); bez plovila
+- **Kameni most**: luk r = 0.4 × raspon, centar 0.2 r ispod vode, kolovoz 7 × s iznad temena luka
 - **Parametri**: horizont (obala) h × 0.56–0.66; sunce r = 22–40 × s (mesec 16–26 × s); verovatnoće znamenitosti Hram 75%, Ušće 60%, Beograđanka 45%, Kula 40%, Avala 50%, Kalemegdan 55%, most 40% (bar 2 u srednjem planu); splav 35%
 - **Posebnosti**: geometrija grada iz `mulberry32(citySeed)` → identična u oba prolaza (odraz); novi grad = novi `CityDef` u `CITIES` + prevod `scene.place.<key>`
 
@@ -308,6 +311,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
 | 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
 | 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
+| 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |
 | 2026-11-19 | Gradovi (novo, v2) | Scenario 8: pogled preko reke na Beograd (Hram Svetog Save, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan sa Pobednikom, Most na Adi), pravi odraz, splav, 6 paleta; ime grada ispod slike. v2 bira `% 9`. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

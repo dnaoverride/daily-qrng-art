@@ -50,7 +50,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | v2: maglina u 6 paleta, zvezde sa zracima, galaksija, 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom, atmosferom, prstenovima i mesecima; „sistem" ili „krupni plan" |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | v2: pogled sa proplanka na šumovitu dolinu — 6 paleta (proleće, leto, jesen, zlatni sat, noć sa svitcima, zima), 4 sloja brda u magli, velika drveta sa dvobojnim krošnjama, zraci, srna |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
-| 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad sa znamenitostima i pravim odrazom; QRNG bira grad (za sada Beograd), 6 doba dana; ime grada ispod slike |
+| 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad sa znamenitostima i pravim odrazom; QRNG bira grad (Beograd 35%, Pariz 32.5%, Rim 32.5%), 6 doba dana; ime grada ispod slike |
 
 ---
 
@@ -82,9 +82,12 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ### Gradovi (samo v2, od 2026-11-19)
 
-- **Koncept:** pogled preko reke na grad; registar gradova `CITIES` (ključ, težina, `decide`, `draw`) — QRNG bira grad po težinama. Za sada **Beograd**; Pariz i Rim slede.
+- **Koncept:** pogled preko reke na grad; registar gradova `CITIES` (ključ, težina, `decide`, `draw`, opciono `boat`) — QRNG bira grad po težinama: **Beograd 35%, Pariz 32.5%, Rim 32.5%**.
 - **Beograd — znamenitosti** (QRNG bira, bar 2 u srednjem planu): Hram Svetog Save 75% (dominantan, kupola + ugaone kule + zlatni krstovi), Ušće kule 60%, Beograđanka 45% (tamna kula sa „krunom"), Kula Beograd 40%, Avalski toranj na brdu u daljini 50%, Kalemegdan sa zidinama, drvećem i Pobednikom 55%, Most na Adi (pilon + lepeza kablova) 40%. Oko njih generički grad: socijalistički blokovi, starogradske zgrade sa kosim krovovima, crkveni tornjevi sa baroknim šiljkom.
-- **Palete:** 6 — day, golden, sunset, blue-hour, night (mesec, zvezde), winter-fog; noću i u plavom satu osvetljeni Hram, zidine, most i Ušće, upaljeni prozori.
+- **Pariz — znamenitosti:** Ajfelova kula 85% (rešetka klipovana na siluetu, platforme, luk između nogu; noću zlatna, svetlucanje i snopovi reflektora), Sacré-Cœur na Monmartru u daljini 55%, Notre-Dame (kule, rozeta, šiljak, kontrafori) 55%, kameni most sa lukovima 60%; Haussmann zgrade (fasade + sivo-plavi mansardni krovovi sa prozorčićima i dimnjacima), kamen kej; turistički brod (bateau-mouche).
+- **Rim — znamenitosti:** kupola Sv. Petra 75% (tambur sa stubovima, rebrasta kupola, fenjer, krst), Koloseum 70% (tri reda lukova u perspektivi + atika, oštećena ivica), Anđeoska tvrđava sa anđelom 45%, Anđeoski most 50%, 2–6 pinija i čempresa; oker/terakota zgrade sa crepom, romanički zvonici, kupolice crkava.
+- **Kameni most (Pariz, Rim):** segmentni lukovi — visina kolovoza se računa iz širine luka (centar malo ispod vode), pa luk + odraz daju prepoznatljive elipse.
+- **Palete:** 6 — day, golden, sunset, blue-hour, night (mesec, zvezde), winter-fog; noću i u plavom satu osvetljene znamenitosti, upaljeni prozori.
 - **Reka:** pravi odraz cele gornje polovine (kao jezero); geometrija grada iz zasebnog PRNG-a sa fiksnim seed-om po slici, pa su normalan prolaz i odraz identični. Splav sa lampicama 35%.
 - **Ime grada ispod slike:** novi opcioni hook `hooks.meta({ place })` ([`sky-events.ts`](src/lib/sky-events.ts)) → `RenderResult.meta.place` → [`ArtCanvas`](src/components/ArtCanvas.tsx) dodaje „· Beograd" (prevod `messages/*.json` → `scene.place.*`).
 
@@ -529,6 +532,15 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Gradovi: Pariz i Rim (grana `claude`)
+
+- **`src/lib/scenarios/cities.ts`** — dodati **Pariz** (Ajfelova kula sa rešetkom i noćnim snopovima, Sacré-Cœur, Notre-Dame, Haussmann zgrade sa mansardama, kameni most, bateau-mouche) i **Rim** (kupola Sv. Petra, Koloseum, Anđeoska tvrđava, Anđeoski most, pinije i čempresi, oker/terakota zgrade, zvonici). Težine: Beograd 35, Pariz 32.5, Rim 32.5. `CityDef.boat` (splav / bateau-mouche; Rim bez plovila). Zajednički `drawStoneBridge` sa segmentnim lukovima.
+- **Izmaglica nad gradom** — malo slabija za sve gradove (0.15 + 0.4 × fog, ranije 0.25 + 0.45 × fog).
+- **`messages/sr.json`, `messages/en.json`** — `scene.place.paris` (Pariz / Paris), `scene.place.rome` (Rim / Rome).
+- **Podešavanje** — lukovi mosta su bili ogromne polulopte iznad kolovoza, pa ravna ploča sa rupama → kolovoz iz širine luka, segmentni lukovi; pinije veće krošnje; Pariz previše izbledeo → tamniji mansardni krovovi, bliži red u boji bliskog plana.
+- **Posledica** — izbor grada se promenio (Beograd više nije jedini): lokalno 2026-11-06 i 2026-11-15 su sada Pariz.
+- **Verifikacija** — pregledi 9 datuma za Pariz i Rim + puna veličina (Rim noću, Pariz zlatni sat) + thumbnail; raspodela na 200 dana sa gradovima: Beograd 37%, Pariz 31%, Rim 32%. v1 hash nepromenjen. `tsc` i ESLint čisti.
 
 ### 2026-11-19 — Novi scenario: Gradovi (Beograd) + broj scenarija po verziji (grana `claude`)
 
