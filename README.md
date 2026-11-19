@@ -46,7 +46,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | v2: 6 paleta (podne, zlatne dune, saharski zalazak, ljubičasti sumrak, noć sa Mlečnim putem, crvene stene), asimetrične dune sa svetlom i senkom, mese, karavan, oaza, saguaro |
 | 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | v2: 6 paleta, 3 sloja zgrada u izmaglici, raznovrsni krovovi, prozori po spratovima, pun mesec/srp, reka sa odrazima ili ulica sa svetiljkama |
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | planete, zvezde (crtaju se pre planeta) |
-| 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | dan/noć, drveće (stablo + krošnja), ptice/sove/šišmiši/veverica |
+| 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | v2: pogled sa proplanka na šumovitu dolinu — 6 paleta (proleće, leto, jesen, zlatni sat, noć sa svitcima, zima), 4 sloja brda u magli, velika drveta sa dvobojnim krošnjama, zraci, srna |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
 
 ---
@@ -90,7 +90,16 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 - Popunjavanje podloge ispod horizonta tamnom bojom (`fillRect`) da ne probija boja prethodnog scenarija (npr. zelena iz Šume)
 
-### Šuma
+### Šuma (v2, od 2026-11-19)
+
+- **Koncept:** pogled sa proplanka na šumovitu dolinu (umesto zida od krugova-krošnji u v1).
+- **Palete:** 6 — spring-morning (jaka magla), summer, autumn (narandžasto/crveno/žuto lišće po grozdu), golden-hour (jaki zraci), night-fireflies (mesec, zvezde, svici), winter (sneg na jelkama i tlu, golo listopadno drveće); hue ±8.
+- **Pozadina:** 4 sloja brda (dve sinusoide) sa siluetama jelki i listopadnog drveća (udeo jelki 30–80%), dalji slojevi u izmaglici, magla između slojeva po jačini palete.
+- **Drveće u prvom planu:** 2–4 velika sa strane + 2–5 manjih u srednjem planu proplanka. Jelka = 5–7 slojeva grana sa osvetljenom i senovitom polovinom (+ sneg zimi). Listopadno = deblo sa granama + 12–19 grozdova (senovita osnova, osvetljeni deo pomeren ka suncu, blagi odsjaj); zimi golo sa malo snega.
+- **Svetlo:** strana svetla prati sunce; noću hladna mesečina umesto toplog svetla (prva verzija je davala sive jelke).
+- **Detalji:** sunčevi zraci (po paleti), travke na proplanku, srna 25%, ptice 40% (danju), svici 40–90 (noću).
+
+### Šuma (v1)
 
 - Svaka krošnja mora imati stablo koje se vidi i doseže do zemlje
 - Drveće na različitim visinama (varijabilan baseY)
@@ -487,6 +496,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Šuma v2: proplanak i šumovita dolina u magli (grana `claude`)
+
+- **`src/lib/scenarios/forest.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 6 paleta (proleće, leto, jesen, zlatni sat, noć sa svitcima, zima), 4 sloja šumovitih brda sa maglom, sunčevi zraci, proplanak sa travkama, velike jelke (slojevi grana, svetla/senovita polovina, sneg) i listopadna stabla (dvobojni grozdovi, golo zimi), manja stabla u srednjem planu, srna, ptice, svici. Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — noću su jelke bile sive (toplo dnevno svetlo) → hladna mesečina; krošnje premale („balon na štapu") → veća krošnja, deblje deblo, više grozdova; prazan proplanak → 2–5 manjih stabala u srednjem planu; odsjaji na grozdovima previše „mehurasti" → blaži.
+- **Verifikacija** — pregled 12 datuma + puna veličina (slika dana 2026-11-18 i jesen) + thumbnail; render 38–54 ms. v1 hash identičan originalu (`ba738be`) i za dane sa šumom (2026-11-18, 19). `tsc` i ESLint prolaze.
+- **README / SCENARIOS** — sekcija „Šuma (v2)", tabela scenarija, opis i changelog.
 
 ### 2026-11-19 — Pustinja v2: asimetrične dune sa svetlom i senkom (grana `claude`)
 

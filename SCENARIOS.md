@@ -142,16 +142,20 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 6. Šuma (`forest.ts`)
+### 6. Šuma (`forest.ts`) — v2
 
-- **Varijacije**: noć (25%) ili dan (75%); dan: plavo ili toplo nebo (50/50); noć: sova/šišmiš (50/50); dan: light rays; dan: eventualno srnjak (50%)
-- **Redosled crtanja**: 1) nebo → 2) zvezde (noć) ili ptice (dan) ili sova/šišmiš (noć) → 3) sunce/mesec → 4) light rays (dan, 6–14) → 5) zemlja (3-stop gradient) → 6) drveće (3 sloja: 6–12, 8–14, 6–12) → 7) srnjak (dan, 50%)
+> v1 (do `RENDER_V2_FROM`): dan/sumrak/noć, nebo do horizonta, 3 sloja drveća od krugova (listopadno 65%) i konusa (četinari), zeleno tlo, ptice / sove / šišmiši / veverica. Zamrznut u `scenarios/v1/forest.ts`.
+
+- **Varijacije**: 6 paleta — spring-morning, summer, autumn, golden-hour, night-fireflies, winter; hue ±8; udeo jelki 30–80%
+- **Redosled crtanja**: 1) nebo → 2) zvezde (noć) → (hooks.sky) → 3) sunce/mesec → (hooks.body) → 4) 4 sloja brda: brdo → siluete drveća → (sneg) → magla → 5) sunčevi zraci → 6) proplanak + travke → 7) srna → 8a) manja stabla u srednjem planu → 8b) velika stabla sa strane → 9) svici (noć) ili ptice
 - **Parametri**:
-  - Drveće: 3 sloja dubine (scale 0.35, 0.65, 1.0); listopadno (65%) — sferični envelope; četinar (35%) — konusna krošnja
-  - Ptice: 1–4, quadraticCurve za krila
-  - Sova/šišmiš: 1–3, stroke stil
-- **Posebnosti**: light rays kao linear gradient pruge; srnjak kao 2 elipse
-
+  - Horizont: h × 0.36–0.48; proplanak od horizont + (h−horizont) × 0.55–0.67
+  - Sunce: x = w × 0.15–0.85, r = 24–44 × s (mesec 16–28 × s); zlatni sat nisko
+  - Brda: amplituda 20–60 × s; siluete 14–40 × s; haze 0.75 → 0.05
+  - Velika stabla: 2–4, visina (h−proplanak) × 0.6 + 180–340 × s; manja: 2–5, 50–120 × s
+  - Jelka: 5–7 slojeva; listopadno: krošnja 0.38 × visina, 12–19 grozdova
+  - Zraci: 5–10 (po paleti 0–90%); srna 25%; ptice 40%; svici 40–90
+- **Posebnosti**: strana svetla prati sunce; noću hladno svetlo (`tint`); QRNG za odluke, `prngFromStream` za drveće i detalje
 ---
 
 ### 7. Jezero (`lake.ts`) — v2
@@ -268,5 +272,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Svi (v2) | Rarity hook-ovi: `hooks.sky(...)` posle neba (horizont + dan/sumrak/noć) i `hooks.body(...)` posle sunca/meseca u svih 8 scenarija. Retki događaji (duga, zvezde padalice, kometa, polarna svetlost, pomračenje, krvavi mesec, glitch) — vidi README → Rarity sistem. Obični dani nepromenjeni. |
 | 2026-11-19 | Jezero (v2) | Prepisano kao planinsko jezero: 6 paleta, planine sa nazubljenim grebenom i snegom, šuma na obali, pravi odraz u vodi, talasići, odsjaj, magla, mol/čamac/trska. |
 | 2026-11-19 | Pustinja (v2) | Prepisana: 6 paleta, asimetrične dune sa osvetljenom i senovitom stranom, talasasto podnožje, jaranice, mese, karavan, saguaro, oaza, Mlečni put noću. |
+| 2026-11-19 | Šuma (v2) | Prepisana kao proplanak sa pogledom na šumovitu dolinu: 6 paleta (uklj. jesen i zimu), 4 sloja brda u magli, velike jelke i listopadna stabla sa dvobojnim krošnjama, zraci, srna, svici. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).
