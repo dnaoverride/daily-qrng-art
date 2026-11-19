@@ -101,14 +101,21 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 4. Noćni grad (`city-night.ts`)
+### 4. Noćni grad (`city-night.ts`) — v2
 
-- **Varijacije**: fiksno noć
-- **Redosled crtanja**: 1) nebo (2-stop tamno plavo) → 2) tlo → 3) zvezde (250–400) → 4) mesec (drawSunGlow) → 5) zgrade (siluete, 8–20) → 6) prozori (15–40 krugova unutar zgrada)
+> v1 (do `RENDER_V2_FROM`): 2-stop tamnoplavo nebo, pravougaone siluete u jednom sloju, 15–40 nasumičnih okruglih prozora. Zamrznut u `scenarios/v1/city-night.ts`.
+
+- **Varijacije**: 6 paleta — midnight, neon-violet, teal, smog-amber, winter, indigo; hue ±8. Reka 50% / ulica 50%. Mesec pun ili srp (45%).
+- **Redosled crtanja**: 1) nebo (3 stopa, svetlosno zagađenje pri horizontu) → 2) zvezde (gustina po paleti) → 3) mesec: sjaj + disk (srp = evenodd isecanje) + „mora" → 4) tanki oblaci (45%) → 5) zgrade u 3 sloja + prozori, izmaglica posle 1. i 2. sloja → 6) reka sa odrazima ILI ulica sa svetiljkama
 - **Parametri**:
-  - Zgrade: širina 25–80, visina 20–70% h, razmak 5–25
-  - Prozori: r 2–3px, žuto svetlo rgba(255,248,200,0.9)
-- **Posebnosti**: zgrade kao pravougaonici, prozori nasumično unutar bounding box-a zgrada
+  - Linija zgrada: reka h × 0.60–0.70, ulica h × 0.82–0.92; gustina 0.7–1.3
+  - Slojevi: haze 0.62 / 0.35 / 0; visina groundY × (0.18–0.42 / 0.14–0.36 / 0.08–0.30); širina 30–70 / 40–90 / 50–120 × s; 12% zgrada 1.6× više
+  - Krovovi: flat (2/7), stepped, spire (+antena), dome, slant, tower (vodotoranj)
+  - Prozori: 3×4 × s, razmak 6/8 × s; 25% spratova mračno; udeo upaljenih 0.18 / 0.30 / 0.42 po sloju
+  - Crvena svetla: slojevi 2–3, 35%, samo visoke zgrade ili spire
+  - Mesec: x = w × 0.1–0.9, r = 16–32 × s
+  - Reka: odrazi 0.8 visine zgrade, 2–5 vertikalnih crtica po zgradi, 40–80 odsjaja meseca
+- **Posebnosti**: QRNG za odluke, `prngFromStream` za zgrade/prozore/zvezde; dimenzije × `s = w/1200`
 
 ---
 
@@ -244,5 +251,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Svi | Uvedeno verzionisanje renderera: trenutni scenariji zamrznuti kao **v1** u `src/lib/scenarios/v1/` (arhiva pre `RENDER_V2_FROM`). Sve dalje izmene u ovoj tabeli odnose se na **v2** (`src/lib/scenarios/*.ts`), osim ako nije drugačije navedeno. Vizuelno bez promene. |
 | 2026-11-19 | Svi (v2) | Post-fx sloj (`src/lib/post-fx.ts`) posle svakog scenarija: S-kontrast, split-tone (5 parova), vinjeta, film grain. Troši 7 QRNG vrednosti posle scene. |
 | 2026-11-19 | Zalazak (v2) | Prepisan: 8 paleta (uklj. plavi sat), sunce na različitim visinama sa mekim sjajem, oblaci obasjani odozdo, izmaglica, refleks neba u vodi, svetlosna staza u perspektivi, siluete (obala/jedrilica/svetionik), ptice. Detalji iz `prng.ts`. |
+| 2026-11-19 | Noćni grad (v2) | Prepisan: 6 paleta, 3 sloja zgrada sa izmaglicom, 6 tipova krovova, prozori po spratovima, crvena svetla (35% visokih), pun mesec/srp, oblaci, reka sa odrazima ili ulica sa svetiljkama. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).
