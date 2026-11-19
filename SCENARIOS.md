@@ -22,7 +22,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ```
 v1:  (v0 ^ v1 ^ v2 ^ v3) % 8  →  12.5% po scenariju (zamrznuto)
-v2:  (v0 ^ v1 ^ v2 ^ v3) % 10  →  ~10% po scenariju (raste sa novim scenarijima)
+v2:  (v0 ^ v1 ^ v2 ^ v3) % 11  →  ~9.1% po scenariju (raste sa novim scenarijima)
 ```
 
 ---
@@ -57,6 +57,7 @@ v2:  (v0 ^ v1 ^ v2 ^ v3) % 10  →  ~10% po scenariju (raste sa novim scenarijim
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | planinsko jezero sa pravim odrazom, sneg, šuma na obali, magla, mol/čamac/trska |
 | 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad, pravi odraz; Beograd (Hram, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan, Most na Adi, splav), Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, mansarde, most, bateau-mouche), Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije) |
 | 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | greben, kelp, jata i tropske ribe, kornjača, meduze, udičarka, zraci i kaustike; ponor sa bioluminiscencijom |
+| 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku i noću |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -217,6 +218,14 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ---
 
+### 10. Savana (`savanna.ts`) — samo v2
+
+- **Varijacije**: 6 paleta — golden-sunset, red-sunset, noon, dawn-mist, night, rainy-season; hue ±8; `silhouette` (zalasci, izmaglica, noć) vs boja (podne, kiša)
+- **Redosled crtanja**: 1) nebo → 2) Mlečni put + zvezde (noć) → (hooks.sky) → 3) sunce (u zalascima ogromno, klipovano na horizont) / mesec → (hooks.body) → 4) trake oblaka / zavese kiše → 5) Kilimandžaro (35%) + kopje → 6) daleki niz akacija → 7) ravnica + prašina + busenje → 8) akacije, baobab, žirafe, slonovi, krdo — sortirano po y → 9) visoka trava → 10) ptice
+- **Parametri**: horizont h × 0.60–0.70; sunce u zalascima r = 70–130 × s, centar 0.2–1.1 r iznad horizonta; akacije 1–3 (razmera 1.1 + 1.6 t); žirafe 1–3 (1.3 + 1.7 t); slonovi 1–4 (1.15 + 1.6 t, mladunče 0.55×); krdo 4–12 (0.85 + 1.3 t), zebre samo danju (50%); trava 220–380 vlati
+
+---
+
 ## 5. Matrica: efekti po scenariju (v2)
 
 | Efekat | Pejzaž | Plaža | Zalazak | Pustinja | Noćni grad | Kosmos | Šuma | Jezero |
@@ -321,6 +330,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
 | 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
 | 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
+| 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |
 | 2026-11-19 | Gradovi (novo, v2) | Scenario 8: pogled preko reke na Beograd (Hram Svetog Save, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan sa Pobednikom, Most na Adi), pravi odraz, splav, 6 paleta; ime grada ispod slike. v2 bira `% 9`. |

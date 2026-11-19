@@ -12,11 +12,11 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 10** (raste sa novim scenarijima).
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 11** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 10
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 11
 ```
 
 `scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
@@ -38,7 +38,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
-## Scenariji (8 u v1, 10 u v2)
+## Scenariji (8 u v1, 11 u v2)
 
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
@@ -52,6 +52,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
 | 8 | Gradovi (samo v2) | [cities.ts](src/lib/scenarios/cities.ts) | pogled preko reke na grad sa znamenitostima i pravim odrazom; QRNG bira grad (Beograd 35%, Pariz 32.5%, Rim 32.5%), 6 doba dana; ime grada ispod slike |
 | 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | 6 paleta (tropski greben, duboko plavo, kelp, zalazak, ponor sa bioluminiscencijom, laguna), zraci, kaustike, greben (razgranati/lepezasti/mozak-korali, sunđeri, sase, kelp), jata i tropske ribe, kornjača, meduze, udičarka; podvodni retki događaji |
+| 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | 6 paleta (zlatni/crveni zalazak, podne, jutarnja izmaglica, noć sa Mlečnim putem, kišna sezona), ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre (siluete u zalasku i noću, u boji danju), Kilimandžaro, visoka trava |
 
 ---
 
@@ -80,6 +81,12 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Savana (samo v2, od 2026-11-19)
+
+- **Palete:** 6 — golden-sunset, red-sunset, noon, dawn-mist, night (mesec, zvezde, Mlečni put), rainy-season (zelena trava, tamni oblaci, zavese kiše); hue ±8.
+- **Siluete vs boja:** u zalascima, jutarnjoj izmaglici i noću životinje, drveće i trava su tamne siluete na nebu; podne i kišna sezona su u boji (šare žirafe, kljove i oko slona, pruge zebre, senke ispod drveća).
+- **Elementi:** ogromno nisko sunce u zalascima (r 70–130 × s), trake oblaka, planina sa snežnim ravnim vrhom 35%, stenovita uzvišenja (kopje), daleki niz akacija, ravnica sa busenjem, 1–3 velike akacije (račvasto deblo + ravna krošnja), baobab 25%, žirafe 1–3 (50%), slonovi 1–4 sa mladunčetom (40%), krdo antilopa ili zebri 4–12 (50%), visoka trava sa klasovima u prvom planu, ptice 45%. Drveće i životinje sortirani po dubini.
 
 ### Podvodni svet (samo v2, od 2026-11-19)
 
@@ -541,6 +548,14 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Novi scenario: Savana (grana `claude`)
+
+- **`src/lib/scenarios/savanna.ts`** — NOVO (scenario 10, samo v2): 6 paleta, ogromno nisko sunce, Mlečni put noću, trake oblaka i zavese kiše, Kilimandžaro, kopje, akacije, baobab, žirafe, slonovi (sa mladunčetom), antilope ili zebre, visoka trava, ptice. Siluete u zalasku/noći, boja danju. Dimenzije relativne (`s = w/1200`).
+- **`src/lib/scenarios/router.ts`, `index.ts`** — `NUM_SCENARIOS_V2 = 11`, `SCENARIO_NAMES[10] = "Savana"`.
+- **Podešavanje** — životinje su bile previše sitne → oko 1.6× veće (akacije 1.2×); žirafe kao „štule" → krupniji trup, deblje noge, širi vrat pri telu.
+- **Posledica** — v2 dani preraspoređeni po 11 scenarija (~9% svaki).
+- **Verifikacija** — pregled 12 datuma + puna veličina (zlatni zalazak sa slonovima, podne sa žirafama) + thumbnail; render 32–68 ms. v1 hash nepromenjen. `tsc` i ESLint prolaze.
 
 ### 2026-11-19 — Cela arhiva prelazi na render v2 (grana `claude`)
 
