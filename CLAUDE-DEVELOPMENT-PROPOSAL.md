@@ -71,7 +71,9 @@ Poređano po odnosu efekta i uloženog rada.
 - Svi novi vizuelni radovi idu u `v2`. Prodata slika je „zamrznuta" na svojoj verziji.
 - Dodati snapshot test: hash PNG-a za nekoliko fiksnih setova brojeva po verziji. Ako se hash promeni, nešto je slučajno pokvareno.
 
-### 4.1 Globalni post-fx sloj (najveći dobitak za najmanje rada)
+### 4.1 Globalni post-fx sloj (najveći dobitak za najmanje rada) — 🟡 delimično urađeno 2026-11-19
+> Urađeno: grain, vinjeta, split-tone (color grading), S-kontrast u [post-fx.ts](src/lib/post-fx.ts). Ostaje: atmosferska perspektiva (traži `depth` iz scenarija) i bloom oko sunca/meseca (traži poziciju sunca iz scenarija).
+
 Novi fajl `src/lib/post-fx.ts`, poziva se na kraju `renderArt`:
 1. **Film grain**: šum niskog intenziteta (alpha 0.03–0.06) preko cele slike. Odmah ubija „vektorski clip-art" utisak.
 2. **Vinjeta**: radijalni gradijent ka tamnim ivicama.

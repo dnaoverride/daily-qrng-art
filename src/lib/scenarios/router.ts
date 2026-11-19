@@ -9,6 +9,7 @@
 import type { QRNGStream } from "../qrng";
 import { LATEST_RENDER_VERSION, type RenderVersion } from "../render-version";
 import { renderArtV1 } from "./v1/router";
+import { applyPostFx, pickPostFxParams } from "../post-fx";
 import { renderLandscape } from "../landscape";
 import { renderBeach } from "./beach";
 import { renderOceanSunset } from "./ocean-sunset";
@@ -32,6 +33,8 @@ export function renderArt(
     return;
   }
   renderArtV2(ctx, stream, w, h);
+  // Post-fx (grain, vinjeta, split-tone, kontrast) — samo v2, posle scene.
+  applyPostFx(ctx, w, h, pickPostFxParams(stream));
 }
 
 function renderArtV2(

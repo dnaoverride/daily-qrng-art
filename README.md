@@ -110,6 +110,19 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
   - `RENDER_V2_FROM` dolazi iz `NEXT_PUBLIC_RENDER_V2_FROM`; ako nije postavljen, podrazumevano je `2099-01-01` → **produkcija ostaje na v1** dok se pri deploy-u ne postavi datum prelaska (vidi [DEPLOY-CHECKLIST.md](DEPLOY-CHECKLIST.md)).
 - `renderArt(ctx, stream, w, h, version)` u [`router.ts`](src/lib/scenarios/router.ts) — bez `version` crta najnoviju (v2).
 
+### Post-fx sloj (samo v2)
+
+[`src/lib/post-fx.ts`](src/lib/post-fx.ts) — poziva se na kraju `renderArt` za v2, posle scenarija. Jedan prolaz kroz piksele (`getImageData`/`putImageData`), **bez `ctx.filter` i composite modova**, da browser i server (`@napi-rs/canvas`) daju isti rezultat.
+
+| Efekat | Opseg | Napomena |
+|---|---|---|
+| S-kontrast | 0.12–0.24 | mešavina linearne i smoothstep krive po kanalu |
+| Split-tone | jačina 0.4–0.75 | 5 kuriranih parova (amber-teal, peach-violet, gold-blue, rose-indigo, neutral-warm); senke imaju vrh oko L≈0.33 i opadaju ka crnoj, da tamne površine ne dobiju plavi cast |
+| Vinjeta | 0.20–0.34 | eliptična, smoothstep od 35% udaljenosti |
+| Film grain | 4–8 (0–255) | monohromatski, `mulberry32` PRNG, najvidljiviji u srednjim tonovima; skaliran sa širinom (thumbnail 600px dobija pola) |
+
+Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za parametre), pa ne menjaju samu kompoziciju.
+
 **Ko koju verziju koristi:**
 
 | Mesto | Verzija |
@@ -234,6 +247,7 @@ src/
 │   ├── landscape.ts
 │   ├── tree-lsystem.ts         # L-system rekurentno grananje (drveće)
 │   ├── render-version.ts       # Verzija renderera po datumu (v1 zamrznut / v2 aktivan)
+│   ├── post-fx.ts              # v2 post-fx: kontrast, split-tone, vinjeta, grain
 │   └── scenarios/
 │       ├── router.ts, index.ts # renderArt(..., version) — v2 + dispatch na v1
 │       ├── beach.ts, ocean-sunset.ts, desert.ts
@@ -402,6 +416,14 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Post-fx sloj za render v2 (grana `claude`)
+
+- **`src/lib/post-fx.ts`** — NOVO: `pickPostFxParams(stream)` + `applyPostFx(ctx, w, h, params)`. Jedan pixel prolaz: S-kontrast, split-tone (5 kuriranih parova), eliptična vinjeta, monohromatski film grain (`mulberry32`, skaliran na rezoluciju). Bez `ctx.filter`/composite modova radi istog izgleda u browseru i na serveru.
+- **`src/lib/scenarios/router.ts`** — `renderArt` za v2 poziva `applyPostFx` posle scenarija. v1 nije dirnut.
+- **Podešavanje** — prva verzija imala je prejak grain (7–13) i plavi cast u tamnim delovima; smanjeno na 4–8, grain najjači u srednjim tonovima, senke split-tone-a opadaju ka čistoj crnoj.
+- **Verifikacija** — v1 hash piksela nepromenjen za 2026-11-10 … 18; pregledani pre/posle parovi za zalazak, šumu, pustinju, plažu, pejzaž (noć) i kosmos. `tsc` prolazi.
+- **README** — podsekcija „Post-fx sloj (samo v2)" sa tabelom opsega, stavka u strukturi projekta.
 
 ### 2026-11-19 — Verzionisanje renderera (grana `claude`)
 
