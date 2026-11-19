@@ -150,14 +150,19 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 7. Jezero (`lake.ts`)
+### 7. Jezero (`lake.ts`) — v2
 
-- **Varijacije**: noć (30%) ili dan (70%)
-- **Redosled crtanja**: 1) nebo (3-stop) → 2) ptice (2–6) → 3) sunce (drawSunGlow) → 4) voda (2-stop gradient) → 5) refleks sunca (elliptični radial gradient u vodi) → 6) brda (1–2 ridgePoints) → 7) talasi (2–4 šumne linije) → 8) obalsko drveće (1–4: samo listač)
+> v1 (do `RENDER_V2_FROM`): horizont 1/3, plavo nebo, voda 2/3, uska traka brda, meki refleks sunca, ptice, 1–4 L-system drveta na obali. Zamrznut u `scenarios/v1/lake.ts`.
+
+- **Varijacije**: 6 paleta — dawn-mist, day, golden, dusk, night, alpine-clear; hue ±8; sneg po verovatnoći palete (0.4–1)
+- **Redosled crtanja**: gornja polovina [nebo → zvezde → (hooks.sky) → sunce/mesec → (hooks.body) → oblaci → ptice → daleke planine + sneg → izmaglica → bliže planine → šuma na obali] → ista gornja polovina preslikana u vodu → zatamnjenje vode → talasići → staza odsjaja → magla → prednji plan
 - **Parametri**:
-  - Refleks: reflexY = 2×horizonY - sunY, elliptičan (1.8×r × 0.5×r)
-  - Talasi: ellipse-free, stroke linija sa šumom po Y
-- **Posebnosti**: ogledalo neba u vodi, refleks sunca kao elipsa; obalsko drveće (samo listač, krošnja nagore) — rekurzivno grananje L-sistem ([tree-lsystem.ts](src/lib/tree-lsystem.ts))
+  - Horizont: h × 0.44–0.54; sunce x = w × 0.15–0.85, r = 22–44 × s (mesec 16–28 × s); u sumraku niže (horizont × 0.55–0.80)
+  - Planine: daleke 3–6 vrhova, visina horizont × 0.42–0.62; bliže 2–5 vrhova, × 0.22–0.38; 1–2 pomoćna vrha po glavnom; šum 3 oktave (14/38/110, amp 0.09/0.045/0.02)
+  - Šuma: jelke 10–32 × s (10% 1.6× više), razmak 3–10 × s
+  - Odsjaj: 120–240 crtica; magla 2–4 trake × jačina palete
+  - Prednji plan: mol 28%, čamac 22%, trska 50%; ptice 35% (ne noću)
+- **Posebnosti**: pravi odraz drugim prolazom (`scale(1,-1)`); rarity događaji se ne preslikavaju; ispod dometa odraza boja zenita
 
 ---
 
@@ -257,5 +262,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Zalazak (v2) | Prepisan: 8 paleta (uklj. plavi sat), sunce na različitim visinama sa mekim sjajem, oblaci obasjani odozdo, izmaglica, refleks neba u vodi, svetlosna staza u perspektivi, siluete (obala/jedrilica/svetionik), ptice. Detalji iz `prng.ts`. |
 | 2026-11-19 | Noćni grad (v2) | Prepisan: 6 paleta, 3 sloja zgrada sa izmaglicom, 6 tipova krovova, prozori po spratovima, crvena svetla (35% visokih), pun mesec/srp, oblaci, reka sa odrazima ili ulica sa svetiljkama. |
 | 2026-11-19 | Svi (v2) | Rarity hook-ovi: `hooks.sky(...)` posle neba (horizont + dan/sumrak/noć) i `hooks.body(...)` posle sunca/meseca u svih 8 scenarija. Retki događaji (duga, zvezde padalice, kometa, polarna svetlost, pomračenje, krvavi mesec, glitch) — vidi README → Rarity sistem. Obični dani nepromenjeni. |
+| 2026-11-19 | Jezero (v2) | Prepisano kao planinsko jezero: 6 paleta, planine sa nazubljenim grebenom i snegom, šuma na obali, pravi odraz u vodi, talasići, odsjaj, magla, mol/čamac/trska. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

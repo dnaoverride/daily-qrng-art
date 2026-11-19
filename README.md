@@ -47,7 +47,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | v2: 6 paleta, 3 sloja zgrada u izmaglici, raznovrsni krovovi, prozori po spratovima, pun mesec/srp, reka sa odrazima ili ulica sa svetiljkama |
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | planete, zvezde (crtaju se pre planeta) |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | dan/noć, drveće (stablo + krošnja), ptice/sove/šišmiši/veverica |
-| 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | nebo, voda 2/3, brda-traka, refleks, ptice |
+| 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
 
 ---
 
@@ -109,7 +109,16 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - Zvezde se crtaju pre planeta (da ostanu iza planeta)
 - Planete: paleta od 6 tipova boja; jedan zajednički izvor svetla (sunce) — hotspot gradijenta usmeren prema suncu; tamnija noćna polutka (0.02 na ivici); prstenovi za veće planete (pr≥70)
 
-### Jezero
+### Jezero (v2, od 2026-11-19)
+
+- **Koncept:** planinsko jezero kao ogledalo. Gornja polovina (nebo, zvezde, sunce/mesec, oblaci, planine, šuma) crta se **dva puta**: normalno, pa preslikana preko horizonta (`translate(0, 2·horizonY)` + `scale(1, -1)`, klip na vodu). Geometrija se izračuna unapred, pa su oba prolaza identična.
+- **Palete:** 6 — dawn-mist (jaka magla), day, golden, dusk, night (mesec + zvezde), alpine-clear; hue ±8.
+- **Planine:** 2 sloja; greben = glavni vrhovi sa konkavnim padinama + 1–2 pomoćna vrha + šum u 3 oktave jači pri vrhu (prva verzija su bili čisti trouglovi). Sneg na dalekim vrhovima po verovatnoći palete; izmaglica između slojeva.
+- **Voda:** ispod dometa odraza boja zenita (prva verzija je imala tamnu traku na dnu); zatamnjenje ka dubini; talasići (svetle/tamne crtice, gušći bliže); staza odsjaja sunca/meseca; magla (po paleti).
+- **Prednji plan:** drveni mol u perspektivi 28%, čamac sa veslom 22%, trska/rogoz 50%; ptice 35% (danju).
+- **Rarity:** `hooks.sky` samo u normalnom prolazu (događaji se ne preslikavaju), `hooks.body` za sunce/mesec.
+
+### Jezero (v1)
 
 - Horizont 1/3–2/3 (voda zauzima ~2/3 visine)
 - Brda kao uska traka na horizontu, ne do dna slike
@@ -470,6 +479,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Jezero v2: planinsko jezero sa pravim odrazom (grana `claude`)
+
+- **`src/lib/scenarios/lake.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 6 paleta po dobu dana, planine u 2 sloja sa nazubljenim grebenom i snegom, traka četinarske šume na obali, pravi odraz cele gornje polovine u vodi, talasići, odsjaj sunca/meseca, magla na vodi, prednji plan (mol / čamac / trska). Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — planine su bile čisti trouglovi → pomoćni vrhovi + šum u 3 oktave; tamna traka na dnu (odraz ne dopire do dna kad je horizont nisko) → popunjeno bojom zenita.
+- **Verifikacija** — pregled 12 datuma + 2 u punoj veličini + thumbnail; render 33–58 ms. v1 hash identičan originalu (`ba738be`) i za datum sa jezerom (2026-11-04). `tsc` i ESLint prolaze.
+- **README / SCENARIOS** — sekcija „Jezero (v2)", tabela scenarija, opis i changelog.
 
 ### 2026-11-19 — Rarity sistem: retki nebeski događaji (grana `claude`)
 
