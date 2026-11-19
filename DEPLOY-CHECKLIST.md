@@ -73,6 +73,7 @@ U **hPanel > Deployments > Environment Variables** dodaj:
 - [ ] Postavi `NEXT_PUBLIC_RENDER_V2_FROM` u Hostinger Environment Variables **pre** build-a (vrednost se inline-uje u build)
 - [ ] Posle deploy-a: arhiva pre tog datuma izgleda isto kao ranije, slika od tog datuma je v2
 - [ ] Ne menjati ništa u `src/lib/scenarios/v1/`
+- [ ] Ako je izgled v2 menjan od poslednjeg deploy-a: povećaj v2 u `RENDER_REVISION` (`src/lib/render-version.ts`), da browser/CDN ne služe stare thumbnailove
 
 ---
 

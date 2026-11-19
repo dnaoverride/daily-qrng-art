@@ -1,3 +1,5 @@
+import { renderRevisionForDate } from "@/lib/render-version";
+
 interface ArchiveThumbnailProps {
   date: string;
 }
@@ -9,7 +11,7 @@ export function ArchiveThumbnail({ date }: ArchiveThumbnailProps) {
       style={{ aspectRatio: "16/9", width: "100%" }}
     >
       <img
-        src={`/api/og-image?date=${date}&size=thumb`}
+        src={`/api/og-image?date=${date}&size=thumb&r=${renderRevisionForDate(date)}`}
         loading="lazy"
         decoding="async"
         alt={date}

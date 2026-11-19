@@ -42,7 +42,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 |---|-------|------|------|
 | 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | sunrise/day/sunset/night, planine, oblaci, sunce/mesec |
 | 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | plavo nebo, sunce, more, pesak (ridgePoints), palme |
-| 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | zalazak nad vodom, gradijent neba, refleks |
+| 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | v2: 8 paleta (uklj. plavi sat), sunce na različitim visinama, oblaci obasjani odozdo, svetlosna staza, silueta (obala/jedrilica/svetionik), ptice |
 | 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | toplo nebo, dune (ridgePoints), base sand fill |
 | 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | tamno nebo, zvezde, mesec, zgrade-siluete, prozori |
 | 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | planete, zvezde (crtaju se pre planeta) |
@@ -58,6 +58,17 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - Nebo nikad zelena: avoidGreen za hue 85–165. Plava (day/night) ili narandžasto/crvenkasto (sunrise/sunset)
 - Oblaci beli ili svetlo sivi
 - Sunce uvek toplo (hue 25–60), ne plavo
+
+### Zalazak (v2, od 2026-11-19)
+
+- **Palete umesto slobodnog HSL-a:** 8 kuriranih (classic, golden, pastel, crimson, tropical, lilac, smoky-amber, blue-hour) + mali pomak hue ±8 / lightness ±0.04. Rešava problem da su v1 zalasci izgledali gotovo isto (npr. 10., 12. i 16. novembar).
+- **Plavi sat** (`sunBelow`): sunce ispod horizonta, vidi se samo sjaj; prve zvezde.
+- **Sunce:** visina od napola zašlog do ~2.5 r iznad horizonta, radijus 26–56 × s; meki radijalni sjaj umesto koncentričnih krugova (nema „traka").
+- **Oblaci:** pramenovi od 9–16 pljosnatih elipsi; dva sloja (svetli donji srp + telo pomereno nagore) daju obasjanu donju ivicu. Bliže suncu → topliji.
+- **Voda:** refleks boje neba pri horizontu → duboka boja; svetlosna staza (260–420 odsjaja, perspektiva: šira i ređa ka posmatraču); linije talasa sa rastućim razmakom.
+- **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
+- **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
+- **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
 
 ### Plaža
 
@@ -130,6 +141,12 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
 | Slika dana, `/art/[date]`, arhiva, `/api/og-image` | po datumu slike (`renderVersionForDate`) |
 | `/create-art` — novi brojevi (ručno, „Nasumično", „Današnja") | po današnjem datumu (`currentRenderVersion`) |
 | Favorit (profil, `/f/[token]`, otvaranje u `/create-art`) | po datumu nastanka favorita (`renderVersionForTimestamp(createdAt)`) |
+
+**Keš thumbnail/OG slika — `RENDER_REVISION`:** `/api/og-image` kešira u memoriji (LRU), a odgovor ima `max-age=3600, s-maxage=86400` (browser/CDN). Da se posle izmene izgleda ne služi stara slika:
+
+- `RENDER_REVISION` u [`render-version.ts`](src/lib/render-version.ts) (`{ 1: "1", 2: "2.1" }`) ulazi u ključ memorijskog keša, a [`ArchiveThumbnail`](src/components/ArchiveThumbnail.tsx) dodaje `&r=<revizija>` u URL, pa browser i CDN dobijaju novi URL.
+- **Pravilo:** pri svakoj vizuelnoj izmeni v2 koja ide na produkciju povećaj v2 reviziju (`2.1` → `2.2` …). v1 se nikad ne menja.
+- **Development:** bez ikakvog keša (`Cache-Control: no-store`, bez LRU), pa se izmene renderera odmah vide u arhivi.
 
 **Poznato ograničenje:** favorit sačuvan danas iz *stare* arhivske slike (v1 datum) prikazuje se u v2, jer favorit ne pamti datum slike, samo datum snimanja. Rešava se kolonom `renderVersion` u `Favorite` tabeli kad bude potrebno.
 
@@ -248,6 +265,7 @@ src/
 │   ├── tree-lsystem.ts         # L-system rekurentno grananje (drveće)
 │   ├── render-version.ts       # Verzija renderera po datumu (v1 zamrznut / v2 aktivan)
 │   ├── post-fx.ts              # v2 post-fx: kontrast, split-tone, vinjeta, grain
+│   ├── prng.ts                 # mulberry32 + prngFromStream (sitni detalji u v2)
 │   └── scenarios/
 │       ├── router.ts, index.ts # renderArt(..., version) — v2 + dispatch na v1
 │       ├── beach.ts, ocean-sunset.ts, desert.ts
@@ -416,6 +434,24 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Thumbnailovi u arhivi prate izmene renderera (grana `claude`)
+
+- **Problem** — posle izmene zalaska arhiva je i dalje prikazivala stare thumbnailove: `/api/og-image` ih je keširao u memoriji (ključ = samo datum) i u browseru (`max-age=3600`). Na produkciji bi CDN (`s-maxage=86400`) služio staru sliku do dan posle deploy-a.
+- **`src/lib/render-version.ts`** — `RENDER_REVISION` (`1: "1"`, `2: "2.1"`) i `renderRevisionForDate(date)`.
+- **`src/app/api/og-image/route.ts`** — ključ keša `datum|revizija`; u developmentu bez LRU keša i sa `Cache-Control: no-store`.
+- **`src/components/ArchiveThumbnail.tsx`** — URL thumbnail-a dobija `&r=<revizija>` (cache-busting za browser/CDN).
+- **Verifikacija** — dev server vraća v2 thumbnail za 2026-11-16 sa `no-store`; `tsc` prolazi.
+- **README / DEPLOY-CHECKLIST** — objašnjenje `RENDER_REVISION` i pravilo povećavanja revizije pri vizuelnim izmenama v2.
+
+### 2026-11-19 — Zalazak v2 + zajednički PRNG (grana `claude`)
+
+- **`src/lib/scenarios/ocean-sunset.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 8 kuriranih paleta uklj. „plavi sat", sunce na različitim visinama sa mekim radijalnim sjajem, oblaci-pramenovi obasjani odozdo, izmaglica na horizontu, voda sa refleksom neba, svetlosna staza u perspektivi, linije talasa, opciona silueta (obala / jedrilica / svetionik sa svetlom) i ptice. Sve dimenzije relativne (`s = w/1200`).
+- **`src/lib/prng.ts`** — NOVO: `mulberry32` i `prngFromStream(stream)`. Pravilo za v2: QRNG za odluke, PRNG seedovan QRNG-om za masovne detalje.
+- **`src/lib/post-fx.ts`** — koristi `mulberry32` iz `prng.ts` (bez promene izlaza).
+- **Podešavanje** — siluete obale povišene (bile su tanke trake), sunce češće više iznad horizonta, oblaci od više manjih elipsi sa svetlim donjim srpom (bili su „naduvane elipse"), oblaci bliže suncu topliji.
+- **Verifikacija** — pregledano 12 datuma sa zalaskom (pregled 3×4) + puna veličina + thumbnail 600px; render 30–60 ms na serveru. v1 hash nepromenjen. `tsc` i ESLint prolaze za nove fajlove.
+- **README** — sekcija „Zalazak (v2)" u Važnim odlukama, tabela scenarija, struktura projekta.
 
 ### 2026-11-19 — Post-fx sloj za render v2 (grana `claude`)
 

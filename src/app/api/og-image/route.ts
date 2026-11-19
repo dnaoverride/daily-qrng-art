@@ -5,8 +5,10 @@
  * ?size=thumb → 600×338 JPEG za arhivske thumbnails (odvojen LRU cache).
  *
  * In-memory LRU cache: PNG do 30, JPEG thumb do 90 unosa.
- * Rezultat za isti datum je uvek isti (deterministički), pa ga možemo keširati
- * bez brige o invalidaciji.
+ * Ključ keša = datum + revizija renderera (RENDER_REVISION), pa izmena v2
+ * izgleda ne služi staru sliku. Klijent dodaje `&r=<revizija>` u URL
+ * (ArchiveThumbnail) da i browser/CDN keš dobiju novi URL.
+ * U developmentu nema keša (ni memorija ni Cache-Control) — izmene se vide odmah.
  */
 import { NextResponse } from "next/server";
 import { createCanvas } from "@napi-rs/canvas/node-canvas";
@@ -14,7 +16,9 @@ import { seedFromDate } from "@/lib/qrng-server";
 import { getTodayBelgrade } from "@/lib/date";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
-import { renderVersionForDate } from "@/lib/render-version";
+import { renderVersionForDate, renderRevisionForDate } from "@/lib/render-version";
+
+const IS_DEV = process.env.NODE_ENV === "development";
 
 const W = 1200;
 const H = 630;
@@ -51,22 +55,26 @@ export async function GET(req: Request) {
   const cache = isThumb ? thumbCache : pngCache;
   const maxEntries = isThumb ? MAX_THUMB : MAX_PNG;
 
+  const cacheKey = `${date}|${renderRevisionForDate(date)}`;
+
   try {
-    let buf = cache.get(date);
+    let buf = IS_DEV ? undefined : cache.get(cacheKey);
 
     if (!buf) {
       buf = renderBuffer(date, isThumb);
-      if (cache.size >= maxEntries) {
-        const oldestKey = cache.keys().next().value;
-        if (oldestKey) cache.delete(oldestKey);
+      if (!IS_DEV) {
+        if (cache.size >= maxEntries) {
+          const oldestKey = cache.keys().next().value;
+          if (oldestKey) cache.delete(oldestKey);
+        }
+        cache.set(cacheKey, buf);
       }
-      cache.set(date, buf);
     }
 
     return new NextResponse(buf as unknown as BodyInit, {
       headers: {
         "Content-Type": isThumb ? "image/jpeg" : "image/png",
-        "Cache-Control": "public, max-age=3600, s-maxage=86400",
+        "Cache-Control": IS_DEV ? "no-store" : "public, max-age=3600, s-maxage=86400",
       },
     });
   } catch (e) {

@@ -28,10 +28,26 @@ export const RENDER_V2_FROM: string = (() => {
   return env && DATE_RE.test(env) ? env : DEFAULT_V2_FROM;
 })();
 
+/**
+ * Revizija izgleda po verziji — ulazi u URL i keš ključ thumbnail/OG slika,
+ * da browser/CDN ne služe staru sliku posle izmene renderera.
+ * v1 je zamrznut (nikad se ne menja). v2 POVEĆATI pri svakoj vizuelnoj izmeni v2
+ * koja ide na produkciju (vidi README → Verzionisanje renderera).
+ */
+export const RENDER_REVISION: Record<RenderVersion, string> = {
+  1: "1",
+  2: "2.1",
+};
+
 /** Verzija za datum slike (YYYY-MM-DD). Nevalidan datum → v1 (bezbedno). */
 export function renderVersionForDate(date: string): RenderVersion {
   if (!DATE_RE.test(date)) return 1;
   return date >= RENDER_V2_FROM ? 2 : 1;
+}
+
+/** Revizija za datum slike — za cache-busting URL-ova (`&r=`). */
+export function renderRevisionForDate(date: string): string {
+  return RENDER_REVISION[renderVersionForDate(date)];
 }
 
 /** Verzija za trenutak nastanka (npr. favorit.createdAt), po beogradskom datumu. */
