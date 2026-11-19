@@ -33,21 +33,29 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 | `ridgePoints()` | [draw-utils.ts](src/lib/draw-utils.ts) | Kriva za brda/dune/plažu: anchor-based smoothstep + octave detalj, vraća `{x,y}[]` |
 | `drawSunGlow()` | [draw-utils.ts](src/lib/draw-utils.ts) | Slojevi koncentričnih krugova za sunce/mesec (layers, alpha, glowSpread) |
 | `hslToRgb`, `rgbString` | [color.ts](src/lib/color.ts) | HSL konverzija, RGB string za Canvas |
+| `mulberry32`, `prngFromStream()` | [prng.ts](src/lib/prng.ts) | v2: PRNG seedovan sa 2 QRNG vrednosti za masovne detalje (QRNG ostaje za odluke) |
+| `applyPostFx()` | [post-fx.ts](src/lib/post-fx.ts) | v2: kontrast, split-tone, vinjeta, film grain posle svake scene |
+| `SceneHooks` (`sky`, `body`) | [sky-events.ts](src/lib/sky-events.ts) | v2: rarity hook-ovi — retki nebeski događaji iza prednjeg plana |
+| Palete po scenariju | svaki v2 scenario | v2: 6–8 kuriranih paleta (`PALETTES`) + pomak hue ±8–10 |
+
+> `ridgePoints` i `drawSunGlow` koristi samo v1; v2 scenariji imaju sopstvenu geometriju i meki radijalni sjaj sunca.
 
 ---
 
-## 3. Tabela scenarija (pregled)
+## 3. Tabela scenarija (pregled) — v2
 
-| # | Naziv | Fajl | Glavni elementi |
+| # | Naziv | Fajl | Glavni elementi (v2) |
 |---|-------|------|-----------------|
-| 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | nebo, brda, sunce/mesec, oblaci ili zvezde |
-| 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | nebo, more, pesak, palme, talasi |
-| 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | zalazak neba (4 stopa), sunce na horizontu, refleks, talasi |
-| 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | toplo nebo, dune (4 sloja), sunce |
-| 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | tamno nebo, zvezde, mesec, zgrade (siluete), prozori |
-| 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | zvezde, sunce, planete (3–7), prstenovi, sferični gradijent |
-| 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | nebo, drveće (3 sloja), sunce/mesec, ptice/sova/šišmiš, light rays |
-| 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | nebo, voda, refleks sunca, brda, ptice, talasi |
+| 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | low-poly planinski vrhovi, snežne kape, more oblaka, podbrđa, alpska livada, staza, koliba |
+| 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | tropska plaža, kumulusi, plićina, pena, palme sa liskama, ostrvo, jedrilica, suncobran |
+| 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | 8 paleta, sunce na različitim visinama, obasjani oblaci, svetlosna staza, siluete |
+| 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | asimetrične dune sa svetlom i senkom, mese, karavan, oaza, saguaro, Mlečni put |
+| 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | 3 sloja zgrada, prozori po spratovima, mesec/srp, reka sa odrazima ili ulica |
+| 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | maglina, zvezde sa zracima, galaksija, 5 tipova planeta, prstenovi, meseci, krupni plan |
+| 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | proplanak i šumovita dolina u magli, jelke i listopadna stabla, zraci, srna, svici |
+| 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | planinsko jezero sa pravim odrazom, sneg, šuma na obali, magla, mol/čamac/trska |
+
+Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
 ---
 
@@ -134,18 +142,20 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 5. Kosmos (`cosmos.ts`)
+### 5. Kosmos (`cosmos.ts`) — v2
 
-- **Varijacije**: paleta boja planeta (6 tipova: Mars, Jupiter, Zemlja/Neptun, Uran, siva, Venus)
-- **Redosled crtanja**: 1) pozadina (2-stop tamno ljubičasto) → 2) zvezde (300–600) → 3) sunce (custom radial gradient + glow) → 4) za svaku planetu: prstenovi back pass → sfera → prstenovi front pass
-- **Parametri**:
-  - Planete: 3–7, radius 30–120, pozicija nasumična
-  - Prstenovi: verovatnoća `pr<70 ? 0 : 0.25 + ((pr-70)/50)*0.35`, 4–7 eliptičnih prstenova
-  - Sunce: pozicija w×0.15–0.85, h×0.1–0.4, r 8–18
-- **Posebnosti**:
-  - Jedinstveno sunce, svi planeti osvetljeni iz istog smera (hotspot usmeren ka suncu)
-  - Prstenovi: occlusion — ellipse/circle presek, back arc (iza planete) i front arc (ispred)
-  - `ellipseCircleIntersectionAngles(rx, ry, pr)` za uglove preseka elipse i kruga planete
+> v1 (do `RENDER_V2_FROM`): tamna pozadina, 300–600 zvezda, jedno sunce, 3–7 planeta (6 tipova boja) sa sfernim gradijentom ka suncu, prstenovi od linija (back/front arc preko preseka elipse i kruga). Zamrznut u `scenarios/v1/cosmos.ts`.
+
+- **Varijacije**: 6 paleta magline — violet-magenta, teal-blue, emission-red, green-cyan, blue-gold, dark; hue ±10. Kompozicija: „sistem" (2–4 planete) 65% ili „krupni plan" (ogromna planeta, horizont kao luk + 1–2 manja tela) 35%. Galaksija 20%. Zvezda u kadru 60% (inače sjaj sa strane).
+- **Redosled crtanja**: 1) pozadina (dijagonalni gradijent) → 2) maglina (2–4 vlakna od mekih radijalnih oblaka + svetlija jezgra + tamne pruge) → (hooks.sky, bez horizonta) → 3) 500–900 zvezda + 6–15 sa difrakcionim zracima → 4) galaksija → 5) zvezda-sunce → 6) planete od najmanje ka najvećoj
+- **Planete**: tipovi gas (2/6), rocky, ocean, ice, lava
+  - gas: talasaste trake (uže na velikim planetama), olujna pega 50%
+  - rocky: mrlje + 14–28 kratera sa svetlim obodom
+  - ocean: kontinenti, oblaci, polarna kapa
+  - ice: pruge + polarna kapa
+  - lava: tamna kora + glatke užarene pukotine sa granama
+  - svima: zatamnjenje ka ivici, noćna strana suprotno od zvezde, odsjaj, svetli obod; atmosfera (osim rocky); prstenovi (gas/ice, r > 45 × s, 55%); 0–2 meseca
+- **Posebnosti**: planete se deterministički odmiču od zvezde u kadru; kosmos ne prijavljuje `hooks.body` → legendarno = glitch; QRNG za odluke, `prngFromStream` za detalje
 
 ---
 
@@ -181,32 +191,32 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-## 5. Matrica: efekti po scenariju
+## 5. Matrica: efekti po scenariju (v2)
 
 | Efekat | Pejzaž | Plaža | Zalazak | Pustinja | Noćni grad | Kosmos | Šuma | Jezero |
 |--------|--------|-------|---------|----------|------------|--------|------|--------|
-| Linear gradient (nebo) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Radial gradient | | | | | | ✓ (planete, sunce) | | ✓ (refleks) |
-| drawSunGlow | ✓ | ✓ | ✓ | ✓ | ✓ (mesec) | (custom) | ✓ | ✓ |
-| ridgePoints | ✓ | ✓ | ✓ | ✓ | | | | ✓ |
-| Zvezde | ✓ (noć) | | | | ✓ | ✓ | ✓ (noć) | |
-| Oblaci | ✓ (dan) | | | | | | | |
-| Talasi | | ✓ | ✓ | | | | | ✓ |
-| Ptice/životinje | | | | | | | ✓ | ✓ |
-| Light rays | | | | | | | ✓ (dan) | |
-| Prstenovi | | | | | | ✓ | | |
+| Kurirane palete | 6 | 6 | 8 | 6 | 6 | 6 | 6 | 6 |
+| Meki radijalni sjaj sunca/meseca | ✓ | ✓ | ✓ | ✓ | ✓ (mesec) | ✓ (zvezda) | ✓ | ✓ |
+| Zvezde | noć | noć | plavi sat | noć + Mlečni put | ✓ | ✓ + zraci | noć | noć |
+| Oblaci | izduženi | kumulusi | obasjani odozdo | | tanki (mesec) | maglina | | ✓ |
+| Slojevi + izmaglica | ✓ | | ✓ | ✓ | ✓ | | ✓ | ✓ |
+| Svetla/senovita strana | vrhovi | palme | | dune, mese | | planete | drveće | |
+| Voda / odraz | | plićina, pena | staza | oaza | reka | | | pravi odraz |
+| Siluete / objekti | koliba, staza | ostrvo, jedrilica, suncobran | obala, jedrilica, svetionik | karavan, kaktusi | zgrade | planete, meseci | srna, svici | mol, čamac, trska |
+| Ptice | ✓ | galebovi | ✓ | | | | ✓ | ✓ |
+| Rarity hook-ovi | ✓ | ✓ | ✓ | ✓ | ✓ | samo sky | ✓ | ✓ |
+| Post-fx | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ---
 
-## 5a. Tipovi drveća/vegetacije po scenariju
+## 5a. Tipovi drveća/vegetacije po scenariju (v2)
 
-Drveće i vegetacija prilagođeni scenariju (Weber model: fan fronds, Shape conical/spherical).
-
-- **Plaža**: Palma — tapered deblo sa ringovima, fan peraja (6–10)
-- **Šuma**: Listočad (65%) — sferična/elipsoidna krošnja (blobovi u envelope); Četinar (35%) — konusna krošnja (trougao/trapez)
-- **Jezero**: Samo obalski listač — rekurzivno grananje nagore (L-system inspirisano)
-- **Pustinja**: Kaktus (70% od vegetacije) — 2–4 segmenta; Palma (30%) — manja, tamnija (oaza)
-- **Pejzaž, Zalazak, Grad, Kosmos**: bez drveća
+- **Plaža**: palma — glatko zakrivljeno stablo sa prstenovima, puni listovi sa dugim liskama, kokosi
+- **Šuma**: jelka (slojevi grana, svetla/senovita polovina, sneg) i listopadno (dvobojni grozdovi; golo zimi); siluete u pozadini
+- **Jezero**: traka jelki na obali (siluete), trska/rogoz u prvom planu
+- **Pustinja**: saguaro (stablo + grane), palme u oazi
+- **Pejzaž**: jelke na podbrđima, cveće na livadi
+- **Zalazak, Grad, Kosmos**: bez drveća
 
 ---
 
@@ -221,16 +231,17 @@ Drveće i vegetacija prilagođeni scenariju (Weber model: fan fronds, Shape coni
 
 ### Raspored crtanja (opšti princíp)
 
-1. **Sky** — linear gradient, eventualno zvezde
-2. **Sredina** — sunce/mesec, oblaci, light rays
-3. **Foreground** — brda, objekti (palme, zgrade, drveće, planete)
+1. **Sky** — linear gradient, zvezde → `hooks.sky` (retki događaji)
+2. **Sredina** — sunce/mesec → `hooks.body`, oblaci, dalji slojevi u izmaglici
+3. **Foreground** — objekti (palme, zgrade, drveće, planete)
+4. **Posle scene** (router) — legendarni događaji (`finish()`), pa post-fx
 
-### Kosmos — prstenovi
+### Kosmos — prstenovi (v2)
 
-- Elipsa prstena presekana krugom planete: `ellipseCircleIntersectionAngles(rx, ry, pr)` računa uglove preseka
-- **Back pass**: crtaju se samo delovi elipse iza planete (pre crtanja sfere)
-- **Front pass**: crtaju se delovi ispred planete (posle sfere)
-- Rezultat: prsteni realistično prelaze iza i ispred planete
+- Prsten = 5–9 eliptičnih traka (procepi = traka sa alpha 0.05), u koordinatama rotiranim za nagib planete
+- **Back pass**: gornja polovina elipse (klip `y < 0`) pre planete
+- **Front pass**: donja polovina (klip `y ≥ 0`) posle planete
+- v1 je koristio presek elipse i kruga (`ellipseCircleIntersectionAngles`) — i dalje postoji u `scenarios/v1/cosmos.ts`
 
 ---
 
@@ -282,5 +293,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Šuma (v2) | Prepisana kao proplanak sa pogledom na šumovitu dolinu: 6 paleta (uklj. jesen i zimu), 4 sloja brda u magli, velike jelke i listopadna stabla sa dvobojnim krošnjama, zraci, srna, svici. |
 | 2026-11-19 | Plaža (v2) | Prepisana kao tropska plaža: 6 paleta, kumulusi, zakrivljena obala sa plićinom, mokrim peskom i penom, palme sa punim listovima i dugim liskama, ostrvo, jedrilica, suncobran, školjke, galebovi. |
 | 2026-11-19 | Pejzaž (v2) | Prepisan kao low-poly planinski vrhovi: 6 paleta (uklj. alpenglow), fasetirani vrhovi sa snežnim kapama, more oblaka, podbrđa, alpska livada, staza, koliba. |
+| 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
+| 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

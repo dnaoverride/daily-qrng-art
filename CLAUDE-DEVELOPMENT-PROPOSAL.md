@@ -81,7 +81,7 @@ Novi fajl `src/lib/post-fx.ts`, poziva se na kraju `renderArt`:
 4. **Bloom/halo oko sunca i meseca** koji prelazi preko siluete (sada je oštro odsečeno).
 5. **Color grading**: blagi split-tone (topli highlights, hladne senke), sa parametrima iz palete.
 
-### 4.2 Kurirane palete — 🟡 započeto 2026-11-19 (zalazak 8, noćni grad 6, jezero 6, pustinja 6, šuma 6, plaža 6, pejzaž 6; sledi kosmos)
+### 4.2 Kurirane palete — ✅ urađeno 2026-11-19 (svih 8 scenarija: zalazak 8, ostali po 6)
 - Biblioteka od 30–50 ručno izabranih harmoničnih paleta (`src/lib/palettes.ts`), svaka sa 5–7 boja i ulogama (`skyTop`, `skyBottom`, `sun`, `far`, `mid`, `near`, `accent`).
 - QRNG bira paletu, a zatim pravi male pomake hue/lightness (±5–8%) da nijedna slika ne bude identična.
 - Postojeća pravila iz README (nebo nikad zeleno, sunce toplo…) postaju svojstva palete umesto `if`-ova.
@@ -98,7 +98,7 @@ QRNG bira stil nezavisno od scenarija, pa 8 scenarija × 5 stilova = 40 vizuelni
 | Akvarel | svaki oblik = 4–6 prozirnih poligona sa noise ivicama (alpha 0.08–0.15) |
 | Linocut | 2–3 boje, šrafura linijama umesto gradijenata |
 
-### 4.4 Konkretno po scenariju
+### 4.4 Konkretno po scenariju — ✅ svih 8 scenarija prerađeno u v2 (2026-11-19)
 
 **Zalazak nad vodom** ([ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts)) — ✅ urađeno 2026-11-19 (v2):
 - paleta iz biblioteke umesto fiksnih hue-ova,
@@ -122,7 +122,7 @@ QRNG bira stil nezavisno od scenarija, pa 8 scenarija × 5 stilova = 40 vizuelni
 - dune sa jasnom osvetljenom i senovitom stranom (oštar greben, mek pad),
 - talasići vetra na pesku, fatamorgana pri horizontu, opciono karavan ili ruševina u daljini.
 
-**Kosmos** ([cosmos.ts](src/lib/scenarios/cosmos.ts)):
+**Kosmos** ([cosmos.ts](src/lib/scenarios/cosmos.ts)) — ✅ urađeno 2026-11-19 (v2):
 - maglina od nekoliko slojeva noise oblaka u 2–3 boje,
 - traka Mlečnog puta, prašina, veće zvezde sa „spikes" difrakcijom.
 

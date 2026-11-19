@@ -45,7 +45,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | v2: 8 paleta (uklj. plavi sat), sunce na različitim visinama, oblaci obasjani odozdo, svetlosna staza, silueta (obala/jedrilica/svetionik), ptice |
 | 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | v2: 6 paleta (podne, zlatne dune, saharski zalazak, ljubičasti sumrak, noć sa Mlečnim putem, crvene stene), asimetrične dune sa svetlom i senkom, mese, karavan, oaza, saguaro |
 | 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | v2: 6 paleta, 3 sloja zgrada u izmaglici, raznovrsni krovovi, prozori po spratovima, pun mesec/srp, reka sa odrazima ili ulica sa svetiljkama |
-| 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | planete, zvezde (crtaju se pre planeta) |
+| 5 | Kosmos | [cosmos.ts](src/lib/scenarios/cosmos.ts) | v2: maglina u 6 paleta, zvezde sa zracima, galaksija, 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom, atmosferom, prstenovima i mesecima; „sistem" ili „krupni plan" |
 | 6 | Šuma | [forest.ts](src/lib/scenarios/forest.ts) | v2: pogled sa proplanka na šumovitu dolinu — 6 paleta (proleće, leto, jesen, zlatni sat, noć sa svitcima, zima), 4 sloja brda u magli, velika drveta sa dvobojnim krošnjama, zraci, srna |
 | 7 | Jezero | [lake.ts](src/lib/scenarios/lake.ts) | v2: planinsko jezero — 6 paleta (zora/dan/zlatni sat/sumrak/noć/alpsko), planine sa snegom, šuma na obali, pravi odraz u vodi, magla, mol/čamac/trska |
 
@@ -136,7 +136,14 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - Base sand fill pre crtanja dina da zelena iz prethodnog scenarija ne probija
 - Dune oble (ridgePoints sa roughness, detailScale) — ne oštre/račvaste
 
-### Kosmos
+### Kosmos (v2, od 2026-11-19)
+
+- **Palete magline:** 6 — violet-magenta, teal-blue, emission-red, green-cyan, blue-gold, dark; hue ±10.
+- **Kompozicija:** „sistem" (2–4 planete) ili „krupni plan" 35% (ogromna planeta čiji je horizont luk + 1–2 manja tela); spiralna galaksija 20%; zvezda u kadru 60% (difrakcioni zraci), inače sjaj sa strane.
+- **Planete (5 tipova):** gasni džin (talasaste trake, olujna pega), stenovita (krateri), okeanska (kontinenti, oblaci, polarna kapa), ledena (pruge, kapa), vulkanska (glatke užarene pukotine). Svima: zatamnjenje ka ivici, noćna strana suprotno od zvezde, odsjaj, svetli obod; atmosfera; prstenovi kao trake sa procepima (zadnja/prednja polovina); meseci.
+- **Podešavanje:** planete se deterministički odmiču od zvezde (prva verzija je imala planetu preko zvezde); velike planete imaju uže trake + zatamnjenje ka ivici (krupni plan je bio „ravan"); pukotine su bile škrabotine → glatke krive sa granama.
+
+### Kosmos (v1)
 
 - Zvezde se crtaju pre planeta (da ostanu iza planeta)
 - Planete: paleta od 6 tipova boja; jedan zajednički izvor svetla (sunce) — hotspot gradijenta usmeren prema suncu; tamnija noćna polutka (0.02 na ivici); prstenovi za veće planete (pr≥70)
@@ -511,6 +518,14 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Kosmos v2: magline, tipovi planeta, krupni plan (grana `claude`) — svih 8 scenarija prerađeno
+
+- **`src/lib/scenarios/cosmos.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 6 paleta magline (vlakna od mekih oblaka + tamne pruge), zvezde sa difrakcionim zracima, spiralna galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta sa površinom po tipu, senkom ka zvezdi, zatamnjenjem ka ivici, atmosferom, prstenovima (trake sa procepima, zadnja/prednja polovina) i mesecima. Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — planeta preko zvezde → deterministički pomak; krupni plan „ravan" → uže trake + zatamnjenje ka ivici; vulkanske pukotine kao škrabotine → glatke krive sa granama.
+- **Verifikacija** — pregled 12 datuma + 2 u punoj veličini + thumbnail; render 56–83 ms. v1 hash identičan originalu (`ba738be`) i za dane sa kosmosom (2026-11-07, 11). `tsc` i ESLint prolaze.
+- **SCENARIOS.md** — pored opisa kosmosa, ažurirani odeljci 2 (deljeni primitivi v2), 3 (tabela scenarija v2), 5 (matrica efekata v2), 5a (vegetacija v2) i 6 (raspored crtanja sa hook-ovima, prstenovi v2).
+- **README** — sekcija „Kosmos (v2)", tabela scenarija.
 
 ### 2026-11-19 — Pejzaž v2: low-poly planinski vrhovi (grana `claude`)
 
