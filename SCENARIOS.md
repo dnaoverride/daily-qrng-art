@@ -65,15 +65,19 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ---
 
-### 1. Plaža (`beach.ts`)
+### 1. Plaža (`beach.ts`) — v2
 
-- **Varijacije**: fiksno dnevno nebo, plava paleta
-- **Redosled crtanja**: 1) nebo (3-stop gradient) → 2) sunce (drawSunGlow) → 3) more (3-stop gradient) → 4) talasi (8–16 elipsi, alpha 0.2–0.38) → 5) pesak (3 sloja ridgePoints) → 6) palme (2–5)
+> v1 (do `RENDER_V2_FROM`): plavo nebo, sunce, more sa elipsama-talasima, 3 sloja peska (ridgePoints), 2–5 palmi sa trapezoidnim deblom i ventilatorom od trouglastih peraja. Zamrznut u `scenarios/v1/beach.ts`.
+
+- **Varijacije**: 6 paleta — tropical-noon, lagoon, sunset-beach, pastel-morning, moonlit, overcast; hue ±8
+- **Redosled crtanja**: 1) nebo → 2) zvezde (noć) → (hooks.sky) → 3) sunce/mesec → (hooks.body) → 4) kumulusi → 5) more (dubina → plićina) → 6) staza odsjaja → 7) ostrvo / jedrilica → 8) linije talasa → 9) plićina uz obalu → 10) mokar + suv pesak → 11) pena + mehurići → 12) tekstura peska, školjke, morske zvezde → 13) suncobran → 14) palme → 15) galebovi
 - **Parametri**:
-  - Talasi: 8–16 elipsi, wa 70–180, wb 6–22
-  - Pesak: amplitude ~14–26, rough 0.72–0.87
-  - Palme: 2–5, trunk 80–160px, 6–10 peraja u ventilatoru
-- **Posebnosti**: palme — trapezoidno deblo sa ringovima, drawPalmFronds (fan peraja)
+  - Horizont: h × 0.40–0.52; obala levo/desno horizont + (h−horizont) × 0.35–0.70, krivina ±30 × s
+  - Sunce: x = w × 0.15–0.85, r = 24–44 × s (mesec 16–28 × s)
+  - Oblaci: 0–8 × količina palete, širina 90–310 × s (overcast 1.6×)
+  - Palme: 1–4, visina (h−horizont) × 0.65–1.0 + 0–120 × s (krošnja u kadru), 7–11 listova × 26 lisaka
+  - Detalji: ostrvo 35%, jedrilica 25%, suncobran 20%, 0–4 školjke/zvezde, galebovi 45%
+- **Posebnosti**: strana svetla prati sunce; QRNG za odluke, `prngFromStream` za detalje
 
 ---
 
@@ -273,5 +277,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Jezero (v2) | Prepisano kao planinsko jezero: 6 paleta, planine sa nazubljenim grebenom i snegom, šuma na obali, pravi odraz u vodi, talasići, odsjaj, magla, mol/čamac/trska. |
 | 2026-11-19 | Pustinja (v2) | Prepisana: 6 paleta, asimetrične dune sa osvetljenom i senovitom stranom, talasasto podnožje, jaranice, mese, karavan, saguaro, oaza, Mlečni put noću. |
 | 2026-11-19 | Šuma (v2) | Prepisana kao proplanak sa pogledom na šumovitu dolinu: 6 paleta (uklj. jesen i zimu), 4 sloja brda u magli, velike jelke i listopadna stabla sa dvobojnim krošnjama, zraci, srna, svici. |
+| 2026-11-19 | Plaža (v2) | Prepisana kao tropska plaža: 6 paleta, kumulusi, zakrivljena obala sa plićinom, mokrim peskom i penom, palme sa punim listovima i dugim liskama, ostrvo, jedrilica, suncobran, školjke, galebovi. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

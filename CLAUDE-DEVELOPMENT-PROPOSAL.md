@@ -81,7 +81,7 @@ Novi fajl `src/lib/post-fx.ts`, poziva se na kraju `renderArt`:
 4. **Bloom/halo oko sunca i meseca** koji prelazi preko siluete (sada je oštro odsečeno).
 5. **Color grading**: blagi split-tone (topli highlights, hladne senke), sa parametrima iz palete.
 
-### 4.2 Kurirane palete — 🟡 započeto 2026-11-19 (zalazak 8, noćni grad 6, jezero 6, pustinja 6, šuma 6; slede plaža, pejzaž, kosmos)
+### 4.2 Kurirane palete — 🟡 započeto 2026-11-19 (zalazak 8, noćni grad 6, jezero 6, pustinja 6, šuma 6, plaža 6; slede pejzaž, kosmos)
 - Biblioteka od 30–50 ručno izabranih harmoničnih paleta (`src/lib/palettes.ts`), svaka sa 5–7 boja i ulogama (`skyTop`, `skyBottom`, `sun`, `far`, `mid`, `near`, `accent`).
 - QRNG bira paletu, a zatim pravi male pomake hue/lightness (±5–8%) da nijedna slika ne bude identična.
 - Postojeća pravila iz README (nebo nikad zeleno, sunce toplo…) postaju svojstva palete umesto `if`-ova.

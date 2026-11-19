@@ -41,7 +41,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
 | 0 | Pejzaž | [landscape.ts](src/lib/landscape.ts) | sunrise/day/sunset/night, planine, oblaci, sunce/mesec |
-| 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | plavo nebo, sunce, more, pesak (ridgePoints), palme |
+| 1 | Plaža | [beach.ts](src/lib/scenarios/beach.ts) | v2: tropska plaža — 6 paleta (podne, laguna, zalazak, pastelno jutro, mesečina, oblačno), zakrivljena obala sa penom i plićinom, palme sa liskama, ostrvo/jedrilica/suncobran/školjke |
 | 2 | Zalazak | [ocean-sunset.ts](src/lib/scenarios/ocean-sunset.ts) | v2: 8 paleta (uklj. plavi sat), sunce na različitim visinama, oblaci obasjani odozdo, svetlosna staza, silueta (obala/jedrilica/svetionik), ptice |
 | 3 | Pustinja | [desert.ts](src/lib/scenarios/desert.ts) | v2: 6 paleta (podne, zlatne dune, saharski zalazak, ljubičasti sumrak, noć sa Mlečnim putem, crvene stene), asimetrične dune sa svetlom i senkom, mese, karavan, oaza, saguaro |
 | 4 | Noćni grad | [city-night.ts](src/lib/scenarios/city-night.ts) | v2: 6 paleta, 3 sloja zgrada u izmaglici, raznovrsni krovovi, prozori po spratovima, pun mesec/srp, reka sa odrazima ili ulica sa svetiljkama |
@@ -70,7 +70,15 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
 
-### Plaža
+### Plaža (v2, od 2026-11-19)
+
+- **Palete:** 6 — tropical-noon, lagoon (beli pesak), sunset-beach, pastel-morning, moonlit, overcast (pun oblaka); hue ±8.
+- **More i obala:** more od tamne dubine pri horizontu ka svetlijoj plićini; obala = kosa linija + blaga krivina; tirkizna traka plićine, mokar pesak, 2–3 talasaste linije pene + mehurići; linije talasa u perspektivi; staza odsjaja.
+- **Palme:** 1–4 sa strana, nagnute ka sredini; glatko zakrivljeno stablo (jedna površina, svetla ivica, prstenovi); 7–11 punih listova sa 26 dugih opuštenih lisaka po strani; kokosi. Visina ograničena da krošnja ostane u kadru. (Prva verzija: lišće kao retka „žičana mreža", pa „testera" od kratkih zubaca; stablo od kockica.)
+- **Oblaci:** puhasti kumulusi sa ravnim dnom, osvetljeni sa strane sunca (količina po paleti).
+- **Detalji:** ostrvo sa palmama na horizontu 35%, jedrilica 25%, suncobran sa senkom 20% (ne noću), školjke i morske zvezde, tekstura peska, galebovi 45%.
+
+### Plaža (v1)
 
 - Nebo plavo (hue 200–240)
 - More plavo-tirkiz gradijent
@@ -496,6 +504,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Plaža v2: tropska plaža sa penom, plićinom i palmama (grana `claude`)
+
+- **`src/lib/scenarios/beach.ts`** — scenario prepisan za v2 (v1 ostaje u `scenarios/v1/`): 6 paleta, puhasti oblaci, more od dubine ka plićini, zakrivljena obala sa tirkiznom plićinom, mokrim peskom i penom, staza odsjaja, ostrvo i jedrilica na horizontu, palme sa punim listovima i dugim liskama, suncobran, školjke, morske zvezde, galebovi. Dimenzije relativne (`s = w/1200`).
+- **Podešavanje** — lišće palmi bilo je retka „žičana mreža" → pun nazubljen list → duge, uske, opuštene liske; stablo od naizmeničnih kockica → glatka površina sa svetlom ivicom i prstenovima; krošnja izlazila van kadra → visina ograničena.
+- **Verifikacija** — pregled 12 datuma + puna veličina + thumbnail; render 37–75 ms. v1 hash identičan originalu (`ba738be`) i za dan sa plažom (2026-11-15). `tsc` i ESLint prolaze.
+- **README / SCENARIOS** — sekcija „Plaža (v2)", tabela scenarija, opis i changelog.
 
 ### 2026-11-19 — Šuma v2: proplanak i šumovita dolina u magli (grana `claude`)
 
