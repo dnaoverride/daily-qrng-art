@@ -8,6 +8,10 @@ Analiza svih scenarija: šta se može iscrtati, koji efekti postoje, parametri i
 
 **QRNG Art** je generativna umetnost zasnovana na kvantno nasumičnim brojevima (QRNG). Projekat ima **8 scenarija**, svaki crta jedinstvenu kompoziciju pomoću Canvas 2D.
 
+### Verzije renderera
+
+Od 2026-11-19 postoje dve verzije: **v1** (zamrznuta, `src/lib/scenarios/v1/`, sve slike pre `RENDER_V2_FROM`) i **v2** (aktivna, `src/lib/scenarios/*.ts`). Opisi u ovom dokumentu važe za v2; v1 je stanje od 2026-11-18. Detalji u [README](README.md#verzionisanje-renderera-render-v1--v2).
+
 ### Izbor scenarija
 
 Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a:
@@ -232,5 +236,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-03-05 | Šuma | Fix: painter's algorithm — svako drvo (krošnja+deblo) crta se kao celina, slojevi unazad; prednje drveće pravilno prekriva zadnje. |
 | 2026-03-05 | Šuma | Fix: sva drveća sortiraju se po baseY (dubina) pa se crtaju — prednje (niže na platnu) prekrivaju zadnje. |
 | 2026-03-05 | Šuma | Fix: nebo uvek plavo ili crvenkasto (zalazak); uklonjena zelena nijansa neba (accentHue 65–100). |
+| 2026-11-19 | Svi | Uvedeno verzionisanje renderera: trenutni scenariji zamrznuti kao **v1** u `src/lib/scenarios/v1/` (arhiva pre `RENDER_V2_FROM`). Sve dalje izmene u ovoj tabeli odnose se na **v2** (`src/lib/scenarios/*.ts`), osim ako nije drugačije navedeno. Vizuelno bez promene. |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

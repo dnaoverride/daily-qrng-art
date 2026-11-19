@@ -1,8 +1,14 @@
 /**
  * Multi-scenario router. Mešanje prvih 4 vrednosti za uniformnu distribuciju.
  * 8 scenarija na Landscape nivou.
+ *
+ * Verzionisanje: renderArt(..., version) — v1 je zamrznut u ./v1/,
+ * ovaj fajl i scenariji u ovom folderu su v2 (aktivni razvoj).
+ * Vidi src/lib/render-version.ts.
  */
 import type { QRNGStream } from "../qrng";
+import { LATEST_RENDER_VERSION, type RenderVersion } from "../render-version";
+import { renderArtV1 } from "./v1/router";
 import { renderLandscape } from "../landscape";
 import { renderBeach } from "./beach";
 import { renderOceanSunset } from "./ocean-sunset";
@@ -15,6 +21,20 @@ import { renderLake } from "./lake";
 export const NUM_SCENARIOS = 8;
 
 export function renderArt(
+  ctx: CanvasRenderingContext2D,
+  stream: QRNGStream,
+  w: number,
+  h: number,
+  version: RenderVersion = LATEST_RENDER_VERSION
+): void {
+  if (version === 1) {
+    renderArtV1(ctx, stream, w, h);
+    return;
+  }
+  renderArtV2(ctx, stream, w, h);
+}
+
+function renderArtV2(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
   w: number,

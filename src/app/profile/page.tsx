@@ -142,7 +142,7 @@ function FavoriteCard({
         className="relative aspect-video bg-zinc-100 dark:bg-zinc-800 block group outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-inset dark:focus-visible:ring-zinc-500"
       >
         {values ? (
-          <AlgoArtCanvas values={values} scenarioName={fav.scenarioName} className="w-full h-full object-cover transition-opacity group-hover:opacity-95" />
+          <AlgoArtCanvas values={values} scenarioName={fav.scenarioName} createdAt={fav.createdAt} className="w-full h-full object-cover transition-opacity group-hover:opacity-95" />
         ) : (
           <div className="w-full h-full animate-pulse bg-zinc-200 dark:bg-zinc-700" />
         )}

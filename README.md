@@ -97,6 +97,39 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
+## Verzionisanje renderera (render v1 / v2)
+
+**Zašto:** Svaka slika se crta iz sačuvanih brojeva (slika dana iz datuma, favoriti iz baze). Bez verzionisanja bi svaka izmena scenarija retroaktivno promenila **celu arhivu** i sve sačuvane favorite.
+
+**Kako:**
+
+- **v1** — zamrznuta kopija scenarija u [`src/lib/scenarios/v1/`](src/lib/scenarios/v1/) (router, svih 8 scenarija, `landscape.ts`, `draw-utils.ts`, `tree-lsystem.ts`, `color.ts`). **Ništa se tu ne menja**, nikad.
+- **v2** — aktivni kod u [`src/lib/scenarios/*.ts`](src/lib/scenarios/), `src/lib/landscape.ts`, `draw-utils.ts`… Sva vizuelna poboljšanja i novi scenariji idu ovde.
+- [`src/lib/render-version.ts`](src/lib/render-version.ts) određuje verziju **po datumu** (Europe/Belgrade):
+  - datum `< RENDER_V2_FROM` → v1, datum `>= RENDER_V2_FROM` → v2
+  - `RENDER_V2_FROM` dolazi iz `NEXT_PUBLIC_RENDER_V2_FROM`; ako nije postavljen, podrazumevano je `2099-01-01` → **produkcija ostaje na v1** dok se pri deploy-u ne postavi datum prelaska (vidi [DEPLOY-CHECKLIST.md](DEPLOY-CHECKLIST.md)).
+- `renderArt(ctx, stream, w, h, version)` u [`router.ts`](src/lib/scenarios/router.ts) — bez `version` crta najnoviju (v2).
+
+**Ko koju verziju koristi:**
+
+| Mesto | Verzija |
+|---|---|
+| Slika dana, `/art/[date]`, arhiva, `/api/og-image` | po datumu slike (`renderVersionForDate`) |
+| `/create-art` — novi brojevi (ručno, „Nasumično", „Današnja") | po današnjem datumu (`currentRenderVersion`) |
+| Favorit (profil, `/f/[token]`, otvaranje u `/create-art`) | po datumu nastanka favorita (`renderVersionForTimestamp(createdAt)`) |
+
+**Poznato ograničenje:** favorit sačuvan danas iz *stare* arhivske slike (v1 datum) prikazuje se u v2, jer favorit ne pamti datum slike, samo datum snimanja. Rešava se kolonom `renderVersion` u `Favorite` tabeli kad bude potrebno.
+
+**Provera determinističnosti:** pri uvođenju je v1 renderovan za 8 datuma (2026-11-10 … 2026-11-18) i hash piksela je identičan kodu pre izmene.
+
+---
+
+## Otvorena pitanja / TODO
+
+- **Slika dana nije kvantna.** `/api/art/[date]` i `/api/og-image` koriste `seedFromDate()` iz [`src/lib/qrng-server.ts`](src/lib/qrng-server.ts): SHA-256 hash datuma → xorshift → 1000 brojeva. ANU QRNG i `qrng_pool` koristi samo `/api/generate` (`/create-art`, `/algorithmic`). Plan za kasnije: tabela `daily_art` (datum → 1000 brojeva), prvi zahtev dana uzima red iz `qrng_pool` i trajno ga vezuje za datum; stari datumi ostaju na `seedFromDate` da se arhiva ne promeni. Preduslov za sertifikat / „Usvoji dan" iz [CLAUDE-DEVELOPMENT-PROPOSAL.md](CLAUDE-DEVELOPMENT-PROPOSAL.md).
+
+---
+
 ## Algoritmički art (`/algorithmic`) — layout u `<style>`
 
 **Zašto:** Na Next.js 16 + Turbopack + Tailwind v4, responsive utility klase (`md:flex-row` itd.) za ovu stranu ponekad **ne daju očekivani desktop layout** (panel i platno ostaju jedan ispod drugog). Zato je raspored rešen **čistim CSS-om** u ugrađenom `<style>` bloku u [`src/app/algorithmic/page.tsx`](src/app/algorithmic/page.tsx), ne kroz Tailwind breakpoint-e za tu osu.
@@ -200,10 +233,12 @@ src/
 │   ├── schema.ts               # Drizzle šema (User, Favorite)
 │   ├── landscape.ts
 │   ├── tree-lsystem.ts         # L-system rekurentno grananje (drveće)
+│   ├── render-version.ts       # Verzija renderera po datumu (v1 zamrznut / v2 aktivan)
 │   └── scenarios/
-│       ├── router.ts, index.ts
+│       ├── router.ts, index.ts # renderArt(..., version) — v2 + dispatch na v1
 │       ├── beach.ts, ocean-sunset.ts, desert.ts
 │       ├── city-night.ts, cosmos.ts, forest.ts, lake.ts
+│       └── v1/                 # ZAMRZNUT render v1 (ne menjati — arhiva)
 └── components/
     ├── ArtCanvas.tsx, Header.tsx, Providers.tsx
     ├── DailyArtSection.tsx, ArtPageContent.tsx
@@ -271,11 +306,15 @@ DATABASE_URL="mysql://qrng_user:tvoja_lozinka@localhost:3306/qrng_db"
 
 # Opciono — apsolutni URL sajta (za OG slike, share linkove)
 NEXTAUTH_URL="http://localhost:9500"
+
+# Opciono — od kog datuma se crta render v2 (YYYY-MM-DD). Bez ovoga: 2099-01-01 (sve v1)
+NEXT_PUBLIC_RENDER_V2_FROM="2026-11-01"
 ```
 
 - **AUTH_SECRET** — generiši sa `openssl rand -base64 32`
 - **DATABASE_URL** — format za MySQL: `mysql://user:pass@host:port/dbname`
 - **NEXTAUTH_URL** — u produkciji postavi na realan domen (npr. `https://qrng-art.com`)
+- **NEXT_PUBLIC_RENDER_V2_FROM** — datum prelaska na render v2 (vidi [Verzionisanje renderera](#verzionisanje-renderera-render-v1--v2)). U `.env.development` je `2026-11-01`, pa se lokalno novembar crta u v2, a starije u v1 (lako poređenje u arhivi).
 
 ### 5. Inicijalizacija baze (Drizzle)
 
@@ -363,6 +402,22 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-19 — Verzionisanje renderera (grana `claude`)
+
+- **`src/lib/scenarios/v1/`** — NOVO: zamrznuta kopija celog renderera (router, 8 scenarija, `landscape.ts`, `draw-utils.ts`, `tree-lsystem.ts`, `color.ts`) sa prepravljenim importima. Funkcija `renderArtV1`. Ne menja se nikad; čuva izgled postojeće arhive.
+- **`src/lib/render-version.ts`** — NOVO: `RenderVersion`, `RENDER_V2_FROM` (iz `NEXT_PUBLIC_RENDER_V2_FROM`, podrazumevano `2099-01-01`), `renderVersionForDate`, `renderVersionForTimestamp`, `currentRenderVersion`.
+- **`src/lib/scenarios/router.ts`** — `renderArt(ctx, stream, w, h, version = 2)`: verzija 1 ide na `renderArtV1`, inače `renderArtV2` (postojeći kod, ovde idu poboljšanja).
+- **`src/components/ArtCanvas.tsx`** — novi opcioni prop `renderVersion`; bez njega verzija po `date` propu, a bez datuma po današnjem danu.
+- **`src/components/AlgoArtCanvas.tsx`** — novi opcioni prop `createdAt` → verzija po datumu nastanka favorita (samo za scenarije, algoritamski presetovi nisu pogođeni).
+- **`src/app/profile/page.tsx`, `src/app/f/[token]/page.tsx`** — prosleđuju `createdAt` favorita u `AlgoArtCanvas`.
+- **`src/app/create-art/page.tsx`** — favorit otvoren u Igraonici crta se u verziji svog `createdAt`; novi brojevi (unos, Nasumično, Današnja) u današnjoj verziji.
+- **`src/app/api/og-image/route.ts`** — OG i arhivski thumbnail crtaju se u verziji datuma.
+- **`.env.development`** — `NEXT_PUBLIC_RENDER_V2_FROM=2026-11-01` (samo lokalno).
+- **Verifikacija** — v1, v2 i kod pre izmene daju identičan hash piksela za 2026-11-10 … 2026-11-18. `tsc --noEmit` prolazi. Vizuelno se još ništa ne menja (v2 == v1).
+- **README** — nove sekcije „Verzionisanje renderera" i „Otvorena pitanja / TODO" (slika dana koristi `seedFromDate`, ne ANU QRNG; vezivanje QRNG-a za datum odloženo), env promenljiva u Pokretanju, ažurirana struktura projekta.
+- **DEPLOY-CHECKLIST** — korak za `NEXT_PUBLIC_RENDER_V2_FROM` pri spajanju u `main`.
+- **CLAUDE-DEVELOPMENT-PROPOSAL.md** — NOVO: analiza i predlog razvoja (vizuelno, monetizacija, roadmap).
 
 ### 2026-03-29
 

@@ -11,6 +11,7 @@ import {
   NUM_SCENARIOS,
 } from "@/lib/scenarios";
 import { getTodayBelgrade } from "@/lib/date";
+import { renderVersionForTimestamp, type RenderVersion } from "@/lib/render-version";
 import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
 
 const REQUIRED_COUNT = 1000;
@@ -31,6 +32,8 @@ function CreateArtPageInner() {
   const [input, setInput] = useState("");
   const [values, setValues] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Verzija renderera — zadata samo kad se učita favorit (po createdAt), inače današnja. */
+  const [renderVersion, setRenderVersion] = useState<RenderVersion | undefined>(undefined);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const t = useTranslations("createArt");
@@ -45,7 +48,7 @@ function CreateArtPageInner() {
       try {
         const res = await fetch(`/api/favorites/${favoriteId}`);
         const data = (await res.json()) as {
-          favorite?: { values?: unknown; scenarioName?: string | null };
+          favorite?: { values?: unknown; scenarioName?: string | null; createdAt?: string };
         };
         if (!alive || !res.ok || !data.favorite) {
           if (alive) {
@@ -73,6 +76,9 @@ function CreateArtPageInner() {
         }
         if (!alive) return;
         setInput(vals.join(", "));
+        setRenderVersion(
+          data.favorite.createdAt ? renderVersionForTimestamp(data.favorite.createdAt) : undefined
+        );
         setValues(vals);
         router.replace("/create-art");
       } catch {
@@ -95,6 +101,7 @@ function CreateArtPageInner() {
       setValues(null);
       return;
     }
+    setRenderVersion(undefined);
     setValues(parsed);
   }
 
@@ -109,6 +116,7 @@ function CreateArtPageInner() {
         throw new Error("Neispravan odgovor.");
       }
       setInput(data.values.join(", "));
+      setRenderVersion(undefined);
       setValues(data.values);
     } catch {
       setError(t("errorLoadToday"));
@@ -130,6 +138,7 @@ function CreateArtPageInner() {
         throw new Error("Neispravan odgovor.");
       }
       setInput(data.values.join(", "));
+      setRenderVersion(undefined);
       setValues(data.values);
     } catch {
       setError(t("errorRandom"));
@@ -220,6 +229,7 @@ function CreateArtPageInner() {
             )}
             <ArtCanvas
               values={values}
+              renderVersion={renderVersion}
               onCanvasReady={(el) => {
                 canvasRef.current = el;
               }}

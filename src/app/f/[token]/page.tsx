@@ -91,6 +91,7 @@ export default async function SharedFavoritePage({ params }: PageProps) {
           <AlgoArtCanvas
             values={values}
             scenarioName={favorite.scenarioName}
+            createdAt={favorite.createdAt}
             className="w-full max-w-4xl h-auto rounded-lg shadow-xl"
           />
         </div>

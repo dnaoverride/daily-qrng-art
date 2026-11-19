@@ -65,6 +65,14 @@ U **hPanel > Deployments > Environment Variables** dodaj:
 | `AUTH_SECRET` | `openssl rand -base64 32` ili [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) | Obavezno novi za produkciju |
 | `NEXTAUTH_SECRET` | isto kao `AUTH_SECRET` | Preporučeno zbog Auth.js kompatibilnosti |
 | `NEXTAUTH_URL` | `https://qrng-art.com` | Bez trailing slash-a |
+| `NEXT_PUBLIC_RENDER_V2_FROM` | `YYYY-MM-DD` (datum deploy-a render v2) | Bez nje sve ostaje v1 (`2099-01-01`). Vidi korak 2a. |
+
+### 2a. Render v2 (pri spajanju grane `claude` u `main`)
+
+- [ ] Izaberi datum prelaska = **dan deploy-a ili sutrašnji dan** (nikako datum u prošlosti — prošle slike bi se promenile)
+- [ ] Postavi `NEXT_PUBLIC_RENDER_V2_FROM` u Hostinger Environment Variables **pre** build-a (vrednost se inline-uje u build)
+- [ ] Posle deploy-a: arhiva pre tog datuma izgleda isto kao ranije, slika od tog datuma je v2
+- [ ] Ne menjati ništa u `src/lib/scenarios/v1/`
 
 ---
 

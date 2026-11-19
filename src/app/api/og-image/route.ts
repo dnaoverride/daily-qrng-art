@@ -14,6 +14,7 @@ import { seedFromDate } from "@/lib/qrng-server";
 import { getTodayBelgrade } from "@/lib/date";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
+import { renderVersionForDate } from "@/lib/render-version";
 
 const W = 1200;
 const H = 630;
@@ -32,7 +33,7 @@ function renderBuffer(date: string, thumb: boolean): Buffer {
   const h = thumb ? H_THUMB : H;
   const canvas = createCanvas(w, h);
   const ctx = canvas.getContext("2d") as unknown as CanvasRenderingContext2D;
-  renderArt(ctx, stream, w, h);
+  renderArt(ctx, stream, w, h, renderVersionForDate(date));
   if (thumb) {
     return canvas.toBuffer("image/jpeg");
   }

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
+import { currentRenderVersion, renderVersionForTimestamp } from "@/lib/render-version";
 import {
   DEFAULT_FLOW_FIELD,
   DEFAULT_WAVE,
@@ -38,10 +39,13 @@ interface AlgoArtCanvasProps {
   values: number[];
   scenarioName?: string | null;
   className?: string;
+  /** Trenutak nastanka (favorit.createdAt) — određuje verziju renderera za scenarije. */
+  createdAt?: string | Date | null;
 }
 
-export function AlgoArtCanvas({ values, scenarioName, className = "" }: AlgoArtCanvasProps) {
+export function AlgoArtCanvas({ values, scenarioName, className = "", createdAt }: AlgoArtCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const version = createdAt ? renderVersionForTimestamp(createdAt) : currentRenderVersion();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -59,9 +63,9 @@ export function AlgoArtCanvas({ values, scenarioName, className = "" }: AlgoArtC
       });
     } else {
       const stream = new QRNGStream(values);
-      renderArt(ctx, stream, W, H);
+      renderArt(ctx, stream, W, H, version);
     }
-  }, [values, scenarioName]);
+  }, [values, scenarioName, version]);
 
   return (
     <canvas

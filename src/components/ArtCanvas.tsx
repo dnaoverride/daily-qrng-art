@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
+import {
+  currentRenderVersion,
+  renderVersionForDate,
+  type RenderVersion,
+} from "@/lib/render-version";
 
 const W = 1200;
 const H = 675;
@@ -11,6 +16,11 @@ interface ArtCanvasProps {
   values: number[];
   date?: string;
   className?: string;
+  /**
+   * Verzija renderera. Ako nije zadata: po `date` (slika dana/arhiva),
+   * a bez datuma — verzija za današnji dan (create-art).
+   */
+  renderVersion?: RenderVersion;
   /** Called with the canvas element after draw (e.g. for PNG download) */
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
@@ -19,8 +29,11 @@ export function ArtCanvas({
   values,
   date,
   className = "",
+  renderVersion,
   onCanvasReady,
 }: ArtCanvasProps) {
+  const version =
+    renderVersion ?? (date ? renderVersionForDate(date) : currentRenderVersion());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -32,10 +45,10 @@ export function ArtCanvas({
     if (!ctx) return;
 
     const stream = new QRNGStream(values);
-    renderArt(ctx, stream, W, H);
+    renderArt(ctx, stream, W, H, version);
     setReady(true);
     onCanvasReady?.(canvas);
-  }, [values, onCanvasReady]);
+  }, [values, version, onCanvasReady]);
 
   useEffect(() => {
     draw();

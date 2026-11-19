@@ -53,15 +53,21 @@ Sa 12,5% šanse po scenariju korisnik posle desetak dana vidi „sve". Fale izne
 - trošiti QRNG vrednosti na *odluke* (kompozicija, paleta, retki događaji),
 - a za masovne detalje (zvezde, lišće, grain) koristiti PRNG seedovan iz QRNG-a, i to jasno napisati na sajtu.
 
+### 3.6 Slika dana trenutno nije kvantna ⚠️ (odloženo)
+[api/art/[date]/route.ts](src/app/api/art/[date]/route.ts) i [api/og-image/route.ts](src/app/api/og-image/route.ts) koriste `seedFromDate()` iz [qrng-server.ts](src/lib/qrng-server.ts): SHA-256 hash datuma → xorshift → 1000 brojeva. ANU QRNG i `qrng_pool` koristi samo `/api/generate` (Igraonica i studio).
+- **Odluka (2026-11-19):** ostaje ovako za sada; prvo vizuelna poboljšanja.
+- **Plan za kasnije:** tabela `daily_art` (datum → 1000 brojeva + izvor + vreme). Prvi zahtev dana uzima red iz `qrng_pool` i trajno ga vezuje za datum; datumi pre prelaska ostaju na `seedFromDate`, pa se arhiva ne menja. Ovo je preduslov za sertifikat i „Usvoji dan" (5.1).
+- Trag je ostavljen i u README, sekcija „Otvorena pitanja / TODO".
+
 ---
 
 ## 4. Ulepšavanje scenarija
 
 Poređano po odnosu efekta i uloženog rada.
 
-### 4.0 Preduslov: `renderVersion`
-- Dodati `renderVersion` (int) u dnevni zapis u bazi; postojeći dani dobijaju `1`.
-- [router.ts](src/lib/scenarios/router.ts) dobija `renderArt(ctx, stream, w, h, version)`, a stari kod ide u `src/lib/scenarios/v1/` i više se ne menja.
+### 4.0 Preduslov: `renderVersion` ✅ urađeno 2026-11-19
+- Verzija se određuje **po datumu** (bez izmena baze): [render-version.ts](src/lib/render-version.ts), `NEXT_PUBLIC_RENDER_V2_FROM`.
+- [router.ts](src/lib/scenarios/router.ts) ima `renderArt(ctx, stream, w, h, version)`, a stari kod je u [src/lib/scenarios/v1/](src/lib/scenarios/v1/) i više se ne menja.
 - Svi novi vizuelni radovi idu u `v2`. Prodata slika je „zamrznuta" na svojoj verziji.
 - Dodati snapshot test: hash PNG-a za nekoliko fiksnih setova brojeva po verziji. Ako se hash promeni, nešto je slučajno pokvareno.
 
