@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
@@ -44,6 +44,8 @@ interface ArtCanvasProps {
    * a bez datuma — verzija za današnji dan (create-art).
    */
   renderVersion?: RenderVersion;
+  /** Sadržaj preko samog platna (npr. strelice prethodni/sledeći dan). */
+  overlay?: ReactNode;
   /** Called with the canvas element after draw (e.g. for PNG download) */
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
@@ -53,6 +55,7 @@ export function ArtCanvas({
   date,
   className = "",
   renderVersion,
+  overlay,
   onCanvasReady,
 }: ArtCanvasProps) {
   const version =
@@ -86,13 +89,16 @@ export function ArtCanvas({
 
   return (
     <div className={`relative ${className}`}>
-      <canvas
-        ref={canvasRef}
-        width={W}
-        height={H}
-        className="w-full max-w-4xl h-auto rounded-lg shadow-xl"
-        style={{ aspectRatio: `${W} / ${H}` }}
-      />
+      <div className="group/art relative">
+        <canvas
+          ref={canvasRef}
+          width={W}
+          height={H}
+          className="block w-full max-w-4xl h-auto rounded-lg shadow-xl"
+          style={{ aspectRatio: `${W} / ${H}` }}
+        />
+        {overlay}
+      </div>
       {ready && (date || place) && (
         <p className="mt-2 text-sm text-zinc-500 text-center">
           {date && tArt("title", { date })}

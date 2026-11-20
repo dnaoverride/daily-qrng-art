@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
-import { getTodayBelgrade } from "@/lib/date";
+import { getTodayBelgrade, ARCHIVE_START } from "@/lib/date";
 import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 import { MonthAccordion } from "@/components/MonthAccordion";
 
 export const revalidate = 3600;
 
-const LAUNCH_DATE = "2026-03-04";
 
 interface MonthGroup {
   key: string;
@@ -62,7 +61,7 @@ function groupByMonth(dates: string[], locale: string): MonthGroup[] {
 }
 
 export default async function ArchivePage() {
-  const dates = getDateRange(LAUNCH_DATE);
+  const dates = getDateRange(ARCHIVE_START);
   const t = await getTranslations("archive");
   const locale = await getLocale();
 

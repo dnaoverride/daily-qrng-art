@@ -48,7 +48,9 @@
     "title": "Slika za {date}",
     "loading": "Učitavanje...",
     "errorLoad": "Greška učitavanja",
-    "error": "Greška"
+    "error": "Greška",
+    "prev": "Prethodni dan",
+    "next": "Sledeći dan"
   },
   "favorites": {
     "save": "Sačuvaj u omiljene",

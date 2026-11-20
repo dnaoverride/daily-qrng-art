@@ -48,7 +48,9 @@
     "title": "Image for {date}",
     "loading": "Loading...",
     "errorLoad": "Load error",
-    "error": "Error"
+    "error": "Error",
+    "prev": "Previous day",
+    "next": "Next day"
   },
   "favorites": {
     "save": "Save to favorites",

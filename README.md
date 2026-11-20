@@ -361,8 +361,8 @@ src/
 │   ├── layout.tsx            # Root layout + Providers (SessionProvider)
 │   ├── create-art/page.tsx   # Igraonica — unesi 1000 brojeva, generiši, preuzmi PNG, snimi u omiljene
 │   ├── algorithmic/page.tsx # Algoritmički art — layout u <style> (vidi sekciju u README)
-│   ├── art/[date]/page.tsx   # Art po datumu
-│   ├── archive/page.tsx      # Arhiva
+│   ├── art/[date]/page.tsx   # Art po datumu — strelice ‹ › preko slike (i tasteri ←/→) za prethodni/sledeći dan
+│   ├── archive/page.tsx      # Arhiva (od ARCHIVE_START = 2026-03-04 do danas)
 │   ├── login/page.tsx        # Prijava / registracija
 │   ├── profile/page.tsx      # Profil — omiljene slike korisnika
 │   ├── f/[token]/page.tsx   # Javno deljenje omiljene slike
@@ -377,7 +377,7 @@ src/
 │           └── [id]/route.ts     # GET, DELETE, PATCH (ažuriraj naslov/javnost)
 ├── lib/
 │   ├── qrng.ts, qrng-server.ts
-│   ├── color.ts, draw-utils.ts, date.ts
+│   ├── color.ts, draw-utils.ts, date.ts  # date.ts: getTodayBelgrade, ARCHIVE_START, shiftDate, archiveNeighbors
 │   ├── auth.ts                 # NextAuth konfiguracija (Credentials + Drizzle)
 │   ├── db.ts                   # Drizzle + mysql2 connection pool
 │   ├── schema.ts               # Drizzle šema (User, Favorite)
@@ -556,6 +556,19 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-20 — Arhiva: navigacija na prethodni/sledeći dan (grana `claude`)
+
+- **`src/components/ArtPageContent.tsx`** — navigacija prethodni / sledeći dan na stranici `/art/[date]`:
+  - Okrugle „frosted glass" strelice (44px desktop / 36px mobilni, poluprovidna crna + `backdrop-blur`, bela SVG strelica) preko leve i desne ivice slike, centrirane po visini. **Leva vodi na noviji dan, desna na stariji** (listanje arhive unazad).
+  - Na desktopu su prigušene dok miš nije nad slikom, a pune na hover slike / strelice. Na uređajima na dodir su uvek vidljive. Tooltip i `aria-label` sadrže ciljni dan („Prethodni dan · 18. nov").
+  - Na prvom danu arhive desna strelica se ne prikazuje, a na današnjem leva. Tasteri ← (noviji) / → (stariji) rade isto (ne dok se kuca u polje ili sa modifikatorima). Susedne stranice se prefetch-uju. Susedni dani se računaju na klijentu (danas po Beogradu), pa keširana stranica ne nudi „sutra".
+  - Zaglavlje (naslov + „Sačuvaj") poravnato je sa širinom slike.
+- **`src/components/ArtCanvas.tsx`** — novi opcioni prop `overlay` koji se crta preko samog platna (`group/art` za hover), pa su strelice centrirane na sliku bez obzira na natpis i oznaku retkosti ispod.
+- **`src/lib/date.ts`** — `ARCHIVE_START` (premešten iz arhive), `shiftDate(date, days)` (UTC aritmetika, bez DST problema), `archiveNeighbors(date, today?)`.
+- **`src/app/archive/page.tsx`** — koristi `ARCHIVE_START` iz `date.ts` umesto lokalne konstante.
+- **`messages/*.json`** — `art.prev`, `art.next` (aria-label / tooltip strelica).
+- **Verifikacija** — screenshot (desktop, mobilni, svetla i tamna tema, prvi dan arhive); `tsc` i ESLint prolaze (jedno postojeće upozorenje u `ArtPageContent`).
 
 ### 2026-11-19 — Novi scenario: Polja i ravnica (Vojvodina, Provansa, Toskana) (grana `claude`)
 
