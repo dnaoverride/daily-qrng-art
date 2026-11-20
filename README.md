@@ -12,11 +12,11 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 13** (raste sa novim scenarijima).
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 14** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 13
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 14
 ```
 
 `scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
@@ -55,6 +55,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | 6 paleta (zlatni/crveni zalazak, podne, jutarnja izmaglica, noć sa Mlečnim putem, kišna sezona), ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre (siluete u zalasku i noću, u boji danju), Kilimandžaro, visoka trava |
 | 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | regioni Vojvodina (suncokret/žito, salaš sa đermom, topole), Provansa (lavanda, kamena kuća, čempresi), Toskana (brežuljci-krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba; ime regiona ispod slike |
 | 12 | Oluja (samo v2) | [storm.ts](src/lib/scenarios/storm.ts) | lokacije svetionik na moru (talasi, rt, pena) / usamljeno drvo u ravnici (vetar, bare, ograda) / planine u kiši i magli (koliba, jezero); 6 paleta (supercell, slate, noć, zlatni proboj, ljubičasti sumrak, oluja prolazi + duga); munje sa grananjem, zavese kiše, kosa kiša |
+| 13 | Arktik (samo v2) | [arctic.ts](src/lib/scenarios/arctic.ts) | lokacije fjord (litice u 3 sloja, snežne planine, pravi odraz, crvene kućice, kit) / presek kroz vodu (santa sa podvodnim delom, zraci svetla, kit u dubini) / ledena obala (sante, ledene ploče, sastrugi, polarni medved ILI pingvini, iglo ili kućica); 6 paleta (polarni dan, ponoćno sunce, polarna noć, plavi čas, oblačno, maglovita zora); česta ali blaga polarna svetlost |
 
 ---
 
@@ -83,6 +84,14 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Arktik (samo v2, od 2026-11-20)
+
+- **Lokacije** (QRNG po težinama): **fjord 40%** (litice sa obe strane u 3 sloja sa maglom između, sneg samo na blagim ispupčenjima ivice, snežni žlebovi, slojevi stene; snežne planine u dnu fjorda; crvene kućice u podnožju 40%, sa upaljenim prozorima noću; ledene ploče, mala santa 50%, rep kita koji izranja 20%), **presek kroz vodu 30%** (vodena linija preko cele slike; iznad nje velika santa, tabularna ili šiljasta; ispod nje podvodni deo 3–4× dublji, tirkizan, sa fasetama, zraci svetla, mehurići, kit u dubini 30%, medved na tabularnoj santi 15%), **ledena obala 30%** (more sa santama i ledenim pločama, ledena ploča u prvom planu sa sastrugima i pukotinama; iglo 30% ili kućica 20%; **polarni medved 35% ili pingvini 35%, nikad zajedno**).
+- **Nebo:** 6 paleta — polar-day, midnight-sun (nisko sunce), polar-night (mesec, zvezde), blue-hour, overcast-pastel (bez sunca, sneg u vazduhu češći), ice-fog-dawn (gusta magla).
+- **Polarna svetlost:** sopstvena, česta (polarna noć 85%, plavi čas 45%) ali blaga (alpha 0.28–0.42, mešanje „lighter"), 1–3 zavese od vertikalnih stubova duž talasaste krive, zeleno → ljubičasto ka vrhu; odražava se u vodi. Legendarni rarity događaj ostaje jači i poseban.
+- **Planine i sante:** fasete senke na strani suprotnoj od sunca (`lightDir`); svetla vodena linija na santama; odraz santi u mirnoj vodi i blag nagoveštaj podvodnog dela.
+- **Odraz:** gornja polovina (nebo, polarna svetlost, sunce/mesec, planine, litice, kućice) se crta dva puta — normalno i preslikano preko horizonta (tehnika iz jezera).
 
 ### Oluja (samo v2, od 2026-11-20)
 
@@ -567,6 +576,15 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-20 — Novi scenario: Arktik / fjord (grana `claude`)
+
+- **`src/lib/scenarios/arctic.ts`** — NOVO (scenario 13, samo v2): 3 lokacije sa težinama 40 / 30 / 30 (fjord, presek kroz vodu sa santom, ledena obala), 6 paleta (polarni dan, ponoćno sunce, polarna noć, plavi čas, oblačno pastelno, maglovita zora), sopstvena blaga polarna svetlost, snežne planine sa fasetama, litice fjorda u 3 sloja, sante (tabularne i šiljaste) sa podvodnim delom, ledene ploče, polarni medved ILI pingvini (nikad zajedno), kit (rep ili u dubini), crvene kućice, iglo, kućica sa dimom, sneg u vazduhu. Pravi odraz u vodi kao u jezeru. Dimenzije relativne (`s = w/1200`).
+- **`src/lib/scenarios/router.ts`, `index.ts`** — `NUM_SCENARIOS_V2 = 14`, `SCENARIO_NAMES[13] = "Arktik"`.
+- **`messages/*.json`** — `scenario.s13`: Arktik / Arctic.
+- **Podešavanje** — litice su prvo bile nazubljene kao češalj (prejak sitan šum, previše žlebova) → masivniji zidovi, sneg samo na blagim delovima ivice umesto bele konture; podvodni deo sante je bio pravilan polukrug sa radijalnim linijama → nepravilan obris (glatki šum, nagib) sa fasetama; medved se nije video na snegu → topliji ton, kontura i gradijent tela, nova silueta; senka na planinama imala oštru vertikalnu ivicu → prati padinu. Šiljasta santa je imala pokidan obris (tačke van širine sante + sortiranje po x presavijali su poligon, npr. 2026-11-15) → obris se gradi redom po x, sve tačke unutar širine; lepeza svetlih trouglova u podvodnom delu (izgledala kao zraci) → blage vertikalne fasete od vodene linije ka obodu.
+- **Posledica** — v2 dani preraspoređeni po 14 scenarija (~7.1% svaki, raspodela na 4000 dana 6.5–7.7%); lokalno arktik: 2026-11-14, 2026-11-15, 2026-11-17.
+- **Verifikacija** — pregled 24 datuma + puna veličina (obala sa medvedom, fjord sa kitom, fjord danju); render 32–63 ms. v1 hash nepromenjen (30 dana, kod iz HEAD naspram radnog stabla). `tsc` i ESLint prolaze.
 
 ### 2026-11-20 — Ime scenarija svuda (naslovna, slika po datumu, arhiva) (grana `claude`)
 

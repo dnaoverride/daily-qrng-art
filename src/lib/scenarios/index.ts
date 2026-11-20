@@ -26,6 +26,7 @@ export const SCENARIO_NAMES: Record<number, string> = {
   10: "Savana",
   11: "Polja",
   12: "Oluja",
+  13: "Arktik",
 };
 
 /** Ime scenarija za brojeve i verziju renderera (za omiljene i prikaz). */
