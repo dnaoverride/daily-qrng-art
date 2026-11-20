@@ -12,11 +12,11 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 12** (raste sa novim scenarijima).
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 13** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 12
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 13
 ```
 
 `scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
@@ -38,7 +38,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 
 ---
 
-## Scenariji (8 u v1, 12 u v2)
+## Scenariji (8 u v1, 13 u v2)
 
 | # | Naziv | Fajl | Opis |
 |---|-------|------|------|
@@ -54,6 +54,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | 6 paleta (tropski greben, duboko plavo, kelp, zalazak, ponor sa bioluminiscencijom, laguna), zraci, kaustike, greben (razgranati/lepezasti/mozak-korali, sunđeri, sase, kelp), jata i tropske ribe, kornjača, meduze, udičarka; podvodni retki događaji |
 | 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | 6 paleta (zlatni/crveni zalazak, podne, jutarnja izmaglica, noć sa Mlečnim putem, kišna sezona), ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre (siluete u zalasku i noću, u boji danju), Kilimandžaro, visoka trava |
 | 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | regioni Vojvodina (suncokret/žito, salaš sa đermom, topole), Provansa (lavanda, kamena kuća, čempresi), Toskana (brežuljci-krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba; ime regiona ispod slike |
+| 12 | Oluja (samo v2) | [storm.ts](src/lib/scenarios/storm.ts) | lokacije svetionik na moru (talasi, rt, pena) / usamljeno drvo u ravnici (vetar, bare, ograda) / planine u kiši i magli (koliba, jezero); 6 paleta (supercell, slate, noć, zlatni proboj, ljubičasti sumrak, oluja prolazi + duga); munje sa grananjem, zavese kiše, kosa kiša |
 
 ---
 
@@ -82,6 +83,16 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Oluja (samo v2, od 2026-11-20)
+
+- **Lokacije** (QRNG po težinama): **svetionik na moru 40%** (talasi sa penom, stenoviti rt sa liticom, pukotinama i stenama u podnožju, pena koja udara o liticu, svetionik sa crvenim prugama 50% i kućicom 45%, snop svetla u sumraku/noći, galebovi), **usamljeno drvo 35%** (krošnja i grane savijene niz vetar, lišće koje leti, ograda ka horizontu 50%, salaš sa topolama u daljini 45%, bare sa odrazom neba, trava savijena vetrom), **planine 25%** (3 venca sa maglom uz podnožje, dolina, koliba sa upaljenim prozorima i dimom 50%, planinsko jezero 45%, jele u prvom planu).
+- **Nebo:** 6 paleta — supercell (zelenkasto), slate (sivo, najgušća kiša), noć, golden-break (sunce ispod oblaka, osvetljene donje ivice), violet-dusk, passing (oluja se povlači na jednu stranu, sunce na vedroj strani, sopstvena duga 50%).
+- **Oblaci:** 4 sloja od dalekih (nisko, sitni, u izmaglici) ka bliskim (gore, krupni); spljošteni „jastuci" (elipse 1.6 : 0.6) sa svetlim temenom ka svetlu i tamnim prugama podnožja; daleki kumulonimbus sa nakovnjem 45%.
+- **Munje:** 0–2 danju, 1–3 noću; putanja metodom pomeranja sredine (7 nivoa) sa granama; sjaj + belo jezgro; bljesak u oblacima; odraz na moru / u jezeru.
+- **Kiša:** 2–4 zavese kiše na horizontu + kosa kiša u prvom planu (ugao = smer vetra, isti za drvo i travu).
+- **Retki događaji:** `hooks.sky` se zove **posle** oblaka, inače bi oblačni pokrivač sakrio dugu/kometu.
+- **Napomena:** nebo se boji do dna platna, da ispod talasastih ivica tla nikad ne ostane prazan (crn) procep.
 
 ### Polja i ravnica (samo v2, od 2026-11-19)
 
@@ -556,6 +567,14 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-20 — Novi scenario: Oluja (svetionik, usamljeno drvo, planine) (grana `claude`)
+
+- **`src/lib/scenarios/storm.ts`** — NOVO (scenario 12, samo v2): 3 lokacije sa težinama 40 / 35 / 25, 6 paleta (supercell, slate, noć, zlatni proboj, ljubičasti sumrak, oluja prolazi), slojeviti olujni oblaci, kumulonimbus sa nakovnjem, munje sa grananjem i bljeskom, zavese kiše, kosa kiša po smeru vetra, sopstvena duga kad oluja prolazi. Dimenzije relativne (`s = w/1200`). Bez `Path2D` (nije globalan u `@napi-rs/canvas`).
+- **`src/lib/scenarios/router.ts`, `index.ts`** — `NUM_SCENARIOS_V2 = 13`, `SCENARIO_NAMES[12] = "Oluja"`.
+- **Podešavanje** — oblaci su prvo bili okrugli „mehurići" → spljošteni slojevi; rt je bio ravan zeleni zid → stena sa plohom litice, pukotinama, stenama i linijom pene, veći svetionik; krošnja drveta → jedna masa sa svetlijim pramenovima; tanka crna linija na horizontu (prazan procep između neba i tla) → nebo do dna; oštra ivica magle u planinama → gradijent koji bledi.
+- **Posledica** — v2 dani preraspoređeni po 13 scenarija (~7.7% svaki); lokalno oluja: 2026-11-29.
+- **Verifikacija** — pregled 24 datuma + puna veličina (svetionik u slate i zlatnom proboju, drvo, planine noću i sa dugom) + thumbnail; render 46–73 ms. v1 hash nepromenjen. `tsc` i ESLint prolaze.
 
 ### 2026-11-20 — Arhiva: navigacija na prethodni/sledeći dan (grana `claude`)
 

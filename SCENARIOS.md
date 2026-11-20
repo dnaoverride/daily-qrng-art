@@ -22,7 +22,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ```
 v1:  (v0 ^ v1 ^ v2 ^ v3) % 8  →  12.5% po scenariju (zamrznuto)
-v2:  (v0 ^ v1 ^ v2 ^ v3) % 12  →  ~8.3% po scenariju (raste sa novim scenarijima)
+v2:  (v0 ^ v1 ^ v2 ^ v3) % 13  →  ~7.7% po scenariju (raste sa novim scenarijima)
 ```
 
 ---
@@ -59,6 +59,7 @@ v2:  (v0 ^ v1 ^ v2 ^ v3) % 12  →  ~8.3% po scenariju (raste sa novim scenariji
 | 9 | Podvodni svet (samo v2) | [underwater.ts](src/lib/scenarios/underwater.ts) | greben, kelp, jata i tropske ribe, kornjača, meduze, udičarka, zraci i kaustike; ponor sa bioluminiscencijom |
 | 10 | Savana (samo v2) | [savanna.ts](src/lib/scenarios/savanna.ts) | ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku i noću |
 | 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | Vojvodina / Provansa / Toskana: redovi useva u perspektivi, žito sa balama, brežuljci-krpljenac, salaš sa đermom, kamena kuća, put sa čempresima |
+| 12 | Oluja (samo v2) | [storm.ts](src/lib/scenarios/storm.ts) | svetionik na moru / usamljeno drvo / planine; slojeviti olujni oblaci, munje sa grananjem, zavese kiše, kosa kiša, duga kad oluja prolazi |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -227,6 +228,15 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ---
 
+### 12. Oluja (`storm.ts`) — samo v2
+
+- **Lokacije** (težine): svetionik 40 / usamljeno drvo 35 / planine 25; dodaci po lokaciji `extraA` (pruge svetionika / ograda / koliba, 50%) i `extraB` (kućica / salaš u daljini / jezero, 45%)
+- **Palete** (6): supercell, slate, night, golden-break (sunce ispod oblaka), violet-dusk, passing (oblaci samo sa strane odakle duva vetar, sunce na vedroj strani, sopstvena duga 50%)
+- **Redosled crtanja**: 1) nebo (do dna platna) + sjaj na horizontu → 2) sunce (proboj) → (hooks.body) → 3) kumulonimbus 45% → 4) 4 sloja oblaka (daleki → bliski) + osvetljenje donjih ivica → 5) munje + bljesak → 6) sopstvena duga → (hooks.sky — posle oblaka, da retki događaji budu vidljivi) → 7) zavese kiše → 8) lokacija → 9) kosa kiša
+- **Parametri**: horizont h × 0.58–0.68; vetar ±(0.12–0.42) dx/dy; munje 0–2 (noć 1–3, prolazi 0–1), pomeranje sredine 7 nivoa, grane do 2 nivoa; oblaci r 18–144 × s, elipse 1.6 : 0.6; talasi 24 reda; kiša 1100 × gustina palete
+
+---
+
 ### 11. Polja i ravnica (`fields.ts`) — samo v2
 
 - **Regioni** `REGIONS` (težine): Vojvodina 40 (suncokret 50% / žito 50%), Provansa 30 (lavanda 75% / suncokret 25%), Toskana 30 (krpljenac 60% / vinograd 40%); `hooks.meta({ place })`
@@ -341,6 +351,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Kosmos (v2) | Prepisan: 6 paleta magline, zvezde sa difrakcionim zracima, galaksija, kompozicija „sistem" ili „krupni plan", 5 tipova planeta (gas, rocky, ocean, ice, lava) sa senkom ka zvezdi, atmosferom, prstenovima i mesecima. |
 | 2026-11-19 | — | Odeljci 2, 3, 5, 5a i 6 ažurirani za v2 (svih 8 scenarija prerađeno). |
 | 2026-11-19 | Polja (novo, v2) | Scenario 11: Vojvodina (suncokret/žito, salaš sa đermom, topole, bale), Provansa (lavanda, kamena kuća), Toskana (krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba. v2 bira `% 12`. |
+| 2026-11-20 | Oluja (novo, v2) | Scenario 12: svetionik na moru (talasi, rt sa liticom, pena) / usamljeno drvo (vetar, bare, ograda) / planine (magla, koliba, jezero); 6 paleta; slojeviti oblaci, kumulonimbus, munje sa grananjem, zavese kiše, duga kad oluja prolazi. v2 bira `% 13`. |
 | 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |

@@ -127,7 +127,7 @@ QRNG bira stil nezavisno od scenarija, pa 8 scenarija × 5 stilova = 40 vizuelni
 - traka Mlečnog puta, prašina, veće zvezde sa „spikes" difrakcijom.
 
 ### 4.5 Novi scenariji (cilj: 14–16)
-> Napredak: ✅ Gradovi — Beograd, Pariz, Rim; ✅ Podvodni svet; ✅ Savana; ✅ Polja i ravnica (2026-11-19). Plan ostalih: oluja, arktik/fjord, japanski vrt, (opciono) kvantna apstrakcija.
+> Napredak: ✅ Gradovi — Beograd, Pariz, Rim; ✅ Podvodni svet; ✅ Savana; ✅ Polja i ravnica (2026-11-19); ✅ Oluja (2026-11-20). Plan ostalih: arktik/fjord, japanski vrt, (opciono) kvantna apstrakcija.
 Polarna svetlost nad fjordom · planinsko jezero u zoru · oluja sa munjom i kišom · japanski vrt/pagoda · podvodni svet · snežni pejzaž · vulkan · polja lavande/žita · apstraktni dan (pozajmljen iz /algorithmic).
 
 ### 4.6 Rarity sistem — ✅ urađeno 2026-11-19 (v2; prikaz oznake ispod slike, bez oznake u arhivi za sada)
