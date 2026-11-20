@@ -22,7 +22,7 @@ Scenarij se bira deterministički na osnovu prvih 4 uint16 vrednosti iz stream-a
 
 ```
 v1:  (v0 ^ v1 ^ v2 ^ v3) % 8  →  12.5% po scenariju (zamrznuto)
-v2:  (v0 ^ v1 ^ v2 ^ v3) % 14  →  ~7.1% po scenariju (raste sa novim scenarijima)
+v2:  (v0 ^ v1 ^ v2 ^ v3) % 15  →  ~6.7% po scenariju (raste sa novim scenarijima)
 ```
 
 ---
@@ -61,6 +61,7 @@ v2:  (v0 ^ v1 ^ v2 ^ v3) % 14  →  ~7.1% po scenariju (raste sa novim scenariji
 | 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | Vojvodina / Provansa / Toskana: redovi useva u perspektivi, žito sa balama, brežuljci-krpljenac, salaš sa đermom, kamena kuća, put sa čempresima |
 | 12 | Oluja (samo v2) | [storm.ts](src/lib/scenarios/storm.ts) | svetionik na moru / usamljeno drvo / planine; slojeviti olujni oblaci, munje sa grananjem, zavese kiše, kosa kiša, duga kad oluja prolazi |
 | 13 | Arktik (samo v2) | [arctic.ts](src/lib/scenarios/arctic.ts) | fjord sa liticama i odrazom / presek kroz vodu sa santom i podvodnim delom / ledena obala sa medvedom ili pingvinima; česta blaga polarna svetlost |
+| 14 | Japanski vrt (samo v2) | [japanese-garden.ts](src/lib/scenarios/japanese-garden.ts) | ukiyo-e: 4 godišnja doba, vulkan, kasumi trake, pagoda, torii, lučni most, jezerce sa odrazom i koi, kameni fenjer, oblikovana stabla, grana u uglu |
 
 Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odeljku 4.
 
@@ -229,6 +230,15 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 
 ---
 
+### 14. Japanski vrt (`japanese-garden.ts`) — samo v2
+
+- **Godišnja doba** `SEASONS` (težine): spring 32 / summer 18 / autumn 25 / winter 25 — boje krošnje (senka, osnova, svetlo), bor, tlo, žbunje, sneg
+- **Palete** (6): dawn-pink, day, ukiyo-blue (`flatSun`), red-dusk (`flatSun`, fenjeri), morning-mist, lantern-night (mesec, zvezde, fenjeri); `shade()` = mešanje sa `tint` + zatamnjenje `dim`
+- **Redosled crtanja**: 1) gornji deo — nebo → zvezde → (hooks.sky, horizont = obala jezera) → sunce/mesec → (hooks.body) → kasumi iza planine → vulkan → kasumi ispred → brda sa borovima → pagoda → daleko drveće → žbunje obale → 2) gornji deo preslikan u jezerce → 3) boja vode, lokvanji, koi, talasići, odsjaj → 4) torii (sa odrazom) → most sa ostrvcima (sa odrazom) → 5) bliža obala, kamenje, azaleje → fenjer → veliko stablo → grana u uglu → magla pri obali → čestice
+- **Parametri**: brda h × 0.44–0.51; obala jezera +3.5–7% h; bliža obala h × 0.80–0.87; vulkan visina 0.45–0.65 × hillY, širina 1.7–2.2 × visina, snežna linija 0.32–0.47 (+0.25 zima, −0.12 leto); pagoda 3 ili 5 spratova; most 0.22–0.34 w; stablo h × 0.65–0.90, krošnja 5–8 masa r = 0.08–0.12 × veličina; latice 90–230, lišće 30–90, pahulje 200–500, svici 15–40
+
+---
+
 ### 13. Arktik (`arctic.ts`) — samo v2
 
 - **Lokacije** (težine): fjord 40 / presek 30 / ledena obala 30; `faunaRoll` (fjord: kit 20%; presek: kit u dubini 30%, medved na tabularnoj santi 15%; obala: medved 35% ILI pingvini 35%), `extraRoll` (fjord: kućice 40%; obala: iglo 30% / kućica 20%)
@@ -363,6 +373,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Polja (novo, v2) | Scenario 11: Vojvodina (suncokret/žito, salaš sa đermom, topole, bale), Provansa (lavanda, kamena kuća), Toskana (krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba. v2 bira `% 12`. |
 | 2026-11-20 | Oluja (novo, v2) | Scenario 12: svetionik na moru (talasi, rt sa liticom, pena) / usamljeno drvo (vetar, bare, ograda) / planine (magla, koliba, jezero); 6 paleta; slojeviti oblaci, kumulonimbus, munje sa grananjem, zavese kiše, duga kad oluja prolazi. v2 bira `% 13`. |
 | 2026-11-20 | Arktik (novo, v2) | Scenario 13: fjord (litice u 3 sloja, snežne planine, pravi odraz, kućice, kit) / presek kroz vodu (santa sa podvodnim delom, zraci, kit u dubini) / ledena obala (sante, ploče, medved ILI pingvini, iglo/kućica); 6 paleta; česta ali blaga polarna svetlost. v2 bira `% 14`. |
+| 2026-11-20 | Japanski vrt (novo, v2) | Scenario 14: ukiyo-e vrt — 4 godišnja doba × 6 paleta; vulkan sa snegom, kasumi trake, pagoda, torii u vodi, crveni lučni most, jezerce sa odrazom i koi, kameni fenjer, oblikovana stabla, grana u uglu, latice/lišće/sneg/svici. v2 bira `% 15`. |
 | 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |

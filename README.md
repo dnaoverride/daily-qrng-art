@@ -12,11 +12,11 @@ Umetnost generisana iz kvantnog suma (ANU QRNG). Svaki dan nova slika — reprod
 
 ### Izbor scenarija
 
-Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 14** (raste sa novim scenarijima).
+Prvih 4 broja se XOR-uje, a ostatak deljenja sa brojem scenarija daje indeks. Broj scenarija zavisi od verzije renderera: **v1 = 8** (zamrznuto), **v2 = 15** (raste sa novim scenarijima).
 
 ```ts
 const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 14
+const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 15
 ```
 
 `scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
@@ -56,6 +56,7 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 | 11 | Polja (samo v2) | [fields.ts](src/lib/scenarios/fields.ts) | regioni Vojvodina (suncokret/žito, salaš sa đermom, topole), Provansa (lavanda, kamena kuća, čempresi), Toskana (brežuljci-krpljenac/vinograd, kuća na brdu, put sa čempresima); 6 paleta neba; ime regiona ispod slike |
 | 12 | Oluja (samo v2) | [storm.ts](src/lib/scenarios/storm.ts) | lokacije svetionik na moru (talasi, rt, pena) / usamljeno drvo u ravnici (vetar, bare, ograda) / planine u kiši i magli (koliba, jezero); 6 paleta (supercell, slate, noć, zlatni proboj, ljubičasti sumrak, oluja prolazi + duga); munje sa grananjem, zavese kiše, kosa kiša |
 | 13 | Arktik (samo v2) | [arctic.ts](src/lib/scenarios/arctic.ts) | lokacije fjord (litice u 3 sloja, snežne planine, pravi odraz, crvene kućice, kit) / presek kroz vodu (santa sa podvodnim delom, zraci svetla, kit u dubini) / ledena obala (sante, ledene ploče, sastrugi, polarni medved ILI pingvini, iglo ili kućica); 6 paleta (polarni dan, ponoćno sunce, polarna noć, plavi čas, oblačno, maglovita zora); česta ali blaga polarna svetlost |
+| 14 | Japanski vrt (samo v2) | [japanese-garden.ts](src/lib/scenarios/japanese-garden.ts) | ukiyo-e duh: 4 godišnja doba (sakura, leto sa lokvanjima i svicima, javor, sneg) × 6 paleta (zora, dan, ukiyo-e plava, crveno sunce u sumraku, jutarnja magla, noć sa fenjerima); vulkan sa snežnom kapom, kasumi trake magle, pagoda, torii u vodi, crveni lučni most, jezerce sa odrazom i koi šaranima, kameni fenjer, oblikovana stabla, grana koja uokviruje kadar |
 
 ---
 
@@ -84,6 +85,13 @@ Izvor: [ANU QRNG API](https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uin
 - **Siluete:** obala 30%, jedrilica 22%, svetionik na steni 12%; ptice 40%.
 - **QRNG vs PRNG:** odluke iz QRNG-a, sitni detalji (zvezde, odsjaji, talasi, oblik oblaka) iz `prngFromStream` ([`src/lib/prng.ts`](src/lib/prng.ts)).
 - **Rezolucija:** sve dimenzije × `s = w/1200`, pa thumbnail (600px) i OG (1200×630) imaju isti raspored.
+
+### Japanski vrt (samo v2, od 2026-11-20)
+
+- **Godišnje doba** (QRNG): sakura 32% (roze krošnje, latice u vazduhu), leto 18% (zeleni javor, lokvanji i lotos, svici u sumraku/noći), javor 25% (crveno-narandžaste krošnje, lišće koje pada), zima 25% (sneg na krovovima, granama, kamenju i fenjeru, pahulje, šljiva sa crvenim cvetovima).
+- **Palete** (6): dawn-pink, day, ukiyo-blue (pruska plava, ravan crveni disk), red-dusk (veliki ravni crveni disk, upaljeni fenjeri), morning-mist (guste kasumi trake), lantern-night (mesec, zvezde, upaljeni fenjeri i prozori pagode). Boje godišnjeg doba se „boje" svetlom palete (`tint`, `dim`).
+- **Slojevi:** nebo → kasumi trake (ravne trake sa zaobljenim krajevima, ispred i iza planine) → vulkan sa nazubljenom snežnom kapom (60%; sneg niži zimi, viši leti) → 2 sloja brda sa borovima → daleka obala sa žbunjem, drvećem i pagodom (50%, 3 ili 5 spratova) → jezerce sa pravim odrazom → torii u vodi (45%, nikad iza mosta) → crveni lučni most sa ostrvcima (50%) → bliža obala sa kamenjem i azalejama → kameni fenjer (65%) → veliko stablo sa strane (65%; krošnja od 5–8 zaobljenih masa ili bor sa jastučićima) → grana iz gornjeg ugla (50%) → čestice.
+- **Odraz:** gornji deo scene se crta dva puta (kao u jezeru); torii i most imaju sopstveni odraz (`withReflection`).
 
 ### Arktik (samo v2, od 2026-11-20)
 
@@ -576,6 +584,15 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-20 — Novi scenario: Japanski vrt (grana `claude`)
+
+- **`src/lib/scenarios/japanese-garden.ts`** — NOVO (scenario 14, samo v2): 4 godišnja doba × 6 paleta u ukiyo-e duhu; vulkan sa snežnom kapom, kasumi trake, brda sa borovima, pagoda, torii u vodi, crveni lučni most, jezerce sa pravim odrazom, koi, lokvanji, kameni fenjer (svetli u sumraku/noći), oblikovana stabla (sakura, javor, bor sa jastučićima), grana koja uokviruje kadar (sakura / javor / šljiva sa snegom), latice, lišće, sneg, svici. Dimenzije relativne (`s = w/1200`).
+- **`src/lib/scenarios/router.ts`, `index.ts`** — `NUM_SCENARIOS_V2 = 15`, `SCENARIO_NAMES[14] = "Japanski vrt"`.
+- **`messages/*.json`** — `scenario.s14`: Japanski vrt / Japanese garden.
+- **Podešavanje** — krošnje su prvo bile ogromni „mehurići", pa niz grozdova u obliku crva duž grana → krošnja od 5–8 zaobljenih masa u elipsi iznad stabla, sa granama do svake mase (i brže: 128 → ~50 ms); jastučići bora su bili jedna elipsa („leteći tanjir") → 5 preklopljenih oblačića; noć je bila pretamna → blaži `tint`/`dim`; torii je mogao da stoji tačno iza mosta → most se bira prvi, torii se pomera u stranu; veći koi.
+- **Posledica** — v2 dani preraspoređeni po 15 scenarija (~6.7% svaki, raspodela na 4000 dana 6.0–7.4%); lokalno japanski vrt: 2026-11-06, 2026-11-12.
+- **Verifikacija** — pregled 24 datuma + puna veličina (sakura sa mostom, torii sa vulkanom, javor); render 35–58 ms. v1 hash nepromenjen (30 dana, HEAD naspram radnog stabla). `tsc` i ESLint prolaze.
 
 ### 2026-11-20 — Novi scenario: Arktik / fjord (grana `claude`)
 
