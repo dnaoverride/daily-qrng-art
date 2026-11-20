@@ -309,7 +309,7 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 1. **Sky** — linear gradient, zvezde → `hooks.sky` (retki događaji)
 2. **Sredina** — sunce/mesec → `hooks.body`, oblaci, dalji slojevi u izmaglici
 3. **Foreground** — objekti (palme, zgrade, drveće, planete)
-4. **Posle scene** (router) — legendarni događaji (`finish()`), pa post-fx
+4. **Posle scene** (router) — `finish()` (zatamnjenje kod pomračenja, glitch), pa post-fx. Pomračenje i krvavi mesec se crtaju već u `hooks.body` (iza prednjeg plana)
 
 ### Kosmos — prstenovi (v2)
 
@@ -374,6 +374,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-20 | Oluja (novo, v2) | Scenario 12: svetionik na moru (talasi, rt sa liticom, pena) / usamljeno drvo (vetar, bare, ograda) / planine (magla, koliba, jezero); 6 paleta; slojeviti oblaci, kumulonimbus, munje sa grananjem, zavese kiše, duga kad oluja prolazi. v2 bira `% 13`. |
 | 2026-11-20 | Arktik (novo, v2) | Scenario 13: fjord (litice u 3 sloja, snežne planine, pravi odraz, kućice, kit) / presek kroz vodu (santa sa podvodnim delom, zraci, kit u dubini) / ledena obala (sante, ploče, medved ILI pingvini, iglo/kućica); 6 paleta; česta ali blaga polarna svetlost. v2 bira `% 14`. |
 | 2026-11-20 | Japanski vrt (novo, v2) | Scenario 14: ukiyo-e vrt — 4 godišnja doba × 6 paleta; vulkan sa snegom, kasumi trake, pagoda, torii u vodi, crveni lučni most, jezerce sa odrazom i koi, kameni fenjer, oblikovana stabla, grana u uglu, latice/lišće/sneg/svici. v2 bira `% 15`. |
+| 2026-11-20 | Svi (v2) | Fix: pomračenje i krvavi mesec se crtaju u `hooks.body` (klipovano na nebo) umesto posle scene — više ne prekrivaju životinje, drveće i zgrade; korona ograničena kod ogromnog sunca (savana). |
 | 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |

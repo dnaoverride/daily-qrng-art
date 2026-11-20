@@ -58,6 +58,35 @@ export function createSceneHooks(
   let info: SkyInfo | null = null;
   let body: CelestialBody | null = null;
   let event: RarityEvent | null = null;
+  let bodyDrawn = false;
+
+  /**
+   * Pomračenje / krvavi mesec se crtaju ODMAH posle tela (iza planina, drveća,
+   * životinja), klipovano na nebo iznad horizonta. Treba nam i telo i horizont:
+   * većina scenarija zove sky pa body, oluja obrnuto — zato se poziva iz oba.
+   */
+  function tryDrawBody(): void {
+    if (bodyDrawn || !info || !body || !event) return;
+    const b = body as CelestialBody;
+    const hy = (info as SkyInfo).horizonY;
+    if (event === "eclipse" && b.kind === "sun") {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, hy);
+      ctx.clip();
+      drawEclipse(ctx, rand, b, s);
+      ctx.restore();
+      bodyDrawn = true;
+    } else if (event === "blood-moon" && b.kind === "moon") {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, hy);
+      ctx.clip();
+      drawBloodMoon(ctx, b);
+      ctx.restore();
+      bodyDrawn = true;
+    }
+  }
 
   const hooks: SceneHooks = {
     sky(i) {
@@ -96,9 +125,11 @@ export function createSceneHooks(
           break;
       }
       ctx.restore();
+      tryDrawBody();
     },
     body(b) {
       if (!body) body = b;
+      tryDrawBody();
     },
   };
 
@@ -109,11 +140,12 @@ export function createSceneHooks(
       if (tier !== "legendary") return { tier: "common", event: null };
       event = "glitch";
     }
-    const b = body as CelestialBody | null;
-    if (event === "eclipse" && b?.kind === "sun") {
-      drawEclipse(ctx, rand, w, h, b, s);
-    } else if (event === "blood-moon" && b?.kind === "moon") {
-      drawBloodMoon(ctx, b);
+    if (bodyDrawn) {
+      // Sumrak usred dana — cela scena (i prednji plan) tamni; korona je već iza scene
+      if (event === "eclipse") {
+        ctx.fillStyle = "rgba(6,6,24,0.34)";
+        ctx.fillRect(0, 0, w, h);
+      }
     } else if (event === "eclipse" || event === "blood-moon" || event === "glitch") {
       event = "glitch";
       drawGlitch(ctx, rand, w, h, s);
@@ -301,43 +333,37 @@ function drawAurora(ctx: CanvasRenderingContext2D, rand: Rand, w: number, horizo
   }
 }
 
-function drawEclipse(
-  ctx: CanvasRenderingContext2D,
-  rand: Rand,
-  w: number,
-  h: number,
-  b: CelestialBody,
-  s: number
-): void {
-  // Sumrak usred dana — cela scena tamni
-  ctx.fillStyle = "rgba(6,6,24,0.42)";
-  ctx.fillRect(0, 0, w, h);
+function drawEclipse(ctx: CanvasRenderingContext2D, rand: Rand, b: CelestialBody, s: number): void {
+  // Zatamnjenje cele scene radi finish(); ovde samo korona i mesec (iza prednjeg plana)
   const r = Math.max(b.r, 18 * s);
-  // Korona
-  const cg = ctx.createRadialGradient(b.x, b.y, r * 0.95, b.x, b.y, r * 4.5);
-  cg.addColorStop(0, "rgba(255,252,240,0.85)");
-  cg.addColorStop(0.15, "rgba(240,240,255,0.35)");
+  // Kod ogromnog sunca (savana) korona ne raste srazmerno — inače prekrije pola slike
+  const cr = Math.min(r, 55 * s);
+  const outer = r + cr * 3.5;
+  const cg = ctx.createRadialGradient(b.x, b.y, r * 0.95, b.x, b.y, outer);
+  cg.addColorStop(0, "rgba(255,252,240,0.95)");
+  cg.addColorStop(0.15, "rgba(240,240,255,0.45)");
   cg.addColorStop(1, "rgba(220,225,255,0)");
   ctx.fillStyle = cg;
   ctx.beginPath();
-  ctx.arc(b.x, b.y, r * 4.5, 0, Math.PI * 2);
+  ctx.arc(b.x, b.y, outer, 0, Math.PI * 2);
   ctx.fill();
   // Streameri korone
   const rays = 14 + Math.floor(rand() * 10);
   for (let i = 0; i < rays; i++) {
     const a = rand() * Math.PI * 2;
-    const len = r * (1.4 + rand() * 2.2);
-    const wdt = r * (0.06 + rand() * 0.1);
+    const len = cr * (1.4 + rand() * 2.2);
+    const wdt = cr * (0.06 + rand() * 0.1);
     const ex = b.x + Math.cos(a) * (r + len);
     const ey = b.y + Math.sin(a) * (r + len);
     const g = ctx.createLinearGradient(b.x, b.y, ex, ey);
-    g.addColorStop(0, "rgba(255,255,255,0.4)");
+    g.addColorStop(0, "rgba(255,255,255,0.55)");
     g.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.moveTo(b.x + Math.cos(a + 0.25) * r, b.y + Math.sin(a + 0.25) * r);
+    const ha = 0.25 * (cr / r);
+    ctx.moveTo(b.x + Math.cos(a + ha) * r, b.y + Math.sin(a + ha) * r);
     ctx.lineTo(ex + Math.cos(a + Math.PI / 2) * wdt, ey + Math.sin(a + Math.PI / 2) * wdt);
-    ctx.lineTo(b.x + Math.cos(a - 0.25) * r, b.y + Math.sin(a - 0.25) * r);
+    ctx.lineTo(b.x + Math.cos(a - ha) * r, b.y + Math.sin(a - ha) * r);
     ctx.closePath();
     ctx.fill();
   }
@@ -350,12 +376,13 @@ function drawEclipse(
   const da = rand() * Math.PI * 2;
   const dx = b.x + Math.cos(da) * r;
   const dy = b.y + Math.sin(da) * r;
-  const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, r * 0.9);
+  const dr = Math.min(r * 0.9, 50 * s);
+  const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, dr);
   dg.addColorStop(0, "rgba(255,255,255,1)");
   dg.addColorStop(0.15, "rgba(255,250,230,0.6)");
   dg.addColorStop(1, "rgba(255,250,230,0)");
   ctx.fillStyle = dg;
-  ctx.fillRect(dx - r, dy - r, r * 2, r * 2);
+  ctx.fillRect(dx - dr, dy - dr, dr * 2, dr * 2);
 }
 
 function drawBloodMoon(ctx: CanvasRenderingContext2D, b: CelestialBody): void {

@@ -263,7 +263,7 @@ Ako scena nema odgovarajuće telo (npr. kosmos nema mesec ni sunce za pomračenj
 **Hook-ovi u scenarijima** — svaki v2 scenario prima opcioni `hooks: SceneHooks`:
 
 - `hooks.sky({ horizonY, light, hasHorizon })` — odmah posle neba, **pre prednjeg plana**, pa su duga/kometa/polarna svetlost iza drveća, zgrada i planina (klipovano na `y < horizonY`).
-- `hooks.body({ x, y, r, kind })` — posle sunca/meseca; pomračenje i krvavi mesec crtaju se posle scene, pre post-fx-a.
+- `hooks.body({ x, y, r, kind })` — posle sunca/meseca; pomračenje (korona, mesec, dijamantski prsten) i krvavi mesec crtaju se **odmah tu**, klipovani na nebo iznad horizonta, pa ostaju iza planina, drveća i životinja. Posle scene (`finish()`) samo se cela scena zatamni kod pomračenja („sumrak usred dana“). Ako scenario zove `body` pre `sky` (oluja), događaj se crta kad stigne `sky`.
 
 `renderArt` vraća `RenderResult { version, scenarioIndex, rarity }`. [`ArtCanvas`](src/components/ArtCanvas.tsx) ispod slike prikazuje oznaku (npr. „✦ Epsko · Kometa"), prevodi su u `messages/*.json` → `rarity`.
 
@@ -584,6 +584,12 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-20 — Fix: pomračenje i krvavi mesec iza prednjeg plana (grana `claude`)
+
+- **Problem** — legendarni događaji vezani za telo crtali su se u `finish()`, posle cele scene, pa su korona, zraci i crni disk išli preko žirafa, drveća i trave (npr. savana 2026-10-13). U savani je sunce ogromno, pa je i korona prekrivala pola slike.
+- **`src/lib/sky-events.ts`** — `tryDrawBody()` crta pomračenje / krvavi mesec čim su poznati i telo (`hooks.body`) i horizont (`hooks.sky`), klipovano na nebo iznad horizonta; `finish()` za pomračenje samo zatamni celu scenu (0.34). Korona i streameri ograničeni na radijus ≤ 55 × s (ugao klina srazmerno), „dijamantski prsten" ≤ 50 × s; korona malo jača jer je posle zatamnjena. Redosled trošenja `rarityRand` nepromenjen, pa ostali događaji izgledaju isto.
+- **Verifikacija** — pregled svih tipova scena sa pomračenjem / krvavim mesecom (polja, pejzaž, savana, šuma, zalazak, japanski vrt, noćni grad, oluja); obični dani i v1 nepromenjeni. `tsc` i ESLint prolaze.
 
 ### 2026-11-20 — Novi scenario: Japanski vrt (grana `claude`)
 
