@@ -239,5 +239,20 @@
       "provence": "Provence",
       "tuscany": "Tuscany"
     }
+  },
+  "scenario": {
+    "s0": "Landscape",
+    "s1": "Beach",
+    "s2": "Sunset",
+    "s3": "Desert",
+    "s4": "Night city",
+    "s5": "Cosmos",
+    "s6": "Forest",
+    "s7": "Lake",
+    "s8": "Cities",
+    "s9": "Underwater",
+    "s10": "Savanna",
+    "s11": "Fields",
+    "s12": "Storm"
   }
 }

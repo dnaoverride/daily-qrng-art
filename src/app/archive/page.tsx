@@ -3,6 +3,9 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getTodayBelgrade, ARCHIVE_START } from "@/lib/date";
 import { ArchiveThumbnail } from "@/components/ArchiveThumbnail";
 import { MonthAccordion } from "@/components/MonthAccordion";
+import { seedFromDate } from "@/lib/qrng-server";
+import { scenarioIndexFor } from "@/lib/scenarios";
+import { renderVersionForDate } from "@/lib/render-version";
 
 export const revalidate = 3600;
 
@@ -63,6 +66,10 @@ function groupByMonth(dates: string[], locale: string): MonthGroup[] {
 export default async function ArchivePage() {
   const dates = getDateRange(ARCHIVE_START);
   const t = await getTranslations("archive");
+  const tScenario = await getTranslations("scenario");
+  // Scenario po datumu (isti brojevi kao /api/art/[date]) — ime ispod sličice
+  const scenarios: Record<string, number> = {};
+  for (const d of dates) scenarios[d] = scenarioIndexFor(seedFromDate(d), renderVersionForDate(d));
   const locale = await getLocale();
 
   const groups = groupByMonth(dates, locale);
@@ -101,6 +108,9 @@ export default async function ArchivePage() {
                       <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                         {date}
                       </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        {tScenario(`s${scenarios[date]}`)}
+                      </p>
                     </Link>
                   ))}
                 </div>
@@ -119,6 +129,7 @@ export default async function ArchivePage() {
                       key={group.key}
                       label={group.label}
                       dates={group.dates}
+                      scenarios={Object.fromEntries(group.dates.map((d) => [d, scenarios[d]!]))}
                     />
                   ))}
                 </div>

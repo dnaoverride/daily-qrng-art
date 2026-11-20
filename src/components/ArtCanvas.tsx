@@ -64,9 +64,11 @@ export function ArtCanvas({
   const [ready, setReady] = useState(false);
   const [rarity, setRarity] = useState<RarityResult | null>(null);
   const [place, setPlace] = useState<string | null>(null);
+  const [scenarioIdx, setScenarioIdx] = useState<number | null>(null);
   const tArt = useTranslations("art");
   const tRarity = useTranslations("rarity");
   const tScene = useTranslations("scene");
+  const tScenario = useTranslations("scenario");
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -79,6 +81,7 @@ export function ArtCanvas({
     const result = renderArt(ctx, stream, W, H, version);
     setRarity(result.rarity);
     setPlace(result.meta.place ?? null);
+    setScenarioIdx(result.scenarioIndex);
     setReady(true);
     onCanvasReady?.(canvas);
   }, [values, version, onCanvasReady]);
@@ -101,9 +104,14 @@ export function ArtCanvas({
       </div>
       {ready && (date || place) && (
         <p className="mt-2 text-sm text-zinc-500 text-center">
-          {date && tArt("title", { date })}
-          {date && place && " · "}
-          {place && tScene(`place.${place}`)}
+          {/* „Slika za {datum} · {scenario} · {mesto}" — svaki deo samo ako postoji */}
+          {[
+            date ? tArt("title", { date }) : null,
+            date && scenarioIdx !== null ? tScenario(`s${scenarioIdx}`) : null, // igraonica već ima „Scenarij: …"
+            place ? tScene(`place.${place}`) : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </p>
       )}
       {ready && rarity && rarity.tier !== "common" && rarity.event && (

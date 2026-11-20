@@ -568,6 +568,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-20 — Ime scenarija svuda (naslovna, slika po datumu, arhiva) (grana `claude`)
+
+- **`src/components/ArtCanvas.tsx`** — natpis ispod slike sada uvek sadrži scenario: „Slika za {datum} · {scenario}" i, kad scenario prijavi mesto, „· {mesto}" (npr. „Slika za 2026-11-20 · Gradovi · Rim"). Indeks dolazi iz `RenderResult.scenarioIndex`. Važi za naslovnu (`DailyArtSection`) i `/art/[date]`. U igraonici (bez datuma) se ne dodaje, jer tamo već postoji red „Scenarij: …".
+- **`src/app/archive/page.tsx`, `src/components/MonthAccordion.tsx`** — ispod datuma na svakoj sličici arhive ime scenarija. Računa ga server iz istih brojeva kao `/api/art/[date]` (`seedFromDate` + `scenarioIndexFor` po verziji renderera), za tekući mesec i za zatvorene mesece (prop `scenarios`).
+- **`messages/*.json`** — novi namespace `scenario` (`s0`–`s12`): Pejzaž / Landscape, Plaža / Beach, Zalazak / Sunset, Pustinja / Desert, Noćni grad / Night city, Kosmos / Cosmos, Šuma / Forest, Jezero / Lake, Gradovi / Cities, Podvodni svet / Underwater, Savana / Savanna, Polja / Fields, Oluja / Storm. **Pri dodavanju novog scenarija dodati i `s{N}` u oba fajla.**
+- **Verifikacija** — screenshot naslovne, `/art/2026-11-18` i arhive; `tsc` i ESLint prolaze.
+
 ### 2026-11-20 — Novi scenario: Oluja (svetionik, usamljeno drvo, planine) (grana `claude`)
 
 - **`src/lib/scenarios/storm.ts`** — NOVO (scenario 12, samo v2): 3 lokacije sa težinama 40 / 35 / 25, 6 paleta (supercell, slate, noć, zlatni proboj, ljubičasti sumrak, oluja prolazi), slojeviti olujni oblaci, kumulonimbus sa nakovnjem, munje sa grananjem i bljeskom, zavese kiše, kosa kiša po smeru vetra, sopstvena duga kad oluja prolazi. Dimenzije relativne (`s = w/1200`). Bez `Path2D` (nije globalan u `@napi-rs/canvas`).

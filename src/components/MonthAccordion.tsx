@@ -8,11 +8,14 @@ import { ArchiveThumbnail } from "./ArchiveThumbnail";
 interface MonthAccordionProps {
   label: string;
   dates: string[];
+  /** Indeks scenarija po datumu (računa server). */
+  scenarios: Record<string, number>;
 }
 
-export function MonthAccordion({ label, dates }: MonthAccordionProps) {
+export function MonthAccordion({ label, dates, scenarios }: MonthAccordionProps) {
   const [open, setOpen] = useState(false);
   const t = useTranslations("archive");
+  const tScenario = useTranslations("scenario");
 
   return (
     <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
@@ -57,6 +60,11 @@ export function MonthAccordion({ label, dates }: MonthAccordionProps) {
                 <p className="mt-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   {date}
                 </p>
+                {scenarios[date] !== undefined && (
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {tScenario(`s${scenarios[date]}`)}
+                  </p>
+                )}
               </Link>
             ))}
           </div>
