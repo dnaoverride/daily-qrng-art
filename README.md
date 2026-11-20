@@ -585,6 +585,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-20 — Arhiva pamti otvorene mesece posle povratka (grana `claude`)
+
+- **Problem** — kada se otvori stariji mesec (npr. jul 2026), klikne slika i vrati se nazad (Back), svi meseci bi bili zatvoreni i stranica na vrhu, pa je ostajao otvoren samo tekući mesec.
+- **`src/components/MonthAccordion.tsx`** — novi prop `monthKey`. Otvoreni meseci se pamte u `sessionStorage` (`archive:open`), a kliknuti datum u `archive:last`. Pri povratku se ti meseci ponovo otvaraju, a stranica se skroluje do kliknute slike (centrirano). Važi samo za taj tab i sesiju. Ako je `sessionStorage` nedostupan, ponašanje je isto kao ranije.
+- **`src/app/archive/page.tsx`** — prosleđuje `monthKey={group.key}`.
+- **Verifikacija** — headless Chrome: arhiva → otvori jul → `/art/2026-07-10` → Back → jul otvoren (31 sličica), kliknuta slika u vidnom polju. Isto važi posle reload-a. `tsc` i ESLint prolaze.
+
 ### 2026-11-20 — Fix: pomračenje i krvavi mesec iza prednjeg plana (grana `claude`)
 
 - **Problem** — legendarni događaji vezani za telo crtali su se u `finish()`, posle cele scene, pa su korona, zraci i crni disk išli preko žirafa, drveća i trave (npr. savana 2026-10-13). U savani je sunce ogromno, pa je i korona prekrivala pola slike.

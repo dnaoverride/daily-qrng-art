@@ -1,19 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ArchiveThumbnail } from "./ArchiveThumbnail";
 
 interface MonthAccordionProps {
+  /** Ključ meseca (npr. "2026-07") — za pamćenje otvorenih meseci. */
+  monthKey: string;
   label: string;
   dates: string[];
   /** Indeks scenarija po datumu (računa server). */
   scenarios: Record<string, number>;
 }
 
-export function MonthAccordion({ label, dates, scenarios }: MonthAccordionProps) {
+const OPEN_KEY = "archive:open";
+const LAST_KEY = "archive:last";
+
+function readOpen(): string[] {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(OPEN_KEY) ?? "[]");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeOpen(monthKey: string, open: boolean) {
+  try {
+    const set = new Set(readOpen());
+    if (open) set.add(monthKey);
+    else set.delete(monthKey);
+    sessionStorage.setItem(OPEN_KEY, JSON.stringify([...set]));
+  } catch {
+    /* sessionStorage nedostupan — ništa */
+  }
+}
+
+export function MonthAccordion({ monthKey, label, dates, scenarios }: MonthAccordionProps) {
   const [open, setOpen] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const scrollTo = useRef<string | null>(null);
+
+  // Posle povratka sa slike (Back): vrati otvorene mesece iz sessionStorage-a
+  // i skroluj do poslednje otvorene slike.
+  useEffect(() => {
+    if (!readOpen().includes(monthKey)) return;
+    try {
+      const last = sessionStorage.getItem(LAST_KEY);
+      if (last && dates.includes(last)) {
+        scrollTo.current = last;
+        sessionStorage.removeItem(LAST_KEY);
+      }
+    } catch {
+      /* ništa */
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- stanje iz sessionStorage-a postoji samo na klijentu
+    setOpen(true);
+  }, [monthKey, dates]);
+
+  useEffect(() => {
+    if (!open || !scrollTo.current) return;
+    const el = gridRef.current?.querySelector(`[data-date="${scrollTo.current}"]`);
+    scrollTo.current = null;
+    el?.scrollIntoView({ block: "center" });
+  }, [open]);
+
+  const toggle = () => {
+    writeOpen(monthKey, !open);
+    setOpen(!open);
+  };
+
+  const rememberDate = (date: string) => {
+    try {
+      sessionStorage.setItem(LAST_KEY, date);
+    } catch {
+      /* ništa */
+    }
+  };
   const t = useTranslations("archive");
   const tScenario = useTranslations("scenario");
 
@@ -21,7 +85,7 @@ export function MonthAccordion({ label, dates, scenarios }: MonthAccordionProps)
     <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={toggle}
         className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 transition-colors text-left"
       >
         <span className="font-medium text-zinc-800 dark:text-zinc-200 capitalize">
@@ -49,11 +113,13 @@ export function MonthAccordion({ label, dates, scenarios }: MonthAccordionProps)
 
       {open && (
         <div className="px-4 pb-4 pt-3 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {dates.map((date) => (
               <Link
                 key={date}
                 href={`/art/${date}`}
+                data-date={date}
+                onClick={() => rememberDate(date)}
                 className="block p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
               >
                 <ArchiveThumbnail date={date} />

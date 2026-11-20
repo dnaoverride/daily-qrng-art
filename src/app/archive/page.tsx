@@ -127,6 +127,7 @@ export default async function ArchivePage() {
                   {prevGroups.map((group) => (
                     <MonthAccordion
                       key={group.key}
+                      monthKey={group.key}
                       label={group.label}
                       dates={group.dates}
                       scenarios={Object.fromEntries(group.dates.map((d) => [d, scenarios[d]!]))}
