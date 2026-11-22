@@ -6,12 +6,13 @@
  * ovaj fajl i scenariji u ovom folderu su v2 (aktivni razvoj).
  * Vidi src/lib/render-version.ts.
  */
-import type { QRNGStream } from "../qrng";
 import { LATEST_RENDER_VERSION, type RenderVersion } from "../render-version";
 import { renderArtV1 } from "./v1/router";
 import { applyPostFx, pickPostFxParams } from "../post-fx";
 import { createSceneHooks, type SceneHooks, type SceneMeta } from "../sky-events";
 import type { RarityResult } from "../rarity";
+import { sinkCtx, type SceneControls } from "./controls";
+import { QRNGStream } from "../qrng";
 import { renderLandscape } from "../landscape";
 import { renderBeach } from "./beach";
 import { renderOceanSunset } from "./ocean-sunset";
@@ -52,6 +53,18 @@ export interface RenderResult {
   rarity: RarityResult | null;
   /** Samo v2: meta podaci scene (npr. ime grada). */
   meta: SceneMeta;
+  /** Samo v2: prirodne (kvantne) odluke koje kontrole mogu da promene — za Studio UI. */
+  naturals: Record<string, boolean | number>;
+}
+
+export interface RenderOptions {
+  /**
+   * Samo v2 (Studio): ručno izabran scenario umesto onog koji biraju brojevi.
+   * Stream se troši isto (v0..v3 se i dalje čitaju), pa su ostale odluke iste.
+   */
+  scenario?: number;
+  /** Samo v2 (Studio): kontrole scene — vidi ./controls.ts. */
+  controls?: SceneControls;
 }
 
 export function renderArt(
@@ -59,22 +72,49 @@ export function renderArt(
   stream: QRNGStream,
   w: number,
   h: number,
-  version: RenderVersion = LATEST_RENDER_VERSION
+  version: RenderVersion = LATEST_RENDER_VERSION,
+  opts: RenderOptions = {}
 ): RenderResult {
   const v = stream.getValues();
-  const scenarioIndex = scenarioIndexFor(v, version);
+  const forced =
+    version !== 1 &&
+    opts.scenario !== undefined &&
+    Number.isInteger(opts.scenario) &&
+    opts.scenario >= 0 &&
+    opts.scenario < NUM_SCENARIOS_V2
+      ? opts.scenario
+      : undefined;
+  const scenarioIndex = forced ?? scenarioIndexFor(v, version);
   if (version === 1) {
     renderArtV1(ctx, stream, w, h);
-    return { version, scenarioIndex, rarity: null, meta: {} };
+    return { version, scenarioIndex, rarity: null, meta: {}, naturals: {} };
   }
   // Rarity: nebeski događaji preko hook-ova u scenariju (ne troše QRNGStream)
   const { hooks, finish } = createSceneHooks(ctx, v, w, h);
   const meta: SceneMeta = {};
-  renderArtV2(ctx, stream, w, h, { ...hooks, meta: (m) => Object.assign(meta, m) });
+  const ctl =
+    opts.controls && Object.keys(opts.controls).length
+      ? { controls: opts.controls, forkSeed: ((v[4] ?? 1) << 16) ^ (v[5] ?? 7) ^ (v[999] ?? 0) }
+      : {};
+  const naturals: Record<string, boolean | number> = {};
+  const report = (k: string, n: boolean | number) => {
+    if (!(k in naturals)) naturals[k] = n;
+  };
+  // Sa kontrolama scena može potrošiti drugačiji broj vrednosti iz streama (npr. druga silueta),
+  // a post-fx čita stream posle scene. Zato se post-fx parametri uzimaju iz probnog prolaza
+  // bez kontrola (1×1 platno) — obrada slike ostaje ista kao u kvantnoj verziji.
+  // Pretpostavka: stream je svež (pozicija 0), kao u svim pozivaocima.
+  let postFx: ReturnType<typeof pickPostFxParams> | null = null;
+  if (ctl.controls) {
+    const probe = new QRNGStream([...v]);
+    renderArtV2(sinkCtx(), probe, w, h, { sky: () => {}, body: () => {} }, forced);
+    postFx = pickPostFxParams(probe);
+  }
+  renderArtV2(ctx, stream, w, h, { ...hooks, ...ctl, report, meta: (m) => Object.assign(meta, m) }, forced);
   const rarity = finish();
   // Post-fx (grain, vinjeta, split-tone, kontrast) — samo v2, posle scene.
-  applyPostFx(ctx, w, h, pickPostFxParams(stream));
-  return { version, scenarioIndex, rarity, meta };
+  applyPostFx(ctx, w, h, postFx ?? pickPostFxParams(stream));
+  return { version, scenarioIndex, rarity, meta, naturals };
 }
 
 function renderArtV2(
@@ -82,14 +122,15 @@ function renderArtV2(
   stream: QRNGStream,
   w: number,
   h: number,
-  hooks: SceneHooks
+  hooks: SceneHooks,
+  forced?: number
 ): void {
   const v0 = stream.next_u16();
   const v1 = stream.next_u16();
   const v2 = stream.next_u16();
   const v3 = stream.next_u16();
   const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
-  const scenarioIndex = mix % NUM_SCENARIOS_V2;
+  const scenarioIndex = forced ?? mix % NUM_SCENARIOS_V2;
 
   switch (scenarioIndex) {
     case 0:

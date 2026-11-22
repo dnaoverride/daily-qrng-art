@@ -13,6 +13,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, toggle, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -193,6 +194,17 @@ interface Cloud {
   blobs: [number, number, number, number][];
 }
 
+/** Kontrole za Studio. */
+export const LAKE_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "snow", type: "toggle", label: "snow" },
+  { key: "clouds", type: "toggle", label: "clouds" },
+  { key: "birds", type: "toggle", label: "birds" },
+  { key: "dock", type: "toggle", label: "dock" },
+  { key: "boat", type: "toggle", label: "boat" },
+  { key: "reeds", type: "toggle", label: "reeds" },
+];
+
 export function renderLake(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -203,7 +215,7 @@ export function renderLake(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.44 + 0.1 * stream.next_f()));
   const sunX = w * (0.15 + 0.7 * stream.next_f());
@@ -240,7 +252,9 @@ export function renderLake(
     }
   }
   const clouds: Cloud[] = [];
-  for (let i = 0; i < cloudCount; i++) {
+  const cloudsOn = toggle(hooks, "clouds", cloudCount > 0);
+  optional(ctx, hooks, "clouds", cloudCount > 0, rand, (_ctx, rand) => {
+  for (let i = 0; i < Math.max(cloudCount, 3); i++) {
     const cx = rand() * w;
     const cy = horizonY * (0.1 + 0.4 * rand());
     const cw = w * (0.1 + 0.18 * rand());
@@ -252,6 +266,8 @@ export function renderLake(
     }
     clouds.push({ x: cx, y: cy, blobs });
   }
+  });
+  if (!cloudsOn) clouds.length = 0;
   // Šuma na obali: niz jelki različite visine
   const trees: [number, number, number][] = [];
   {
@@ -263,12 +279,14 @@ export function renderLake(
     }
   }
   const birds: [number, number, number][] = [];
-  if (birdsRoll < 0.35 && pal.light !== "night") {
+  const birdsOn = toggle(hooks, "birds", birdsRoll < 0.35 && pal.light !== "night");
+  optional(ctx, hooks, "birds", birdsRoll < 0.35 && pal.light !== "night", rand, (_ctx, rand) => {
     const n = 2 + Math.floor(rand() * 5);
     const bx = w * (0.15 + 0.7 * rand());
     const by = horizonY * (0.15 + 0.35 * rand());
     for (let i = 0; i < n; i++) birds.push([bx + (rand() - 0.5) * 150 * s, by + (rand() - 0.5) * 60 * s, (4 + rand() * 6) * s]);
-  }
+  });
+  if (!birdsOn) birds.length = 0;
 
   // ---- Gornja polovina (pass: normal ili odraz) ----
   const drawUpper = (mirror: boolean) => {
@@ -349,7 +367,7 @@ export function renderLake(
     farPath();
     ctx.fillStyle = fg;
     ctx.fill();
-    if (hasSnow) {
+    optional(ctx, hooks, "snow", hasSnow, rand, (ctx) => {
       ctx.save();
       farPath();
       ctx.clip();
@@ -368,7 +386,7 @@ export function renderLake(
         ctx.fill();
       }
       ctx.restore();
-    }
+    });
     // Izmaglica između slojeva
     const hz = ctx.createLinearGradient(0, horizonY - horizonY * 0.25, 0, horizonY);
     hz.addColorStop(0, rgba(skyHorizon, 0));
@@ -470,14 +488,15 @@ export function renderLake(
 
   // 7) Prednji plan
   const silCol = mix(forestCol, [0, 0, 0], 0.45);
-  if (fgRoll < 0.28) {
+  optional(ctx, hooks, "dock", fgRoll < 0.28, rand, (ctx, rand) => {
     drawDock(ctx, rand, w, h, horizonY, s, silCol, waterDeep);
-  } else if (fgRoll < 0.5) {
+  });
+  optional(ctx, hooks, "boat", fgRoll >= 0.28 && fgRoll < 0.5, rand, (ctx, rand) => {
     drawBoat(ctx, w * (0.2 + 0.6 * rand()), horizonY + (h - horizonY) * (0.35 + 0.35 * rand()), s * (0.8 + 0.6 * rand()), silCol);
-  }
-  if (reedsRoll < 0.5) {
+  });
+  optional(ctx, hooks, "reeds", reedsRoll < 0.5, rand, (ctx, rand) => {
     drawReeds(ctx, rand, w, h, s, silCol, rand() < 0.5);
-  }
+  });
 }
 
 function drawDock(

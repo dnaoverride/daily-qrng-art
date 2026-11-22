@@ -15,6 +15,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -89,6 +90,13 @@ function shade(f: FCtx, c: RGB, lit = 0.15): RGB {
   return mix(mix(c, f.tint, lit), [10, 12, 30], f.dim);
 }
 
+/** Kontrole za Studio. */
+export const FIELDS_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: SKIES.map((p) => p.name) },
+  { key: "region", type: "choice", label: "region", options: ["vojvodina", "provence", "tuscany"] },
+  { key: "house", type: "toggle", label: "house" },
+];
+
 export function renderFields(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -100,14 +108,15 @@ export function renderFields(
 
   // ---- Odluke (QRNG) ----
   let roll = stream.next_f() * REGIONS.reduce((a, r) => a + r.weight, 0);
-  let region = REGIONS[0]!;
-  for (const r of REGIONS) {
-    if (roll < r.weight) {
-      region = r;
+  let regionIdx = 0;
+  for (let i = 0; i < REGIONS.length; i++) {
+    if (roll < REGIONS[i]!.weight) {
+      regionIdx = i;
       break;
     }
-    roll -= r.weight;
+    roll -= REGIONS[i]!.weight;
   }
+  const region = REGIONS[choice(hooks, "region", regionIdx, REGIONS.length)]!;
   const cropRoll = stream.next_f();
   let crop: Crop = region.crops[0]![0];
   let acc = 0;
@@ -118,7 +127,7 @@ export function renderFields(
       break;
     }
   }
-  const pal = SKIES[stream.next_int(0, SKIES.length - 1)]!;
+  const pal = SKIES[choice(hooks, "palette", stream.next_int(0, SKIES.length - 1), SKIES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.42 + 0.12 * stream.next_f()));
   const sunX = w * (0.12 + 0.76 * stream.next_f());
@@ -253,11 +262,12 @@ export function renderFields(
   else drawRows(f, rand, crop, vpX);
 
   // ---- 6. Kuća regiona ----
-  if (houseRoll < 0.8) {
-    if (region.key === "vojvodina") drawSalas(f, rand, w * (0.12 + 0.76 * rand()), horizonY + 3 * s, s * (0.9 + 0.3 * rand()));
-    else if (region.key === "provence") drawMas(f, rand, w * (0.12 + 0.76 * rand()), horizonY + 4 * s, s * (0.9 + 0.3 * rand()));
-    else drawTuscanHill(f, rand);
-  }
+  optional(f.ctx, hooks, "house", houseRoll < 0.8, rand, (hctx, rand) => {
+    const hf: FCtx = { ...f, ctx: hctx };
+    if (region.key === "vojvodina") drawSalas(hf, rand, w * (0.12 + 0.76 * rand()), horizonY + 3 * s, s * (0.9 + 0.3 * rand()));
+    else if (region.key === "provence") drawMas(hf, rand, w * (0.12 + 0.76 * rand()), horizonY + 4 * s, s * (0.9 + 0.3 * rand()));
+    else drawTuscanHill(hf, rand);
+  });
 
   // ---- 7. Prvi plan ----
   drawForeground(f, rand, crop, sunX);

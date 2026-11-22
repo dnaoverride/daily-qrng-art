@@ -389,6 +389,7 @@ src/
 │   ├── layout.tsx            # Root layout + Providers (SessionProvider)
 │   ├── create-art/page.tsx   # Igraonica — unesi 1000 brojeva, generiši, preuzmi PNG, snimi u omiljene
 │   ├── algorithmic/page.tsx # Algoritmički art — layout u <style> (vidi sekciju u README)
+│   ├── studio/page.tsx       # Studio — jedno izvlačenje → 15 scena + 9 apstrakcija; kontrole scene i parametri apstrakcija (spaja igraonicu i algoritmički art; u izradi)
 │   ├── art/[date]/page.tsx   # Art po datumu — strelice ‹ › preko slike (i tasteri ←/→) za prethodni/sledeći dan
 │   ├── archive/page.tsx      # Arhiva (od ARCHIVE_START = 2026-03-04 do danas)
 │   ├── login/page.tsx        # Prijava / registracija
@@ -584,6 +585,66 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-22 — Studio, faza 2: kontrole scene, parametri apstrakcija, izvoz (grana `claude`)
+
+- **Kontrole scene** (zahtev: „kao što apstrakcije imaju parametre, i scene da se minimalno modifikuju"):
+  - u svih 15 scenarija mogu da se izaberu paleta, lokacija, godišnje doba, grad, region ili silueta, i da se uključe ili isključe elementi (ptice, munje, oblaci, kiša, duga, pagoda, most, žirafe…);
+  - svaka kontrola ima „Auto ⚛" sa prikazom kvantne odluke (npr. „⚛ uklj", „Auto ⚛ (Crveni sumrak)");
+  - prekidač menja **samo taj element**, a ostatak slike ostaje isti.
+  - Mehanizam, tabela kontrola po scenariju i rezultati merenja izolacije su u [SCENARIOS.md → Kontrole scene](SCENARIOS.md#kontrole-scene--studio-v2-od-2026-11-22).
+- **`src/lib/scenarios/controls.ts`, `controls-registry.ts`** — NOVO: `toggle`, `choice`, `optional` (sink platno i fork PRNG-a), `ControlDef`, `SCENE_CONTROLS`.
+- **`src/lib/scenarios/*.ts`, `src/lib/landscape.ts`** — odluke su umotane u helpere, a svaki fajl izvozi `*_CONTROLS`. Gde je potrošnja `rand`-a zavisila od drugog elementa (torii ↔ most, drvo ↔ fenjer u japanskom vrtu), troši se po prirodnoj odluci.
+- **`src/lib/scenarios/router.ts`, `src/lib/sky-events.ts`:**
+  - `renderArt(..., { scenario, controls })`;
+  - `SceneHooks.controls`, `forkSeed`, `report`;
+  - `RenderResult.naturals`;
+  - probni prolaz (1×1 platno, bez kontrola) za post-fx parametre, da obrada slike ostane ista.
+- **Studio UI** (`src/components/studio/`):
+  - `SceneControls.tsx`: izbori kao padajući meni, elementi kao **Auto · Uklj · Isklj**, dugme „↺ Sve na kvantno";
+  - `AbstractControls.tsx` i `abstract-sliders.ts`: paleta i klizači sa istim opsezima kao u `/algorithmic`, „Nasumičan stil", zaključavanja, pauza ili nastavak animacije;
+  - `StudioSheet.tsx`: na telefonu **panel koji se izvlači odozdo** (dugme ⚙ u donjoj traci, do 55% visine, pa glavna slika ostaje vidljiva iznad njega; zatvara se tapom van panela, prevlačenjem ručke ili tasterom Esc); na desktopu su kontrole i izvoz u levoj koloni;
+  - `AbstractCanvas.tsx`: parametri, crtanje u workeru sa debounce-om i živa animacija flow-field-a.
+  - **Izvoz:**
+    - PNG za scenu (1200×675) i za apstrakciju (rezolucija iz `EXPORT_PRESETS`);
+    - set (ZIP) i WebM (flow-field);
+    - **Kopiraj link**: scena sa `v=` (1000 brojeva, base64url) i `c=`, apstrakcija sa preset kodom (`code=QAL1…`);
+    - **Sačuvaj u omiljene**.
+- **URL stanja:** `?mode=scene&s=12&c=rain:off,rainbow:on` čuva izbor posle reload-a; `v=` i `code=` otvaraju tačno podeljenu sliku.
+- **`src/components/ArtCanvas.tsx`** — props `controls` i `onRendered`.
+- **`messages/*.json`** — `studio.ctl.*` (labele kontrola), `studio.opt.*` (opcije), `studio.pal.*` (imena svih paleta), tekstovi panela (sr i en).
+- **Poznato ograničenje (faza 3):** favorit scene za sada pamti samo brojeve i ime scene, bez ručno izabrane scene i kontrola.
+- **Verifikacija:**
+  - hash v1 i v2 dnevne slike identičan na 60 dana (HEAD worktree u odnosu na radno stablo);
+  - izolacija prekidača izmerena za svih 15 scenarija;
+  - headless Chrome, telefon i desktop: panel se otvara i zatvara, prekidači menjaju sliku, URL `c=` preživi reload, klizač menja apstrakciju, linkovi `v=` i `code=` vraćaju istu sliku, nema horizontalnog skrola, nema grešaka u konzoli;
+  - `tsc` i ESLint prolaze.
+
+### 2026-11-21 — Studio, faza 1: jedno izvlačenje, više slika (grana `claude`)
+
+- **Cilj** — igraonica (`/create-art`) i algoritmički art (`/algorithmic`) se spajaju u jedan **Studio** (`/studio`) koji radi i na telefonu. Iz istih 1000 kvantnih brojeva nastaje 15 scena i 9 apstrakcija, a bira se swipe-om kroz traku sličica. Faza 1 je kostur. Stare stranice još rade; preusmerenja i stavka „Studio" u meniju dolaze u fazi 4.
+- **`src/app/studio/page.tsx`, `src/components/studio/Studio.tsx`** — NOVO:
+  - glavna slika, prekidač **Scene | Apstrakcija**, traka sličica;
+  - prva scena je „⚛ Kvantni izbor" (scenu biraju brojevi, kao dnevna slika);
+  - dugmad **Izvuci** (`/api/generate`), **Danas** (`/api/art/[date]`) i **Zalepi brojeve**;
+  - na prvom otvaranju se učitavaju današnji brojevi;
+  - stanje je u URL-u (`?mode=scene&s=14`, `?mode=abstract&a=julia`), pa se link deli tačno na izabranu sliku;
+  - na telefonu je akciona traka zalepljena za dno (`safe-area-inset-bottom`, mete ≥44px), a na desktopu su akcije u levoj koloni.
+- **`StudioThumb.tsx`, `thumb-render.ts`, `thumb-draw.ts`, `thumb.worker.ts`** — NOVO:
+  - sličice se crtaju tek kad uđu u vidno polje (`IntersectionObserver`);
+  - crtaju se u **Web Worker-u** (`OffscreenCanvas`): puna rezolucija, pa smanjenje na 320×180, preko `ImageBitmap`;
+  - zadaci se otkazuju kad se promene brojevi;
+  - rezerva bez workera: crtanje na glavnom thread-u, jedna po jedna sličica.
+- **`AbstractCanvas.tsx`** — NOVO: glavna apstrakcija se crta u workeru sa prioritetom (ispred sličica), uz podrazumevane parametre. Parametri, animacija i izvoz dolaze u fazi 2.
+- **`src/lib/scenarios/router.ts`, `src/components/ArtCanvas.tsx`** — `renderArt(..., version, { scenario })` i prop `scenario`: ručno izabran scenario, samo u v2. Stream se troši isto (v0..v3 se i dalje čitaju), pa su ostale odluke, retki događaji i post-fx isti kao za „Kvantni izbor". **Dnevna slika i v1 su nepromenjeni.**
+- **`src/app/globals.css`** — `studio-shimmer` (dok se sličica crta), `studio-reveal` (fade i blur glavne slike posle izvlačenja), `studio-strip`; poštuje `prefers-reduced-motion`.
+- **`messages/*.json`** — novi blok `studio.*` (sr i en).
+- **Verifikacija** — headless Chrome:
+  - telefon 390×844 (tamna tema) i desktop 1400×900 (svetla): nema horizontalnog skrola, URL prati izbor;
+  - izvlačenje radi, a greška za pogrešan broj brojeva se prikazuje;
+  - long tasks dok se crta svih 25 sličica: apstrakcije 0 (ranije, na glavnom thread-u, do 364ms), scene samo prvi prikaz.
+  - `tsc` i ESLint prolaze.
+- **Napomena** — lokalno je `qrng_pool` prazan, pa `/api/generate` čeka ANU oko 10s pre rezerve. To nije vezano za Studio (na produkciji pool puni cron).
 
 ### 2026-11-20 — Arhiva pamti otvorene mesece posle povratka (grana `claude`)
 

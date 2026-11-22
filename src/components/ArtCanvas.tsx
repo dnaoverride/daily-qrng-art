@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { QRNGStream } from "@/lib/qrng";
-import { renderArt } from "@/lib/scenarios";
+import { renderArt, type RenderResult } from "@/lib/scenarios";
+import type { SceneControls } from "@/lib/scenarios/controls";
 import type { RarityEvent, RarityResult, RarityTier } from "@/lib/rarity";
 import {
   currentRenderVersion,
@@ -44,6 +45,12 @@ interface ArtCanvasProps {
    * a bez datuma — verzija za današnji dan (create-art).
    */
   renderVersion?: RenderVersion;
+  /** Studio: ručno izabran scenario (samo v2); bez njega scenario biraju brojevi. */
+  scenario?: number;
+  /** Studio: kontrole scene (vidi lib/scenarios/controls.ts). */
+  controls?: SceneControls;
+  /** Studio: rezultat crtanja (prirodne odluke za UI kontrola). */
+  onRendered?: (result: RenderResult) => void;
   /** Sadržaj preko samog platna (npr. strelice prethodni/sledeći dan). */
   overlay?: ReactNode;
   /** Called with the canvas element after draw (e.g. for PNG download) */
@@ -55,6 +62,9 @@ export function ArtCanvas({
   date,
   className = "",
   renderVersion,
+  scenario,
+  controls,
+  onRendered,
   overlay,
   onCanvasReady,
 }: ArtCanvasProps) {
@@ -78,13 +88,14 @@ export function ArtCanvas({
     if (!ctx) return;
 
     const stream = new QRNGStream(values);
-    const result = renderArt(ctx, stream, W, H, version);
+    const result = renderArt(ctx, stream, W, H, version, { scenario, controls });
     setRarity(result.rarity);
     setPlace(result.meta.place ?? null);
     setScenarioIdx(result.scenarioIndex);
     setReady(true);
     onCanvasReady?.(canvas);
-  }, [values, version, onCanvasReady]);
+    onRendered?.(result);
+  }, [values, version, scenario, controls, onRendered, onCanvasReady]);
 
   useEffect(() => {
     draw();

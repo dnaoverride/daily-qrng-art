@@ -12,6 +12,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { mulberry32, prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -1217,6 +1218,13 @@ function drawCypress(c: CityCtx, x: number, baseY: number, k: number): void {
 
 const CITIES: readonly CityDef[] = [BELGRADE, PARIS, ROME];
 
+/** Kontrole za Studio. */
+export const CITIES_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "city", type: "choice", label: "city", options: ["belgrade", "paris", "rome"] },
+  { key: "boat", type: "toggle", label: "boat" },
+];
+
 export function renderCities(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -1229,15 +1237,16 @@ export function renderCities(
   // ---- Odluke (QRNG) ----
   const totalW = CITIES.reduce((a, c) => a + c.weight, 0);
   let roll = stream.next_f() * totalW;
-  let city = CITIES[0]!;
-  for (const c of CITIES) {
-    if (roll < c.weight) {
-      city = c;
+  let cityIdx = 0;
+  for (let i = 0; i < CITIES.length; i++) {
+    if (roll < CITIES[i]!.weight) {
+      cityIdx = i;
       break;
     }
-    roll -= c.weight;
+    roll -= CITIES[i]!.weight;
   }
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const city = CITIES[choice(hooks, "city", cityIdx, CITIES.length)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.56 + 0.1 * stream.next_f()));
   const sunX = w * (0.12 + 0.76 * stream.next_f());
@@ -1349,10 +1358,13 @@ export function renderCities(
     gap *= 1.08;
   }
   // 5) Splav (plutajući restoran) — noću sa svetlima
-  if (splavRoll < 0.35 && city.boat) {
-    const sx = w * (0.15 + 0.7 * rand());
-    const sy = horizonY + (h - horizonY) * (0.35 + 0.3 * rand());
-    city.boat(c, sx, sy, s * (1 + 0.4 * rand()));
+  const boat = city.boat;
+  if (boat) {
+    optional(c.ctx, hooks, "boat", splavRoll < 0.35, rand, (bctx, rand) => {
+      const sx = w * (0.15 + 0.7 * rand());
+      const sy = horizonY + (h - horizonY) * (0.35 + 0.3 * rand());
+      boat({ ...c, ctx: bctx }, sx, sy, s * (1 + 0.4 * rand()));
+    });
   }
 }
 

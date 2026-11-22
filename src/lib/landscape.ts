@@ -13,6 +13,7 @@
 import type { QRNGStream } from "./qrng";
 import { hslToRgb, rgbString, type RGB } from "./color";
 import { prngFromStream, type Rand } from "./prng";
+import { choice, optional, toggle, type ControlDef } from "./scenarios/controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "./sky-events";
 
 type HSL = [number, number, number];
@@ -146,6 +147,14 @@ interface Peak {
   hwR: number;
 }
 
+/** Kontrole za Studio. */
+export const LANDSCAPE_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "cloudSea", type: "toggle", label: "cloudSea" },
+  { key: "path", type: "toggle", label: "path" },
+  { key: "cabin", type: "toggle", label: "cabin" },
+];
+
 export function renderLandscape(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -156,14 +165,14 @@ export function renderLandscape(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.5 + 0.12 * stream.next_f()));
   const sunX = w * (0.12 + 0.76 * stream.next_f());
   const sunR = (pal.moon ? 16 + 12 * stream.next_f() : 24 + 20 * stream.next_f()) * s;
   const sunY = pal.light === "dusk" ? horizonY * (0.35 + 0.3 * stream.next_f()) : horizonY * (0.12 + 0.25 * stream.next_f());
   const mainPeaks = stream.next_int(2, 4);
-  const cloudSea = stream.next_f() < 0.3;
+  const cloudSea = toggle(hooks, "cloudSea", stream.next_f() < 0.3);
   const cabinRoll = stream.next_f();
   const pathRoll = stream.next_f();
   const rand = prngFromStream(stream);
@@ -348,7 +357,7 @@ export function renderLandscape(
   ctx.fill();
 
   // Staza: vijuga od dna ka podbrđu
-  if (pathRoll < 0.45) {
+  optional(ctx, hooks, "path", pathRoll < 0.45, rand, (ctx, rand) => {
     const x0 = w * (0.35 + 0.3 * rand());
     const x1 = w * (0.2 + 0.6 * rand());
     const wig = (60 + rand() * 120) * s;
@@ -370,7 +379,7 @@ export function renderLandscape(
     for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i]![0], right[i]![1]);
     ctx.closePath();
     ctx.fill();
-  }
+  });
 
   // Cveće i travke
   const flowers = pal.flowers.map((c) => hsl(c));
@@ -396,11 +405,11 @@ export function renderLandscape(
   }
 
   // ---- 10. Koliba sa dimom ----
-  if (cabinRoll < 0.3) {
+  optional(ctx, hooks, "cabin", cabinRoll < 0.3, rand, (ctx, rand) => {
     const cx = w * (0.12 + 0.76 * rand());
     const cy = meadowEdge(cx) + (h - meadowY) * (0.12 + 0.2 * rand());
     drawCabin(ctx, rand, cx, cy, s * (0.8 + 0.4 * rand()), lightDir, !!pal.moon, fog);
-  }
+  });
 
   // ---- 11. Ptice ----
   if (!pal.moon && rand() < 0.35) {

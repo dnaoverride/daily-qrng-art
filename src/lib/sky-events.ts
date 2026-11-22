@@ -37,6 +37,12 @@ export interface SceneMeta {
 }
 
 export interface SceneHooks {
+  /** Studio: kontrole scene (samo kad korisnik nešto menja). */
+  controls?: import("./scenarios/controls").SceneControls;
+  /** Studio: seme za fork PRNG-a forsirano uključenih elemenata. */
+  forkSeed?: number;
+  /** Studio: beleži prirodne odluke (vidi scenarios/controls.ts). */
+  report?: (key: string, natural: boolean | number) => void;
   sky(info: SkyInfo): void;
   body(b: CelestialBody): void;
   /** Opciono: scenario javlja meta podatke (ime mesta). Ne utiče na crtanje. */

@@ -21,6 +21,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, toggle, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -354,6 +355,14 @@ function makeBerg(rand: Rand, cx: number, wl: number, W: number, H: number, tabu
   return { cx, wl, W, H, top, peaks, under };
 }
 
+/** Kontrole za Studio. */
+export const ARCTIC_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "location", type: "choice", label: "location", options: ["fjord", "split", "coast"] },
+  { key: "aurora", type: "toggle", label: "aurora" },
+  { key: "snowfall", type: "toggle", label: "snowfall" },
+];
+
 export function renderArctic(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -364,10 +373,10 @@ export function renderArctic(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-6, 6);
   const locRoll = stream.next_f();
-  const loc: "fjord" | "split" | "coast" = locRoll < 0.4 ? "fjord" : locRoll < 0.7 ? "split" : "coast";
+  const loc = (["fjord", "split", "coast"] as const)[choice(hooks, "location", locRoll < 0.4 ? 0 : locRoll < 0.7 ? 1 : 2, 3)]!;
   const horizonY = Math.floor(h * (loc === "split" ? 0.36 + 0.06 * stream.next_f() : loc === "coast" ? 0.42 + 0.08 * stream.next_f() : 0.5 + 0.08 * stream.next_f()));
   const sunX = w * (0.15 + 0.7 * stream.next_f());
   const sunY = horizonY * (pal.lowSun ? 0.72 + 0.18 * stream.next_f() : 0.18 + 0.3 * stream.next_f());
@@ -403,7 +412,8 @@ export function renderArctic(
   }
   // Polarna svetlost: 1–3 zavese
   const aurora: { y: number; amp: number; f: number; ph: number; f2: number; ph2: number; len: number; hue: number; alpha: number; x0: number; x1: number }[] = [];
-  if (hasAurora) {
+  const auroraOn = toggle(hooks, "aurora", hasAurora);
+  optional(ctx, hooks, "aurora", hasAurora, rand, (_ctx, rand) => {
     const n = 1 + Math.floor(rand() * 3);
     for (let i = 0; i < n; i++) {
       const x0 = w * (rand() * 0.4 - 0.1);
@@ -421,7 +431,8 @@ export function renderArctic(
         x1: x0 + w * (0.6 + 0.6 * rand()),
       });
     }
-  }
+  });
+  if (!auroraOn) aurora.length = 0;
   // Stratusi (tanki pramenovi) — ne noću
   const streaks: [number, number, number, number][] = [];
   if (!night) {
@@ -760,7 +771,7 @@ export function renderArctic(
   }
 
   // 6) Sneg u vazduhu
-  if (hasSnowfall) {
+  optional(ctx, hooks, "snowfall", hasSnowfall, rand, (ctx, rand) => {
     const n = 250 + Math.floor(rand() * 350);
     const sc = mix([255, 255, 255], skyHorizon, night ? 0.3 : 0.05);
     for (let i = 0; i < n; i++) {
@@ -770,7 +781,7 @@ export function renderArctic(
       ctx.arc(rand() * w, rand() * h, (0.6 + z * 2.2) * s, 0, Math.PI * 2);
       ctx.fill();
     }
-  }
+  });
 }
 
 // ---------------------------------------------------------------------------

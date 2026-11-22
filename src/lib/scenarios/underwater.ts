@@ -14,6 +14,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -119,6 +120,16 @@ function rgba(c: RGB, a: number): string {
   return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 }
 
+/** Kontrole za Studio. */
+export const UNDERWATER_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "surface", type: "toggle", label: "surface" },
+  { key: "turtle", type: "toggle", label: "turtle" },
+  { key: "jellies", type: "toggle", label: "jellies" },
+  { key: "anchor", type: "toggle", label: "anchor" },
+  { key: "angler", type: "toggle", label: "angler" },
+];
+
 export function renderUnderwater(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -129,7 +140,7 @@ export function renderUnderwater(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-10, 10);
   const floorY = h * (0.72 + 0.12 * stream.next_f());
   const showSurface = stream.next_f() < (pal.abyss ? 0 : 0.45);
@@ -158,7 +169,7 @@ export function renderUnderwater(
   ctx.fillRect(0, 0, w, h);
 
   // ---- 2. Površina odozdo ----
-  if (showSurface) {
+  optional(ctx, hooks, "surface", showSurface, rand, (ctx, rand) => {
     const sh = h * 0.07;
     ctx.fillStyle = rgba(mix(lightCol, [255, 255, 255], 0.3), 0.55);
     ctx.beginPath();
@@ -177,7 +188,7 @@ export function renderUnderwater(
       ctx.ellipse(x, y, (10 + rand() * 30) * s, (2 + rand() * 4) * s, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
-  }
+  });
 
   // ---- 3. Zraci sa površine ----
   if (pal.rays > 0.05) {
@@ -297,11 +308,11 @@ export function renderUnderwater(
     else if (kind < 0.82) items.push({ y, draw: () => drawSponges(ctx, sub, x, y, k, col) });
     else items.push({ y, draw: () => drawAnemone(ctx, sub, x, y, k, col, !!pal.abyss) });
   }
-  if (anchor) {
+  optional(ctx, hooks, "anchor", anchor, rand, (ctx, rand) => {
     const x = w * (0.15 + 0.7 * rand());
     const y = floorY + (h - floorY) * (0.3 + 0.3 * rand());
     items.push({ y, draw: () => drawAnchor(ctx, x, y, s * 1.2, mix(deep, [60, 50, 45], 0.4)) });
-  }
+  });
   items.sort((a, b) => a.y - b.y);
   // Greben se crta deterministički: svaki item koristi zajednički rand redom posle sortiranja
   for (const it of items) it.draw();
@@ -330,12 +341,12 @@ export function renderUnderwater(
     const c2 = fishCols[Math.floor(rand() * fishCols.length)]!;
     drawFish(ctx, x, y, (14 + rand() * 16) * s, rand() < 0.5 ? -1 : 1, c1, c2, 1);
   }
-  if (turtle) drawTurtle(ctx, rand, w * (0.2 + 0.6 * rand()), floorY * (0.3 + 0.35 * rand()), s * (1 + 0.5 * rand()), mix(hsl([90, 0.3, 0.35]), haze, 0.2));
-  if (jellies) {
+  optional(ctx, hooks, "turtle", turtle, rand, (ctx, rand) => drawTurtle(ctx, rand, w * (0.2 + 0.6 * rand()), floorY * (0.3 + 0.35 * rand()), s * (1 + 0.5 * rand()), mix(hsl([90, 0.3, 0.35]), haze, 0.2)));
+  optional(ctx, hooks, "jellies", jellies, rand, (ctx, rand) => {
     const n = pal.abyss ? 3 + Math.floor(rand() * 5) : 1 + Math.floor(rand() * 4);
     for (let i = 0; i < n; i++) drawJelly(ctx, rand, w * rand(), floorY * (0.15 + 0.6 * rand()), s * (0.7 + 0.8 * rand()), pal.abyss ? hsl([190 + rand() * 120, 0.8, 0.65]) : mix(top, [255, 220, 240], 0.6), !!pal.abyss);
-  }
-  if (angler) drawAngler(ctx, w * (0.2 + 0.6 * rand()), floorY * (0.55 + 0.3 * rand()), s * (1.2 + 0.6 * rand()), rand() < 0.5 ? -1 : 1);
+  });
+  optional(ctx, hooks, "angler", !!angler, rand, (ctx, rand) => drawAngler(ctx, w * (0.2 + 0.6 * rand()), floorY * (0.55 + 0.3 * rand()), s * (1.2 + 0.6 * rand()), rand() < 0.5 ? -1 : 1));
 
   // ---- 9. Plankton (ponor) / mehurići ----
   if (pal.abyss) {

@@ -18,6 +18,7 @@ import type { QRNGStream } from "../qrng";
 import { hslToRgb, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
+import { choice, optional, toggle, type ControlDef } from "./controls";
 
 type HSL = [number, number, number];
 
@@ -112,6 +113,19 @@ const PALETTES: readonly StormPalette[] = [
 ];
 
 type Location = "lighthouse" | "tree" | "mountains";
+const LOCATIONS: readonly Location[] = ["lighthouse", "tree", "mountains"];
+
+/** Kontrole za Studio (redosled = redosled u UI). */
+export const STORM_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "location", type: "choice", label: "location", options: ["lighthouse", "tree", "mountains"] },
+  { key: "lightning", type: "toggle", label: "lightning" },
+  { key: "rain", type: "toggle", label: "rain" },
+  { key: "anvil", type: "toggle", label: "anvil" },
+  { key: "rainbow", type: "toggle", label: "rainbow" },
+  { key: "extraA", type: "toggle", label: "stormExtraA" },
+  { key: "extraB", type: "toggle", label: "stormExtraB" },
+];
 
 function hsl(c: HSL, dh = 0, dl = 0): RGB {
   return hslToRgb(c[0] + dh, c[1], Math.min(0.97, Math.max(0.02, c[2] + dl)));
@@ -147,10 +161,10 @@ export function renderStorm(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-6, 6);
   const lr = stream.next_f();
-  const loc: Location = lr < 0.4 ? "lighthouse" : lr < 0.75 ? "tree" : "mountains";
+  const loc: Location = LOCATIONS[choice(hooks, "location", lr < 0.4 ? 0 : lr < 0.75 ? 1 : 2, LOCATIONS.length)]!;
   const horizonY = Math.floor(h * (loc === "lighthouse" ? 0.6 + 0.08 * stream.next_f() : 0.58 + 0.1 * stream.next_f()));
   const windSign = stream.next_f() < 0.5 ? -1 : 1;
   const wind = windSign * (0.12 + 0.3 * stream.next_f()); // dx po dy za kišu
@@ -214,9 +228,9 @@ export function renderStorm(
   }
 
   // ---- Kumulonimbus (nakovanj) u daljini ----
-  if (anvil && !pal.passing) {
+  optional(ctx, hooks, "anvil", anvil && !pal.passing, rand, (ctx, rand) => {
     drawAnvil(ctx, rand, anvilX, horizonY, s, mix(cloudBase, skyHor, 0.45), mix(cloudLit, skyHor, 0.3), sunXp);
-  }
+  });
 
   // ---- Slojevi oblaka (daleki → bliski) ----
   const bands = 4;
@@ -263,13 +277,15 @@ export function renderStorm(
   // ---- Munje ----
   const boltCol = hsl(pal.bolt);
   const boltHits: number[] = [];
-  for (let k = 0; k < boltCount; k++) {
+  const lightningOn = toggle(hooks, "lightning", boltCount > 0);
+  optional(ctx, hooks, "lightning", boltCount > 0, rand, (ctx, rand) => {
+  for (let k = 0; k < Math.max(boltCount, 1); k++) {
     let bx = w * (0.1 + 0.8 * boltXs[k]!);
     if (pal.passing) bx = stormLeft ? w * 0.05 + (passEdge - w * 0.2) * boltXs[k]! : passEdge + w * 0.15 + (w * 0.8 - passEdge) * boltXs[k]!;
     const y0 = horizonY * (0.25 + 0.15 * rand());
     const x1 = bx + (rand() - 0.5) * w * 0.12;
     const y1 = horizonY + 4 * s;
-    boltHits.push(x1);
+    if (lightningOn) boltHits.push(x1);
     // bljesak u oblacima
     ctx.save();
     ctx.globalCompositeOperation = "screen";
@@ -281,18 +297,20 @@ export function renderStorm(
     ctx.restore();
     drawBolt(ctx, rand, bx, y0, x1, y1, (k === 0 ? 2.6 : 1.9) * s, boltCol, 3);
   }
+  });
 
   // ---- Sopstvena duga (oluja prolazi) — na tamnoj strani, nasuprot suncu ----
-  if (ownRainbow) {
+  optional(ctx, hooks, "rainbow", ownRainbow, rand, (ctx, rand) => {
     const R = h * (0.5 + 0.15 * rand());
     const cx = stormLeft ? w * (0.22 + 0.15 * rand()) : w * (0.63 + 0.15 * rand());
     drawOwnRainbow(ctx, cx, horizonY + R * 0.18, R, horizonY, s);
-  }
+  });
 
   hooks.sky({ horizonY, light: pal.light });
 
   // ---- Zavese kiše ----
   const rainCol = mix(cloudLit, skyHor, 0.5);
+  optional(ctx, hooks, "rain", true, rand, (ctx, rand) => {
   for (let i = 0; i < curtains; i++) {
     let cx = w * (0.08 + 0.84 * rand());
     if (pal.passing) cx = stormLeft ? w * 0.05 + (passEdge - w * 0.15) * rand() : passEdge + (w * 0.95 - passEdge) * rand();
@@ -300,15 +318,18 @@ export function renderStorm(
     const top = horizonY * (0.35 + 0.25 * rand());
     drawCurtain(ctx, rand, cx, cw, top, horizonY + 6 * s, wind, rainCol, 0.18 + 0.2 * pal.rain, s);
   }
+  });
 
   // ---- Lokacija ----
-  const ctxL: LocCtx = { ctx, rand, w, h, s, horizonY, pal, dh, skyHor, cloudBase, wind, side, posF, extraA, extraB, boltHits, sunX: sunXp };
+  const ctxL: LocCtx = { ctx, hooks, rand, w, h, s, horizonY, pal, dh, skyHor, cloudBase, wind, side, posF, extraA, extraB, boltHits, sunX: sunXp };
   if (loc === "lighthouse") drawLighthouseScene(ctxL);
   else if (loc === "tree") drawTreeScene(ctxL);
   else drawMountainScene(ctxL);
 
   // ---- Kiša u prvom planu ----
-  drawRain(ctx, rand, w, h, s, wind, mix(rainCol, WHITE, 0.35), pal.rain);
+  optional(ctx, hooks, "rain", true, rand, (ctx, rand) => {
+    drawRain(ctx, rand, w, h, s, wind, mix(rainCol, WHITE, 0.35), pal.rain);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -577,6 +598,7 @@ interface LocCtx {
   posF: number;
   extraA: boolean;
   extraB: boolean;
+  hooks: SceneHooks;
   boltHits: number[];
   sunX: number;
 }
@@ -805,7 +827,7 @@ function drawLighthouseScene(L: LocCtx): void {
   const white = mix(mix([240, 238, 230], L.cloudBase, night ? 0.6 : 0.25), L.skyHor, 0.1);
   const red = mix(hsl([2, 0.65, 0.42]), L.cloudBase, night ? 0.5 : 0.2);
   // kućica
-  if (L.extraB) {
+  optional(ctx, L.hooks, "extraB", L.extraB, rand, (ctx) => {
     const hx = lx + dir * 46 * s;
     ctx.fillStyle = rgba(white);
     ctx.fillRect(hx - 24 * s, ly - 30 * s, 48 * s, 32 * s);
@@ -818,7 +840,7 @@ function drawLighthouseScene(L: LocCtx): void {
     ctx.fill();
     ctx.fillStyle = L.pal.lit ? rgba(WARM) : rgba(L.cloudBase, 0.8);
     ctx.fillRect(hx - 8 * s, ly - 20 * s, 9 * s, 10 * s);
-  }
+  });
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(lx - bw / 2, ly);
@@ -829,10 +851,10 @@ function drawLighthouseScene(L: LocCtx): void {
   ctx.fillStyle = rgba(white);
   ctx.fill();
   ctx.clip();
-  if (L.extraA) {
+  optional(ctx, L.hooks, "extraA", L.extraA, rand, (ctx) => {
     ctx.fillStyle = rgba(red);
     for (let k = 0; k < 4; k++) ctx.fillRect(lx - bw, ly - th + (k * 2 + 1) * (th / 8), bw * 2, th / 8);
-  }
+  });
   // senka na tornju
   ctx.fillStyle = "rgba(0,0,0,0.22)";
   ctx.fillRect(lx + (L.sunX < lx ? 0 : -bw), ly - th, bw, th);
@@ -904,7 +926,7 @@ function drawTreeScene(L: LocCtx): void {
   }
 
   // salaš u daljini
-  if (L.extraB) {
+  optional(ctx, L.hooks, "extraB", L.extraB, rand, (ctx, rand) => {
     const fx = L.side < 0 ? w * (0.7 + 0.15 * rand()) : w * (0.12 + 0.15 * rand());
     const fy = horizonY - 2 * s;
     const hc = mix(far, L.cloudBase, 0.35);
@@ -929,7 +951,7 @@ function drawTreeScene(L: LocCtx): void {
       ctx.ellipse(px + windDir * 2 * s, fy - 22 * s, 5 * s, 22 * s, windDir * 0.08, 0, Math.PI * 2);
       ctx.fill();
     }
-  }
+  });
 
   // livada
   const g = ctx.createLinearGradient(0, horizonY, 0, h);
@@ -958,7 +980,7 @@ function drawTreeScene(L: LocCtx): void {
   ctx.restore();
 
   // ograda koja se gubi ka horizontu
-  if (L.extraA) {
+  optional(ctx, L.hooks, "extraA", L.extraA, rand, (ctx) => {
     const x0 = L.side < 0 ? w * 0.92 : w * 0.08;
     const x1 = L.side < 0 ? w * 0.55 : w * 0.45;
     const y0 = h * 1.02;
@@ -987,7 +1009,7 @@ function drawTreeScene(L: LocCtx): void {
       const sc = 1 - (i / n) * 0.9;
       ctx.fillRect(p[0] - 3 * s * sc, p[1] - 60 * s * sc, 6 * s * sc, 60 * s * sc);
     });
-  }
+  });
 
   // humka i drvo
   const tx = w * (0.3 + 0.4 * L.posF);
@@ -1182,7 +1204,7 @@ function drawMountainScene(L: LocCtx): void {
   ctx.fill();
 
   // planinsko jezero sa odrazom munje
-  if (L.extraB) {
+  optional(ctx, L.hooks, "extraB", L.extraB, rand, (ctx, rand) => {
     const lx = w * (0.3 + 0.4 * rand());
     const ly = vy + (h - vy) * 0.3;
     const lw = w * (0.18 + 0.1 * rand());
@@ -1205,10 +1227,10 @@ function drawMountainScene(L: LocCtx): void {
         ctx.stroke();
       }
     }
-  }
+  });
 
   // koliba
-  if (L.extraA) {
+  optional(ctx, L.hooks, "extraA", L.extraA, rand, (ctx) => {
     const cx = L.side < 0 ? w * (0.15 + 0.2 * L.posF) : w * (0.65 + 0.2 * L.posF);
     const cy = vy + (h - vy) * 0.45;
     const wood = mix(near, [60, 35, 20], 0.5);
@@ -1241,7 +1263,7 @@ function drawMountainScene(L: LocCtx): void {
       ctx.arc(cx + 22 * s + Math.sign(L.wind) * i * 14 * s, cy - 70 * s - i * 5 * s, (5 + i * 2) * s, 0, Math.PI * 2);
       ctx.fill();
     }
-  }
+  });
 
   // jele u prvom planu
   const pine = mix(near, [0, 0, 0], 0.45);

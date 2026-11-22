@@ -12,6 +12,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -131,6 +132,15 @@ function crestAt(dunes: Dune[], base: Base, x: number, lightDir: number): number
   return y;
 }
 
+/** Kontrole za Studio. */
+export const DESERT_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "mesas", type: "toggle", label: "mesas" },
+  { key: "oasis", type: "toggle", label: "oasis" },
+  { key: "caravan", type: "toggle", label: "caravan" },
+  { key: "cactus", type: "toggle", label: "cactus" },
+];
+
 export function renderDesert(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -141,7 +151,7 @@ export function renderDesert(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.42 + 0.14 * stream.next_f()));
   const sunX = w * (0.12 + 0.76 * stream.next_f());
@@ -210,7 +220,7 @@ export function renderDesert(
   ctx.fillRect(0, horizonY - hazeH, w, hazeH * 1.3);
 
   // ---- 5. Mese u daljini ----
-  if (hasMesas) {
+  optional(ctx, hooks, "mesas", hasMesas, rand, (ctx, rand) => {
     const mesaCol = mix(mix(shade, lit, 0.5), skyHorizon, 0.5);
     const n = 1 + Math.floor(rand() * 3);
     // Svaka mesa u svom delu širine — bez preklapanja (preklop je pravio „odsečene" ivice)
@@ -221,7 +231,7 @@ export function renderDesert(
       const cx = slot * i + slot / 2 + (rand() - 0.5) * (slot - mw * 2) * 0.5;
       drawMesa(ctx, rand, cx, horizonY + 2 * s, mw, mh, mesaCol, mix(mesaCol, shade, 0.45), lightDir, s);
     }
-  }
+  });
 
   // ---- 6. Slojevi dina (dalji → bliži) ----
   const step = Math.max(2, 3 * s);
@@ -332,14 +342,16 @@ export function renderDesert(
     ctx.stroke();
 
     // Oaza na srednjem sloju
-    if (li === Math.floor(layerCount / 2) && propRoll >= 0.55 && propRoll < 0.7) {
-      drawOasis(ctx, rand, w, crest, s, skyHorizon, mix(shade, [0, 0, 0], 0.35));
+    if (li === Math.floor(layerCount / 2)) {
+      optional(ctx, hooks, "oasis", propRoll >= 0.55 && propRoll < 0.7, rand, (ctx, rand) => {
+        drawOasis(ctx, rand, w, crest, s, skyHorizon, mix(shade, [0, 0, 0], 0.35));
+      });
     }
   }
 
   // ---- 7. Karavan na grebenu / kaktusi ----
   const silCol = mix(shade, [0, 0, 0], 0.55);
-  if (propRoll < 0.25 && caravanLayer) {
+  if (caravanLayer) optional(ctx, hooks, "caravan", propRoll < 0.25, rand, (ctx, rand) => {
     const { dunes, base } = caravanLayer;
     const startX = w * (0.15 + 0.5 * rand());
     const n = 3 + Math.floor(rand() * 4);
@@ -348,14 +360,15 @@ export function renderDesert(
       const x = startX + i * 34 * k * lightDir * -1 + i * 6 * s;
       drawCamel(ctx, x, crestAt(dunes, base, x, lightDir), k, silCol, lightDir);
     }
-  } else if (propRoll >= 0.25 && propRoll < 0.55) {
+  });
+  optional(ctx, hooks, "cactus", propRoll >= 0.25 && propRoll < 0.55, rand, (ctx, rand) => {
     const n = 1 + Math.floor(rand() * 3);
     for (let i = 0; i < n; i++) {
       const x = w * (0.08 + 0.84 * rand());
       const y = h - (h - horizonY) * (0.05 + 0.2 * rand());
       drawSaguaro(ctx, rand, x, y, s * (0.7 + 0.6 * rand()), silCol, lightDir);
     }
-  }
+  });
 }
 
 /** Mesa (butte): ravan vrh, strma litica (caprock), konkavna siparna padina; senka klipovana na obris. */

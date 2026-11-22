@@ -14,6 +14,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -120,6 +121,17 @@ interface Look {
   haze: RGB;
 }
 
+/** Kontrole za Studio. */
+export const SAVANNA_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "mountain", type: "toggle", label: "mountain" },
+  { key: "baobab", type: "toggle", label: "baobab" },
+  { key: "giraffes", type: "toggle", label: "giraffes" },
+  { key: "elephants", type: "toggle", label: "elephants" },
+  { key: "herd", type: "toggle", label: "herd" },
+  { key: "birds", type: "toggle", label: "birds" },
+];
+
 export function renderSavanna(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -130,7 +142,7 @@ export function renderSavanna(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.6 + 0.1 * stream.next_f()));
   const sunX = w * (0.2 + 0.6 * stream.next_f());
@@ -240,7 +252,7 @@ export function renderSavanna(
 
   // ---- 5. Planina sa snegom (Kilimandžaro) + stenovita uzvišenja ----
   const farCol = mix(look.sil ? silCol : mix(groundFar, [90, 90, 110], 0.5), skyHorizon, 0.6);
-  if (mountain) {
+  optional(ctx, hooks, "mountain", mountain, rand, (ctx, rand) => {
     const mx = w * (0.15 + 0.7 * rand());
     const mw = (380 + rand() * 220) * s;
     const mh = (90 + rand() * 60) * s;
@@ -262,7 +274,7 @@ export function renderSavanna(
     ctx.lineTo(mx - mw * 0.15, horizonY - mh * 0.86);
     ctx.closePath();
     ctx.fill();
-  }
+  });
   // Stenovita uzvišenja (kopje)
   const kopjes = Math.floor(rand() * 3);
   for (let i = 0; i < kopjes; i++) {
@@ -324,13 +336,13 @@ export function renderSavanna(
     const seed = rand();
     items.push({ y, draw: () => drawAcacia(ctx, x, y, k, look, groundNear, seed) });
   }
-  if (baobab) {
+  optional(ctx, hooks, "baobab", baobab, rand, (ctx, rand) => {
     const x = w * (0.1 + 0.8 * rand());
     const y = horizonY + (h - horizonY) * (0.2 + 0.4 * rand());
     const k = s * (1 + 1.2 * ((y - horizonY) / (h - horizonY)));
     items.push({ y, draw: () => drawBaobab(ctx, rand, x, y, k, look) });
-  }
-  if (giraffes) {
+  });
+  optional(ctx, hooks, "giraffes", giraffes, rand, (ctx, rand) => {
     const n = 1 + Math.floor(rand() * 3);
     const gx = w * (0.15 + 0.7 * rand());
     const gy = horizonY + (h - horizonY) * (0.15 + 0.35 * rand());
@@ -341,8 +353,8 @@ export function renderSavanna(
       const x = gx + i * 70 * k * dir;
       items.push({ y, draw: () => drawGiraffe(ctx, x, y, k, dir, look) });
     }
-  }
-  if (elephants) {
+  });
+  optional(ctx, hooks, "elephants", elephants, rand, (ctx, rand) => {
     const n = 1 + Math.floor(rand() * 4);
     const ex = w * (0.1 + 0.8 * rand());
     const ey = horizonY + (h - horizonY) * (0.1 + 0.4 * rand());
@@ -354,8 +366,8 @@ export function renderSavanna(
       const x = ex + i * 110 * s * dir;
       items.push({ y, draw: () => drawElephant(ctx, x, y, k, dir, look) });
     }
-  }
-  if (herd) {
+  });
+  optional(ctx, hooks, "herd", herd, rand, (ctx, rand) => {
     const n = 4 + Math.floor(rand() * 9);
     const hx = w * (0.1 + 0.8 * rand());
     const hy = horizonY + (h - horizonY) * (0.05 + 0.25 * rand());
@@ -367,7 +379,7 @@ export function renderSavanna(
       const dir = rand() < 0.5 ? -1 : 1;
       items.push({ y, draw: () => drawAntelope(ctx, x, y, k, dir, look, zebra) });
     }
-  }
+  });
   items.sort((a, b) => a.y - b.y);
   for (const it of items) it.draw();
 
@@ -395,7 +407,7 @@ export function renderSavanna(
   }
 
   // ---- 10. Ptice ----
-  if (birdsRoll < 0.45) {
+  optional(ctx, hooks, "birds", birdsRoll < 0.45, rand, (ctx, rand) => {
     const n = 3 + Math.floor(rand() * 8);
     const bx = w * (0.2 + 0.6 * rand());
     const by = horizonY * (0.2 + 0.4 * rand());
@@ -411,7 +423,7 @@ export function renderSavanna(
       ctx.quadraticCurveTo(x + sp * 0.4, y - sp * 0.5, x + sp, y - sp * 0.35);
       ctx.stroke();
     }
-  }
+  });
 }
 
 // ---------------------------------------------------------------------------

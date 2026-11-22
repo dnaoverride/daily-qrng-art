@@ -318,6 +318,45 @@ Opisi v1 (stanje do 2026-11-18) su u citatu na početku svake podsekcije u odelj
 - **Front pass**: donja polovina (klip `y ≥ 0`) posle planete
 - v1 je koristio presek elipse i kruga (`ellipseCircleIntersectionAngles`) — i dalje postoji u `scenarios/v1/cosmos.ts`
 
+### Kontrole scene — Studio (v2, od 2026-11-22)
+
+U Studiju (`/studio`) korisnik može da menja kvantne odluke scene: paletu, lokaciju, godišnje doba, grad ili region, i da uključi ili isključi elemente. Svaka kontrola ima stanje **„Auto ⚛"**, i tada odluka ostaje ona koju su doneli brojevi.
+
+- **[`controls.ts`](src/lib/scenarios/controls.ts):**
+  - `toggle(hooks, key, natural)` i `choice(hooks, key, natural, count)` vraćaju override ako postoji, inače prirodnu odluku. Odluka se uvek računa iz streama, pa je **potrošnja streama ista**.
+  - `optional(ctx, hooks, key, natural, rand, draw)` menja **samo taj element**:
+    - prirodno uključen, a isključen → crta se u 1×1 „sink" platno, pa se `rand` troši identično;
+    - prirodno isključen, a uključen → crta se iz nezavisnog forka `mulberry32(forkSeed, key)`, pa glavni `rand` ostaje netaknut.
+- **Registar:** svaki scenario izvozi `*_CONTROLS: ControlDef[]` (ključ, tip, labela, opcije), a [`controls-registry.ts`](src/lib/scenarios/controls-registry.ts) ih skuplja po indeksu (`SCENE_CONTROLS`).
+- **Router:**
+  - `renderArt(..., { scenario, controls })` stavlja `controls`, `forkSeed` i `report` u `SceneHooks`;
+  - `report` beleži prirodne odluke, koje se vraćaju u `RenderResult.naturals`, pa UI prikazuje npr. „Auto ⚛ (uklj)";
+  - kad ima kontrola, post-fx parametri se uzimaju iz **probnog prolaza bez kontrola** (1×1 platno), pa obrada slike (zrno, vinjeta, toniranje) ostaje ista čak i kad izbor promeni potrošnju streama.
+- **Bez kontrola** (dnevna slika, arhiva, OG, sličice) sve je bit-identično: hash v1 i v2 je proveren na 60 dana.
+- **Izolacija** (izmereno na 3 dana × svi prekidači):
+  - elementi menjaju obično 0–6% piksela, samo svoje područje;
+  - munje do ~20% (bljesak u oblacima), polarna svetlost do ~18%;
+  - strukturni prekidači menjaju kompoziciju: reka u noćnom gradu, planeta izbliza i zvezda u kosmosu, more oblaka u pejzažu.
+- **Napomena:** izbor (paleta, lokacija, doba, grad) menja i odluke koje od njega zavise. To je namerno, jer paleta ili lokacija menjaju celu scenu.
+
+| # | Scenario | Izbori | Prekidači |
+|---|----------|--------|-----------|
+| 0 | Pejzaž | paleta | more oblaka, staza, koliba |
+| 1 | Plaža | paleta | palme, ostrvo, čamac, suncobran, ptice |
+| 2 | Zalazak | paleta, silueta (bez / obala / jedrilica / svetionik) | oblaci, ptice |
+| 3 | Pustinja | paleta | mese, oaza, karavan, kaktusi |
+| 4 | Noćni grad | paleta, mesec (pun / srp) | reka, oblaci |
+| 5 | Kosmos | paleta | planeta izbliza, zvezda u kadru, galaksija |
+| 6 | Šuma | paleta | zraci, srna, ptice |
+| 7 | Jezero | paleta | sneg, oblaci, ptice, mol, čamac, trska |
+| 8 | Gradovi | paleta, grad | splav ili brod |
+| 9 | Podvodni svet | paleta | površina, kornjača, meduze, sidro, udičarka |
+| 10 | Savana | paleta | planina, baobab, žirafe, slonovi, krdo, ptice |
+| 11 | Polja | paleta neba, region | kuća regiona |
+| 12 | Oluja | paleta, lokacija | munje, kiša, nakovanj, duga, dodatak A, dodatak B |
+| 13 | Arktik | paleta, lokacija | polarna svetlost, sneg u vazduhu |
+| 14 | Japanski vrt | paleta, godišnje doba | vulkan, pagoda, torii, most, fenjer, koi, veliko drvo, grana, čestice |
+
 ---
 
 ## 7. Changelog scenarija
@@ -375,6 +414,8 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-20 | Arktik (novo, v2) | Scenario 13: fjord (litice u 3 sloja, snežne planine, pravi odraz, kućice, kit) / presek kroz vodu (santa sa podvodnim delom, zraci, kit u dubini) / ledena obala (sante, ploče, medved ILI pingvini, iglo/kućica); 6 paleta; česta ali blaga polarna svetlost. v2 bira `% 14`. |
 | 2026-11-20 | Japanski vrt (novo, v2) | Scenario 14: ukiyo-e vrt — 4 godišnja doba × 6 paleta; vulkan sa snegom, kasumi trake, pagoda, torii u vodi, crveni lučni most, jezerce sa odrazom i koi, kameni fenjer, oblikovana stabla, grana u uglu, latice/lišće/sneg/svici. v2 bira `% 15`. |
 | 2026-11-20 | Svi (v2) | Fix: pomračenje i krvavi mesec se crtaju u `hooks.body` (klipovano na nebo) umesto posle scene — više ne prekrivaju životinje, drveće i zgrade; korona ograničena kod ogromnog sunca (savana). |
+| 2026-11-21 | Router (v2) | `renderArt(..., { scenario })` — Studio može ručno da izabere scenario. v0..v3 se i dalje troše iz streama, pa su palete, detalji, retki događaji i post-fx isti; bez opcije (dnevna slika, arhiva) ponašanje je nepromenjeno, v1 ignoriše opciju. |
+| 2026-11-22 | Svi (v2) | **Kontrole scene za Studio**: odluke su umotane u `toggle` / `choice` / `optional` ([`controls.ts`](src/lib/scenarios/controls.ts)), svaki scenario izvozi `*_CONTROLS`, a router dobija `controls`, `forkSeed`, `report` i probni prolaz za post-fx. Bez kontrola izgled je bit-identičan (v1 i v2, 60 dana). Vidi „Kontrole scene" u odeljku 6. |
 | 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |

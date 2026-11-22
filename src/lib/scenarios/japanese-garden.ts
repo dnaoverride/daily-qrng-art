@@ -16,10 +16,12 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, toggle, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
 type Season = "spring" | "summer" | "autumn" | "winter";
+const SEASON_ORDER: readonly Season[] = ["spring", "summer", "autumn", "winter"];
 
 interface GardenPalette {
   name: string;
@@ -286,6 +288,21 @@ function growPine(rand: Rand, x: number, baseY: number, size: number, lean: numb
   return { kind: "pine", branches, clusters: [], pads, blobs: [] };
 }
 
+/** Kontrole za Studio (redosled = redosled u UI). */
+export const JAPANESE_GARDEN_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "season", type: "choice", label: "season", options: ["spring", "summer", "autumn", "winter"] },
+  { key: "volcano", type: "toggle", label: "volcano" },
+  { key: "pagoda", type: "toggle", label: "pagoda" },
+  { key: "torii", type: "toggle", label: "torii" },
+  { key: "bridge", type: "toggle", label: "bridge" },
+  { key: "lantern", type: "toggle", label: "lantern" },
+  { key: "koi", type: "toggle", label: "koi" },
+  { key: "bigTree", type: "toggle", label: "bigTree" },
+  { key: "branch", type: "toggle", label: "branch" },
+  { key: "particles", type: "toggle", label: "particles" },
+];
+
 export function renderJapaneseGarden(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -296,20 +313,21 @@ export function renderJapaneseGarden(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const seasonRoll = stream.next_f();
-  const season: Season = seasonRoll < 0.32 ? "spring" : seasonRoll < 0.5 ? "summer" : seasonRoll < 0.75 ? "autumn" : "winter";
+  const season: Season = SEASON_ORDER[choice(hooks, "season", seasonRoll < 0.32 ? 0 : seasonRoll < 0.5 ? 1 : seasonRoll < 0.75 ? 2 : 3, 4)]!;
   const dh = stream.next_int(-5, 5);
   const hillY = Math.floor(h * (0.44 + 0.07 * stream.next_f()));
   const sunX = w * (0.12 + 0.76 * stream.next_f());
   const sunY = hillY * (pal.sunHigh[0] + (pal.sunHigh[1] - pal.sunHigh[0]) * stream.next_f());
   const sunR = (pal.flatSun ? 34 + 26 * stream.next_f() : pal.body === "moon" ? 16 + 10 * stream.next_f() : 20 + 16 * stream.next_f()) * s;
-  const hasVolcano = stream.next_f() < 0.6;
-  const hasPagoda = stream.next_f() < 0.5;
+  const hasVolcano = toggle(hooks, "volcano", stream.next_f() < 0.6);
+  const hasPagoda = toggle(hooks, "pagoda", stream.next_f() < 0.5);
   const toriiRoll = stream.next_f();
-  const hasBridge = stream.next_f() < 0.5;
-  const hasLantern = stream.next_f() < 0.65;
-  const hasKoi = stream.next_f() < 0.6;
+  const natBridge = stream.next_f() < 0.5;
+  const hasBridge = toggle(hooks, "bridge", natBridge);
+  const natLantern = stream.next_f() < 0.65;
+  const natKoi = stream.next_f() < 0.6;
   const bigTreeRoll = stream.next_f();
   const frameRoll = stream.next_f();
   const rand = prngFromStream(stream);
@@ -492,7 +510,7 @@ export function renderJapaneseGarden(
       drawLilyPad(ctx, rand, rand() * w, y, (6 + rand() * 10) * s * (0.5 + t), shade([70, 130, 60]), shade([240, 160, 190]), season === "summer" && rand() < 0.3);
     }
   }
-  if (hasKoi && season !== "winter") {
+  optional(ctx, hooks, "koi", natKoi && season !== "winter", rand, (ctx, rand) => {
     const n = 3 + Math.floor(rand() * 5);
     const kx = w * (0.2 + 0.6 * rand());
     const ky = shoreY + (nearY - shoreY) * (0.45 + 0.35 * rand());
@@ -500,7 +518,7 @@ export function renderJapaneseGarden(
       const t = (ky - shoreY) / (nearY - shoreY);
       drawKoi(ctx, rand, kx + (rand() - 0.5) * 260 * s, ky + (rand() - 0.5) * 50 * s, (24 + 12 * rand()) * s * (0.6 + t), rand() * Math.PI * 2, water, night);
     }
-  }
+  });
 
   // Talasići
   {
@@ -539,16 +557,17 @@ export function renderJapaneseGarden(
   const bx = w * (0.25 + 0.5 * rand());
 
   // Torii u vodi (bliže dalekoj obali; nikad iza mosta)
-  if (toriiRoll < 0.45) {
-    const tY = shoreY + (nearY - shoreY) * (hasBridge ? 0.12 : 0.15 + 0.2 * rand());
+  optional(ctx, hooks, "torii", toriiRoll < 0.45, rand, (ctx, rand) => {
+    const tR = natBridge ? 0.5 : rand(); // rand se troši po prirodnom mostu, da prekidač mosta ne pomeri ostale detalje
+    const tY = shoreY + (nearY - shoreY) * (hasBridge ? 0.12 : 0.15 + 0.2 * tR);
     const tH = (70 + rand() * 50) * s * (1 + (tY - shoreY) / (nearY - shoreY));
     let tx = hasPagoda ? w - pagodaX + (rand() - 0.5) * 100 * s : w * (0.25 + 0.5 * rand());
     if (hasBridge && Math.abs(tx - bx) < bW * 0.75 + tH * 0.6) tx = bx < w / 2 ? Math.min(w - tH * 0.7, bx + bW * 0.75 + tH * 0.7) : Math.max(tH * 0.7, bx - bW * 0.75 - tH * 0.7);
     withReflection(ctx, tY, w, h, 0.35, () => drawTorii(ctx, tx, tY, tH, vermilion, shade([30, 28, 30]), sea.snow ? snowCol : null));
-  }
+  });
 
   // Lučni most
-  if (hasBridge) {
+  optional(ctx, hooks, "bridge", natBridge, rand, (ctx, rand) => {
     // Obale na krajevima mosta
     withReflection(ctx, bY, w, h, 0.3, () => {
       for (const side of [-1, 1]) {
@@ -564,7 +583,7 @@ export function renderJapaneseGarden(
       }
       drawBridge(ctx, bx, bY, bW, bW * (0.16 + 0.06 * rand()), vermilion, sea.snow ? snowCol : null, s);
     });
-  }
+  });
 
   // Bliža obala
   const edge: Pt[] = [];
@@ -627,28 +646,29 @@ export function renderJapaneseGarden(
   }
 
   // Kameni fenjer
-  let lanternPos: Pt | null = null;
-  if (hasLantern) {
+  let lanternPos = null as Pt | null;
+  optional(ctx, hooks, "lantern", natLantern, rand, (ctx, rand) => {
     const p = edge[Math.floor(edge.length * (lightDir > 0 ? 0.1 + 0.3 * rand() : 0.6 + 0.3 * rand()))]!;
     lanternPos = { x: p.x, y: p.y + (h - p.y) * (0.3 + 0.3 * rand()) };
     drawStoneLantern(ctx, lanternPos.x, lanternPos.y, (90 + rand() * 40) * s, shade([150, 146, 138]), pal.lanterns, sea.snow ? snowCol : null, lightDir);
-  }
+  });
 
   // Veliko drvo sa strane
-  if (bigTreeRoll < 0.65) {
-    const side = lanternPos ? (lanternPos.x < w / 2 ? 1 : -1) : rand() < 0.5 ? -1 : 1;
+  optional(ctx, hooks, "bigTree", bigTreeRoll < 0.65, rand, (ctx, rand) => {
+    const sideR = natLantern ? 0.5 : rand();
+    const side = lanternPos ? (lanternPos.x < w / 2 ? 1 : -1) : sideR < 0.5 ? -1 : 1;
     const x = side < 0 ? w * (0.02 + 0.1 * rand()) : w * (0.88 + 0.1 * rand());
     const size = h * (0.65 + 0.25 * rand());
     const pine = season === "winter" ? rand() < 0.7 : season === "summer" ? rand() < 0.5 : rand() < 0.2;
     const tree = pine ? growPine(rand, x, h + 5 * s, size, -side * (0.2 + 0.3 * rand())) : growBloomTree(rand, x, h + 5 * s, size, -side * (0.15 + 0.25 * rand()));
     drawTree(ctx, tree, barkCol, bloom, pineCol, sea.snow ? snowCol : null, lightDir, s);
-  }
+  });
 
   // Grana koja uokviruje kadar (gornji ugao)
-  if (frameRoll < 0.5) {
+  optional(ctx, hooks, "branch", frameRoll < 0.5, rand, (ctx, rand) => {
     const left = rand() < 0.5;
     drawFrameBranch(ctx, rand, w, h, s, left, season, barkCol, bloom, snowCol);
-  }
+  });
 
   // Magla preko vode pri obali
   {
@@ -662,6 +682,8 @@ export function renderJapaneseGarden(
   }
 
   // Čestice: latice / lišće / sneg / svici
+  const natParticles = season !== "summer" || night || pal.light === "dusk";
+  optional(ctx, hooks, "particles", natParticles, rand, (ctx, rand) => {
   if (season === "spring") {
     const n = 90 + Math.floor(rand() * 140);
     for (let i = 0; i < n; i++) {
@@ -686,7 +708,7 @@ export function renderJapaneseGarden(
       ctx.arc(rand() * w, rand() * h, (0.7 + 2 * z) * s, 0, Math.PI * 2);
       ctx.fill();
     }
-  } else if (night || pal.light === "dusk") {
+  } else if (night || pal.light === "dusk" || !natParticles) {
     const n = 15 + Math.floor(rand() * 25);
     for (let i = 0; i < n; i++) {
       const x = rand() * w;
@@ -699,6 +721,7 @@ export function renderJapaneseGarden(
       ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
   }
+  });
 }
 
 // ---------------------------------------------------------------------------

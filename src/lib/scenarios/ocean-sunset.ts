@@ -13,6 +13,7 @@ import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { ridgePoints } from "../draw-utils";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 interface SunsetPalette {
@@ -115,6 +116,14 @@ function rgba(c: RGB, a: number): string {
   return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 }
 
+/** Kontrole za Studio. */
+export const OCEAN_SUNSET_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "silhouette", type: "choice", label: "silhouette", options: ["none", "coast", "sailboat", "lighthouse"] },
+  { key: "clouds", type: "toggle", label: "clouds" },
+  { key: "birds", type: "toggle", label: "birds" },
+];
+
 export function renderOceanSunset(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -125,7 +134,7 @@ export function renderOceanSunset(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const dl = (stream.next_f() - 0.5) * 0.08;
   const horizonY = Math.floor(h * (0.5 + 0.12 * stream.next_f()));
@@ -195,13 +204,18 @@ export function renderOceanSunset(
   ctx.restore();
 
   // ---- 4. Oblaci obasjani odozdo ----
-  for (let i = 0; i < cloudCount; i++) {
-    const cy = horizonY * (0.12 + 0.72 * stream.next_f());
-    const cx = w * stream.next_f();
-    const cw = w * (0.12 + 0.3 * stream.next_f());
-    const ch = (8 + 22 * stream.next_f()) * s;
-    drawLitCloud(ctx, rand, cx, cy, cw, ch, sunX, sunY, w, cloudLit, cloudShade, warmth);
-  }
+  // Prirodno: pozicije iz streama; forsirano uključeni oblaci uzimaju sve iz forka (stream netaknut).
+  optional(ctx, hooks, "clouds", cloudCount > 0, rand, (ctx, rand) => {
+    const nf = cloudCount > 0 ? () => stream.next_f() : rand;
+    const n = cloudCount > 0 ? cloudCount : 5;
+    for (let i = 0; i < n; i++) {
+      const cy = horizonY * (0.12 + 0.72 * nf());
+      const cx = w * nf();
+      const cw = w * (0.12 + 0.3 * nf());
+      const ch = (8 + 22 * nf()) * s;
+      drawLitCloud(ctx, rand, cx, cy, cw, ch, sunX, sunY, w, cloudLit, cloudShade, warmth);
+    }
+  });
 
   hooks.sky({ horizonY, light: pal.sunBelow ? "night" : "dusk" });
   if (!pal.sunBelow) hooks.body({ x: sunX, y: sunY, r: sunR, kind: "sun" });
@@ -260,16 +274,17 @@ export function renderOceanSunset(
 
   // ---- 9. Silueta (opciono) ----
   const silCol = mix(waterDeep, [0, 0, 0], 0.35);
-  if (silhouetteRoll < 0.3) {
+  const sil = choice(hooks, "silhouette", silhouetteRoll < 0.3 ? 1 : silhouetteRoll < 0.52 ? 2 : silhouetteRoll < 0.64 ? 3 : 0, 4);
+  if (sil === 1) {
     drawCoast(ctx, stream, w, horizonY, s, silCol, stream.next_f() < 0.5);
-  } else if (silhouetteRoll < 0.52) {
+  } else if (sil === 2) {
     drawSailboat(ctx, w * (0.12 + 0.76 * stream.next_f()), horizonY, s * (0.7 + 0.6 * stream.next_f()), silCol);
-  } else if (silhouetteRoll < 0.64) {
+  } else if (sil === 3) {
     drawLighthouse(ctx, stream.next_f() < 0.5 ? w * 0.1 : w * 0.88, horizonY, s, silCol);
   }
 
   // ---- 10. Ptice (opciono) ----
-  if (birdsRoll < 0.4) {
+  optional(ctx, hooks, "birds", birdsRoll < 0.4, rand, (ctx, rand) => {
     const n = 2 + Math.floor(rand() * 6);
     const bx = w * (0.15 + 0.7 * rand());
     const by = horizonY * (0.25 + 0.4 * rand());
@@ -286,7 +301,7 @@ export function renderOceanSunset(
       ctx.quadraticCurveTo(x + span * 0.4, yb - span * 0.5, x + span, yb - span * 0.35);
       ctx.stroke();
     }
-  }
+  });
 }
 
 /** Izduženi oblak: unija elipsi, vertikalni gradijent (senka gore, obasjano dole). */

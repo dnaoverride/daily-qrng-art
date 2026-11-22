@@ -12,6 +12,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -127,6 +128,14 @@ function rgba(c: RGB, a: number): string {
   return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 }
 
+/** Kontrole za Studio. */
+export const FOREST_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "rays", type: "toggle", label: "rays" },
+  { key: "deer", type: "toggle", label: "deer" },
+  { key: "birds", type: "toggle", label: "birds" },
+];
+
 export function renderForest(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -137,7 +146,7 @@ export function renderForest(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.36 + 0.12 * stream.next_f()));
   const sunX = w * (0.15 + 0.7 * stream.next_f());
@@ -260,7 +269,7 @@ export function renderForest(
   }
 
   // ---- 5. Sunčevi zraci ----
-  if (hasRays && !pal.moon) {
+  optional(ctx, hooks, "rays", hasRays && !pal.moon, rand, (ctx, rand) => {
     const n = 5 + Math.floor(rand() * 6);
     for (let i = 0; i < n; i++) {
       const a = Math.PI / 2 + lightDir * -1 * (0.25 + rand() * 0.6) + (rand() - 0.5) * 0.25;
@@ -280,7 +289,7 @@ export function renderForest(
       ctx.closePath();
       ctx.fill();
     }
-  }
+  });
 
   // ---- 6. Proplanak ----
   const mg2 = ctx.createLinearGradient(0, meadowY, 0, h);
@@ -311,11 +320,11 @@ export function renderForest(
   }
 
   // ---- 7. Srna na proplanku ----
-  if (deerRoll < 0.25) {
+  optional(ctx, hooks, "deer", deerRoll < 0.25, rand, (ctx, rand) => {
     const dx = w * (0.3 + 0.4 * rand());
     const dy = meadowY + (h - meadowY) * (0.2 + 0.25 * rand());
     drawDeer(ctx, dx, dy, s * (0.9 + 0.5 * rand()), mix(trunk, [0, 0, 0], 0.35), rand() < 0.5 ? 1 : -1);
-  }
+  });
 
   // Boja svetla na drveću: toplo danju, hladna mesečina noću
   const tint: RGB = pal.moon ? [150, 175, 220] : [255, 250, 205];
@@ -362,7 +371,7 @@ export function renderForest(
       ctx.fillStyle = fg;
       ctx.fillRect(fx - r, fy - r, r * 2, r * 2);
     }
-  } else if (birdsRoll < 0.4) {
+  } else optional(ctx, hooks, "birds", birdsRoll < 0.4, rand, (ctx, rand) => {
     const n = 2 + Math.floor(rand() * 5);
     const bx = w * (0.2 + 0.6 * rand());
     const byy = horizonY * (0.2 + 0.4 * rand());
@@ -379,7 +388,7 @@ export function renderForest(
       ctx.quadraticCurveTo(x + sp * 0.4, y - sp * 0.5, x + sp, y - sp * 0.35);
       ctx.stroke();
     }
-  }
+  });
 }
 
 // ---------------------------------------------------------------------------

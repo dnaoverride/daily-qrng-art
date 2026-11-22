@@ -13,6 +13,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, toggle, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -118,6 +119,14 @@ interface Building {
   warm: boolean;
 }
 
+/** Kontrole za Studio. */
+export const CITY_NIGHT_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "moon", type: "choice", label: "moon", options: ["fullMoon", "crescent"] },
+  { key: "river", type: "toggle", label: "river" },
+  { key: "clouds", type: "toggle", label: "clouds" },
+];
+
 export function renderCityNight(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -128,16 +137,16 @@ export function renderCityNight(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
-  const hasRiver = stream.next_f() < 0.5;
+  const hasRiver = toggle(hooks, "river", stream.next_f() < 0.5);
   // Linija na kojoj zgrade stoje (obala ili ulica)
   const groundY = Math.floor(h * (hasRiver ? 0.6 + 0.1 * stream.next_f() : 0.82 + 0.1 * stream.next_f()));
   const density = 0.7 + 0.6 * stream.next_f(); // visina/gustina grada
   const moonX = w * (0.1 + 0.8 * stream.next_f());
   const moonY = groundY * (0.12 + 0.3 * stream.next_f());
   const moonR = (16 + 16 * stream.next_f()) * s;
-  const crescent = stream.next_f() < 0.45;
+  const crescent = choice(hooks, "moon", stream.next_f() < 0.45 ? 1 : 0, 2) === 1;
   const cloudsRoll = stream.next_f();
   const rand = prngFromStream(stream);
 
@@ -209,7 +218,7 @@ export function renderCityNight(
   ctx.restore();
 
   // ---- 4. Tanki oblaci obasjani mesecom (opciono) ----
-  if (cloudsRoll < 0.45) {
+  optional(ctx, hooks, "clouds", cloudsRoll < 0.45, rand, (ctx, rand) => {
     const n = 2 + Math.floor(rand() * 4);
     for (let i = 0; i < n; i++) {
       const cy = groundY * (0.1 + 0.45 * rand());
@@ -233,7 +242,7 @@ export function renderCityNight(
       }
       ctx.fill();
     }
-  }
+  });
 
   hooks.sky({ horizonY: groundY, light: "night" });
   hooks.body({ x: moonX, y: moonY, r: moonR, kind: "moon" });

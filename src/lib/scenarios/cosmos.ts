@@ -16,6 +16,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, toggle, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -74,6 +75,14 @@ const TYPE_HUES: Record<PlanetType, [number, number]> = {
   lava: [5, 25],
 };
 
+/** Kontrole za Studio. */
+export const COSMOS_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "closeUp", type: "toggle", label: "closeUp" },
+  { key: "star", type: "toggle", label: "star" },
+  { key: "galaxy", type: "toggle", label: "galaxy" },
+];
+
 export function renderCosmos(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -84,11 +93,11 @@ export function renderCosmos(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-10, 10);
-  const closeUp = stream.next_f() < 0.35;
-  const hasGalaxy = stream.next_f() < 0.2;
-  const starInFrame = stream.next_f() < 0.6;
+  const closeUp = toggle(hooks, "closeUp", stream.next_f() < 0.35);
+  const natGalaxy = stream.next_f() < 0.2;
+  const starInFrame = toggle(hooks, "star", stream.next_f() < 0.6);
   const starX = starInFrame ? w * (0.1 + 0.8 * stream.next_f()) : stream.next_f() < 0.5 ? -w * 0.15 : w * 1.15;
   const starY = h * (0.1 + 0.4 * stream.next_f());
   const planets: Planet[] = [];
@@ -164,7 +173,7 @@ export function renderCosmos(
   for (let i = 0; i < bright; i++) drawSpikeStar(ctx, rand() * w, rand() * h, (3 + rand() * 6) * s, [255, 255, 255]);
 
   // ---- 4. Spiralna galaksija ----
-  if (hasGalaxy) drawGalaxy(ctx, rand, w * (0.15 + 0.7 * rand()), h * (0.2 + 0.5 * rand()), (70 + rand() * 90) * s, rand() * Math.PI, pal.nebula.map((c) => hsl(c)));
+  optional(ctx, hooks, "galaxy", natGalaxy, rand, (ctx, rand) => drawGalaxy(ctx, rand, w * (0.15 + 0.7 * rand()), h * (0.2 + 0.5 * rand()), (70 + rand() * 90) * s, rand() * Math.PI, pal.nebula.map((c) => hsl(c))));
 
   // ---- 5. Zvezda-sunce ----
   if (starInFrame) {

@@ -12,6 +12,7 @@
 import type { QRNGStream } from "../qrng";
 import { hslToRgb, rgbString, type RGB } from "../color";
 import { prngFromStream, type Rand } from "../prng";
+import { choice, optional, type ControlDef } from "./controls";
 import { NO_HOOKS, type SceneHooks, type SkyLight } from "../sky-events";
 
 type HSL = [number, number, number];
@@ -124,6 +125,16 @@ function rgba(c: RGB, a: number): string {
   return `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 }
 
+/** Kontrole za Studio. */
+export const BEACH_CONTROLS: ControlDef[] = [
+  { key: "palette", type: "choice", label: "palette", options: PALETTES.map((p) => p.name) },
+  { key: "palms", type: "toggle", label: "palms" },
+  { key: "island", type: "toggle", label: "island" },
+  { key: "boat", type: "toggle", label: "boat" },
+  { key: "umbrella", type: "toggle", label: "umbrella" },
+  { key: "birds", type: "toggle", label: "birds" },
+];
+
 export function renderBeach(
   ctx: CanvasRenderingContext2D,
   stream: QRNGStream,
@@ -134,7 +145,7 @@ export function renderBeach(
   const s = w / 1200;
 
   // ---- Odluke (QRNG) ----
-  const pal = PALETTES[stream.next_int(0, PALETTES.length - 1)]!;
+  const pal = PALETTES[choice(hooks, "palette", stream.next_int(0, PALETTES.length - 1), PALETTES.length)]!;
   const dh = stream.next_int(-8, 8);
   const horizonY = Math.floor(h * (0.4 + 0.12 * stream.next_f()));
   const sunX = w * (0.15 + 0.7 * stream.next_f());
@@ -238,12 +249,12 @@ export function renderBeach(
 
   // ---- 7. Ostrvo / jedrilica na horizontu ----
   const silCol = mix(seaDeep, [0, 0, 0], 0.35);
-  if (islandRoll < 0.35) {
+  optional(ctx, hooks, "island", islandRoll < 0.35, rand, (ctx, rand) => {
     drawIsland(ctx, rand, w * (0.1 + 0.8 * rand()), horizonY, s, mix(palmCol, skyHorizon, 0.45));
-  }
-  if (boatRoll < 0.25) {
+  });
+  optional(ctx, hooks, "boat", boatRoll < 0.25, rand, (ctx, rand) => {
     drawSail(ctx, w * (0.1 + 0.8 * rand()), horizonY + 4 * s, s * (0.6 + 0.4 * rand()), silCol, foam);
-  }
+  });
 
   // ---- 8. Linije talasa (perspektiva) ----
   let y = horizonY + 5 * s;
@@ -333,13 +344,14 @@ export function renderBeach(
   }
 
   // ---- 13. Suncobran ----
-  if (umbrellaRoll < 0.2 && !pal.moon) {
+  optional(ctx, hooks, "umbrella", umbrellaRoll < 0.2 && !pal.moon, rand, (ctx, rand) => {
     const ux = w * (0.25 + 0.5 * rand());
     const uy = shore(ux) + (h - shore(ux)) * (0.5 + 0.3 * rand());
     drawUmbrella(ctx, rand, ux, uy, s * (0.9 + 0.4 * rand()), lightDir);
-  }
+  });
 
   // ---- 14. Palme (sa strana, nagnute ka sredini) ----
+  optional(ctx, hooks, "palms", palmsCount > 0, rand, (ctx, rand) => {
   for (let i = 0; i < palmsCount; i++) {
     const left = i % 2 === 0 ? rand() < 0.6 : rand() < 0.4;
     const x = left ? w * (0.02 + 0.14 * rand()) : w * (0.84 + 0.14 * rand());
@@ -348,9 +360,11 @@ export function renderBeach(
     const th = Math.min((h - horizonY) * (0.65 + 0.35 * rand()) + 120 * s * rand(), by - h * 0.16);
     drawPalm(ctx, rand, x, by, th, left ? 1 : -1, palmCol, s, lightDir, !!pal.moon);
   }
+  });
 
   // ---- 15. Galebovi ----
-  if (!pal.moon && rand() < 0.45) {
+  const gullsNat = !pal.moon && rand() < 0.45;
+  optional(ctx, hooks, "birds", gullsNat, rand, (ctx, rand) => {
     const n = 2 + Math.floor(rand() * 4);
     ctx.strokeStyle = rgba(mix(palmCol, [0, 0, 0], 0.3), 0.85);
     ctx.lineWidth = Math.max(1, 1.6 * s);
@@ -365,7 +379,7 @@ export function renderBeach(
       ctx.quadraticCurveTo(x + sp * 0.45, yy - sp * 0.55, x + sp, yy - sp * 0.3);
       ctx.stroke();
     }
-  }
+  });
 }
 
 function drawCumulus(
