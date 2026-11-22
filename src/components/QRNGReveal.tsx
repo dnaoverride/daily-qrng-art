@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
-/** Odakle su brojevi slike dana (iz /api/art/[date]). */
+/** Odakle su brojevi (slika dana iz /api/art/[date], Studio „Izvuci" iz /api/generate). */
 export interface ValuesOrigin {
-  source: "date" | "pool" | "qrng" | "entropy";
+  source: "date" | "pool" | "qrng" | "entropy" | "seeded";
   fetchedAt: string | null;
+  /** Studio izvlačenje (nije vezano za dan) — drugi tekstovi. */
+  draw?: boolean;
 }
 
 interface QRNGRevealProps {
@@ -26,7 +28,7 @@ export function QRNGReveal({ values, date, className, origin }: QRNGRevealProps)
   const originText = (() => {
     if (!origin) return null;
     if (origin.source === "date") return t("originDate");
-    if (origin.source === "entropy") return t("originEntropy");
+    if (origin.source === "entropy") return t(origin.draw ? "originDrawEntropy" : "originEntropy");
     const when = origin.fetchedAt
       ? new Intl.DateTimeFormat(locale === "sr" ? "sr-Latn" : "en-GB", {
           dateStyle: "long",
@@ -34,7 +36,8 @@ export function QRNGReveal({ values, date, className, origin }: QRNGRevealProps)
           timeZone: "Europe/Belgrade",
         }).format(new Date(origin.fetchedAt))
       : "";
-    return t("originQuantum", { when });
+    if (origin.source === "seeded") return t("originDrawSeeded", { when });
+    return t(origin.draw ? "originDrawQuantum" : "originQuantum", { when });
   })();
 
   const copyJson = () => {

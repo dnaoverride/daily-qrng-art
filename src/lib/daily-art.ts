@@ -4,14 +4,14 @@
  * - Datum pre DAILY_QUANTUM_FROM → seedFromDate (SHA-256 datuma), kao do sada, pa se
  *   stara arhiva ne menja.
  * - Datum od DAILY_QUANTUM_FROM do danas → red u `daily_art`. Prvi zahtev za taj dan uzima
- *   1000 kvantnih brojeva (qrng_pool → direktno ANU → entropija, ako ANU nije dostupan)
+ *   1000 kvantnih brojeva (qrng_pool → entropija, ako je bazen prazan)
  *   i TRAJNO ih vezuje za datum. Svaki sledeći zahtev čita isti red.
  * - Budući datum (posle današnjeg) → nema slike (ne može se „izvući" unapred).
  */
 import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "./db";
 import { daily_art } from "./schema";
-import { fetchQRNG, randomEntropySeed, seedFromDate } from "./qrng-server";
+import { expandQuantumSeed, randomEntropySeed, seedFromDate } from "./qrng-server";
 import { ARCHIVE_START, getTodayBelgrade } from "./date";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,7 +24,8 @@ export const DAILY_QUANTUM_FROM: string = (() => {
   return env && DATE_RE.test(env) ? env : DEFAULT_FROM;
 })();
 
-export type ValuesSource = "date" | "pool" | "qrng" | "entropy";
+/** "qrng" = stari direktni ANU poziv (više se ne koristi, ostaje za postojeće redove). */
+export type ValuesSource = "date" | "pool" | "qrng" | "entropy" | "seeded";
 
 export interface DailyValues {
   values: number[];
@@ -44,20 +45,30 @@ function parseValues(raw: unknown): number[] | null {
   }
 }
 
-/**
- * 1000 kvantnih brojeva: najstariji neiskorišćen red iz qrng_pool (atomski označen kao
- * iskorišćen), pa direktno ANU, pa kriptografska entropija. Deli ga i /api/generate.
- */
 export interface ClaimedValues {
   values: number[];
-  source: Exclude<ValuesSource, "date">;
+  source: "pool" | "entropy";
   fetchedAt: Date;
   /** id reda u qrng_pool (samo za source "pool"). */
   poolId?: number;
 }
 
-export async function claimQuantumValues(): Promise<ClaimedValues> {
+/** Studio „Izvuci" ne uzima iz bazena kad je slobodnih redova ovoliko ili manje (rezerva za sliku dana). */
+export const STUDIO_POOL_RESERVE: number = (() => {
+  const n = Number(process.env.STUDIO_POOL_RESERVE);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 60;
+})();
+
+/**
+ * Najstariji neiskorišćen red iz qrng_pool, atomski označen kao iskorišćen. null ako je bazen
+ * prazan (ili na rezervi). ANU se ne zove odavde — bazen puni qrng-pool/refill.php (cron).
+ */
+async function claimPoolRow(reserve = 0): Promise<ClaimedValues | null> {
   try {
+    if (reserve > 0) {
+      const [cnt] = (await db.execute(sql`SELECT COUNT(*) AS n FROM qrng_pool WHERE used = 0`)) as unknown as [{ n: number | string }[]];
+      if (Number(cnt[0]?.n ?? 0) <= reserve) return null;
+    }
     // Jedna naredba zauzima najstariji slobodan red (UPDATE … ORDER BY … LIMIT 1) i pamti
     // njegov id u LAST_INSERT_ID() te konekcije → potpuno atomski, i kada arhiva odjednom
     // traži 20+ dana. Transakcija garantuje istu konekciju za oba upita.
@@ -73,23 +84,47 @@ export async function claimQuantumValues(): Promise<ClaimedValues> {
         return rows[0] ?? null;
       });
       if (!row) {
-        console.warn("[qrng] Pool is empty, falling back to direct ANU fetch");
-        break;
+        console.warn("[qrng] Pool is empty");
+        return null;
       }
       const values = parseValues(row.values);
       if (values) return { values, source: "pool", fetchedAt: new Date(row.fetchedAt), poolId: row.id };
       console.warn("[qrng] Pool row invalid length or parse failed, skipping row id", row.id);
     }
   } catch (e) {
-    console.warn("[qrng] Pool read failed, falling back to direct ANU fetch:", e);
+    console.warn("[qrng] Pool read failed:", e);
   }
+  return null;
+}
 
+/** Brojevi za sliku dana: bazen (i poslednji red), pa kriptografska entropija. */
+export async function claimQuantumValues(): Promise<ClaimedValues> {
+  return (await claimPoolRow()) ?? { values: randomEntropySeed(), source: "entropy", fetchedAt: new Date() };
+}
+
+export interface StudioValues {
+  values: number[];
+  source: "pool" | "seeded" | "entropy";
+  /** pool: kad je red preuzet iz ANU; seeded: kad su preuzeti brojevi semena (slika dana). */
+  fetchedAt: string | null;
+}
+
+/**
+ * Studio „Izvuci": bazen dok je iznad rezerve; zatim današnja slika dana kao kvantno seme
+ * proširena xorshift128 (iskreno označeno "seeded"); ako ni to ne ide, entropija.
+ */
+export async function drawStudioValues(): Promise<StudioValues> {
+  const pool = await claimPoolRow(STUDIO_POOL_RESERVE);
+  if (pool) return { values: pool.values, source: "pool", fetchedAt: pool.fetchedAt.toISOString() };
   try {
-    return { values: await fetchQRNG(), source: "qrng", fetchedAt: new Date() };
+    const seed = await getDailyValues(getTodayBelgrade());
+    if (seed.source === "pool" || seed.source === "qrng") {
+      return { values: expandQuantumSeed(seed.values), source: "seeded", fetchedAt: seed.fetchedAt };
+    }
   } catch (e) {
-    console.warn("[qrng] Direct ANU fetch failed, falling back to entropy:", e);
+    console.warn("[qrng] Quantum seed unavailable:", e);
   }
-  return { values: randomEntropySeed(), source: "entropy", fetchedAt: new Date() };
+  return { values: randomEntropySeed(), source: "entropy", fetchedAt: null };
 }
 
 // Vezani dani se nikad ne menjaju → keš u memoriji (ograničen).

@@ -354,7 +354,10 @@
     "copyJson": "Copy JSON",
     "originQuantum": "Source: ANU QRNG — quantum vacuum fluctuations · numbers fetched {when}, permanently bound to this day",
     "originEntropy": "Source: server cryptographic entropy — ANU QRNG was unavailable when this day was drawn",
-    "originDate": "Source: derived from the date (SHA-256) — this image predates the switch to quantum numbers for the daily image"
+    "originDate": "Source: derived from the date (SHA-256) — this image predates the switch to quantum numbers for the daily image",
+    "originDrawQuantum": "Source: ANU QRNG — quantum vacuum fluctuations · numbers fetched {when}",
+    "originDrawSeeded": "Source: derived from today's quantum numbers (ANU QRNG, fetched {when}) — xorshift128 expansion; the seed is quantum, these numbers are not. The quantum pool is reserved for the daily image.",
+    "originDrawEntropy": "Source: server cryptographic entropy — quantum numbers are currently unavailable"
   },
   "shared": {
     "noTitle": "Untitled",

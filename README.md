@@ -315,10 +315,15 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
   - `fetchedAt` je vreme kada je red preuzet iz ANU u bazen (za martovske dane to je jun ili jul 2026), i tako piše ispod slike.
   - Prvi zahtev za dan (naslovna, `/art/[date]`, OG slika, arhiva) uzima 1000 brojeva.
   - Brojevi se **trajno upisuju** u tabelu `daily_art`: datum, brojevi, izvor, vreme preuzimanja iz ANU. Svi posle toga vide istu sliku.
-- **Izvor brojeva** ([`claimQuantumValues`](src/lib/daily-art.ts), isti kao Studio „Izvuci"):
+- **Izvor brojeva** ([`claimQuantumValues`](src/lib/daily-art.ts)):
   - najstariji slobodan red iz `qrng_pool`. Zauzima se jednom naredbom (`UPDATE … ORDER BY fetchedAt LIMIT 1` + `LAST_INSERT_ID(id)` u transakciji), pa ni 20+ istovremenih zahteva iz arhive ne mogu uzeti isti red. Istovremeni zahtevi za isti dan u jednom procesu dele jedno zauzimanje, a ako dva procesa vežu isti dan, red koji izgubi trku vraća se u bazen (bez rasipanja);
-  - ako je bazen prazan, direktno ANU API;
-  - ako ni ANU ne radi, kriptografska entropija servera. To se upisuje kao `source = entropy` i iskreno prikazuje ispod slike.
+  - ako je bazen prazan, kriptografska entropija servera. To se upisuje kao `source = entropy` i iskreno prikazuje ispod slike.
+  - **Aplikacija ne zove ANU direktno** (od 2026-11-22: novi ANU API traži ključ i dozvoljava 100 poziva mesečno). Bazen puni samo cron skripta, vidi „Dopuna bazena".
+- **Studio „Izvuci"** ([`drawStudioValues`](src/lib/daily-art.ts), `/api/generate`):
+  - uzima red iz bazena samo dok je slobodnih redova više od rezerve `STUDIO_POOL_RESERVE` (podrazumevano 60), da slika dana nikad ne ostane bez kvantnih brojeva;
+  - ispod rezerve: **kvantno seme + xorshift** (`source = seeded`). Seme su brojevi današnje slike dana; stanje xorshift128 je `SHA-256(seme ‖ nasumičan nonce)` ([`expandQuantumSeed`](src/lib/qrng-server.ts)), pa je svako izvlačenje drugačije. Ispod slike piše da je seme kvantno, a ovi brojevi nisu;
+  - ako ni seme nije dostupno, entropija servera;
+  - Studio prikazuje izvor ispod slike i za „Izvuci" i za „Danas".
 - **Dva istovremena „prva" zahteva:** primarni ključ je datum (`ON DUPLICATE KEY`), pa važi red koji je prvi upisan, a oba zahteva vraćaju njega.
 - **Dani pre prelaska** (samo ako se `DAILY_QUANTUM_FROM` pomeri unapred) ostaju na `seedFromDate()` (SHA-256 datuma).
 - **Arhiva ne vezuje dane sama.** `getDailyValuesMany` samo čita postojeće redove, a dan bez reda nema ime scene dok se ne otvori njegova sličica ili stranica. Tako se ~265 dana vezuje postepeno, a ne u jednom zahtevu.
@@ -326,6 +331,12 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
 - **Ispod slike** (`QRNGReveal`, prop `origin`) piše izvor: „ANU QRNG · brojevi preuzeti …", „entropija servera" ili „izvedeno iz datuma".
 - **Kod:** [`src/lib/daily-art.ts`](src/lib/daily-art.ts) (`getDailyValues`, `getDailyValuesMany` za arhivu, keš u memoriji jer se vezani dani ne menjaju), tabela u [`schema.ts`](src/lib/schema.ts), SQL u [`drizzle/0001_daily_art.sql`](drizzle/0001_daily_art.sql).
 - **Ako baza ne radi**, `/api/art` vraća 503 umesto pogrešne slike, a arhiva radi bez imena scene za kvantne dane.
+- **Dopuna bazena** ([`qrng-pool/refill.php`](qrng-pool/refill.php), Hostinger cron `0 3,15 * * *`):
+  - ANU Quantum Numbers API v2 (`https://api.quantumnumbers.anu.edu.au`, zaglavlje `x-api-key`);
+  - jedan poziv `type=hex16&length=1024&size=10` daje 1024 bloka × 10 = **10.240 kvantnih uint16 → 10 redova** po 1000 (ostatak 240 se odbacuje), upisanih u jednoj transakciji;
+  - zove ANU samo dok je slobodnih redova manje od 500; 2 poziva dnevno ≈ 60 mesečno (limit 100), do 20 redova dnevno, a slika dana troši 1;
+  - briše iskorišćene redove starije od 7 dana (brojevi vezanih dana su sačuvani u `daily_art`);
+  - **`DB_PASS` i `ANU_API_KEY` se popunjavaju samo u kopiji na serveru** (van `public_html`); u repou ostaju prazni.
 - **Ovo je preduslov za sertifikat i „Usvoji dan"** ([predlog](CLAUDE-DEVELOPMENT-PROPOSAL.md), 3.6 i 5.1): brojevi, izvor i vreme preuzimanja su sačuvani za svaki dan.
 
 ---
@@ -591,6 +602,15 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-22 — Bazen pod novim ANU limitom: refill v2, rezerva, Studio „kvantno seme + xorshift"
+
+- **ANU je promenio API:** nova adresa sa ključem, 100 besplatnih poziva mesečno. Stara adresa `qrng.anu.edu.au/API/jsonI.php` ne radi, zato bazen stoji od 2026-07-05.
+- **`qrng-pool/refill.php`:** novi API, `hex16`/`size=10` → **10 redova po pozivu** umesto 1, upis u transakciji, cron 2× dnevno. Lozinka i ključ više nisu u fajlu (popunjavaju se samo na serveru).
+- **`src/lib/daily-art.ts`:** izbačen direktni ANU poziv iz aplikacije (`fetchQRNG` obrisan iz `qrng-server.ts`). Slika dana: bazen → entropija. Novi `drawStudioValues()`: bazen iznad rezerve `STUDIO_POOL_RESERVE` (60) → kvantno seme (današnja slika dana) + xorshift128 (`source = seeded`) → entropija.
+- **`src/lib/qrng-server.ts`:** novi `expandQuantumSeed(seed, nonce)`.
+- **`/api/generate`** vraća i `fetchedAt`. **Studio** prikazuje izvor brojeva ispod slike (`QRNGReveal` `origin.draw`), novi tekstovi `originDrawQuantum`, `originDrawSeeded`, `originDrawEntropy` (sr/en).
+- Test lokalno: rezerva 5 → `pool`; rezerva 1000 → `seeded`, dva izvlačenja različita, bazen se ne troši.
 
 ### 2026-11-22 — Build preko webpack-a (Hostinger)
 

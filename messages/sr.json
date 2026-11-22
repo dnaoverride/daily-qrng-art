@@ -384,7 +384,10 @@
     "copyJson": "Kopiraj JSON",
     "originQuantum": "Izvor: ANU QRNG — kvantne fluktuacije vakuuma · brojevi preuzeti {when}, trajno vezani za ovaj dan",
     "originEntropy": "Izvor: kriptografska entropija servera — ANU QRNG nije bio dostupan kada je ovaj dan izvučen",
-    "originDate": "Izvor: izvedeno iz datuma (SHA-256) — ova slika je nastala pre prelaska na kvantne brojeve za sliku dana"
+    "originDate": "Izvor: izvedeno iz datuma (SHA-256) — ova slika je nastala pre prelaska na kvantne brojeve za sliku dana",
+    "originDrawQuantum": "Izvor: ANU QRNG — kvantne fluktuacije vakuuma · brojevi preuzeti {when}",
+    "originDrawSeeded": "Izvor: izvedeno iz današnjih kvantnih brojeva (ANU QRNG, preuzeti {when}) — xorshift128 proširenje; seme je kvantno, a ovi brojevi nisu. Kvantni bazen se čuva za sliku dana.",
+    "originDrawEntropy": "Izvor: kriptografska entropija servera — kvantni brojevi trenutno nisu dostupni"
   },
   "rarity": {
     "tier": {

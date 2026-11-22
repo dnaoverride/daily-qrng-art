@@ -1,5 +1,6 @@
 /**
- * Server-only: seed iz datuma, fetch ANU, entropy fallback.
+ * Server-only: seed iz datuma, kvantno seme + xorshift, entropy fallback.
+ * ANU se NE zove iz aplikacije (limit 100 poziva/mes) — bazen puni qrng-pool/refill.php.
  * Koristi se u API rutama.
  */
 
@@ -26,23 +27,27 @@ export function seedFromDate(dateStr: string): number[] {
   return values;
 }
 
-export async function fetchQRNG(): Promise<number[]> {
-  const res = await fetch(
-    "https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uint16",
-    {
-      headers: {
-        "User-Agent": "qrng-art/1.0 (+next.js; respectful rate)",
-        Accept: "application/json",
-      },
-      next: { revalidate: 0 },
-    }
-  );
-  if (!res.ok) throw new Error(`ANU API error: ${res.status}`);
-  const obj = await res.json();
-  if (!obj?.success || !Array.isArray(obj.data) || obj.data.length !== 1000) {
-    throw new Error("Invalid ANU QRNG response");
+/**
+ * 1000 brojeva izvedenih iz kvantnog semena (Studio, kad je bazen na rezervi).
+ * Stanje xorshift128 = SHA-256(seme ‖ nonce): svi kvantni brojevi semena ulaze u stanje,
+ * a nasumičan nonce čini svako izvlačenje drugačijim. Brojevi NISU kvantni — samo seme jeste.
+ */
+export function expandQuantumSeed(seed: number[], nonce: Buffer = randomBytes(16)): number[] {
+  const buf = Buffer.alloc(seed.length * 2);
+  seed.forEach((v, i) => buf.writeUInt16LE(v & 0xffff, i * 2));
+  const h = createHash("sha256").update(buf).update(nonce).digest();
+  let x = h.readUInt32LE(0), y = h.readUInt32LE(4), z = h.readUInt32LE(8), w = h.readUInt32LE(12);
+  if ((x | y | z | w) === 0) w = 1;
+  const values: number[] = [];
+  for (let i = 0; i < 1000; i++) {
+    const t = (x ^ (x << 11)) >>> 0;
+    x = y;
+    y = z;
+    z = w;
+    w = (w ^ (w >>> 19) ^ (t ^ (t >>> 8))) >>> 0;
+    values.push(w >>> 16);
   }
-  return obj.data.map((v: unknown) => Number(v) & 0xffff);
+  return values;
 }
 
 export function randomEntropySeed(): number[] {

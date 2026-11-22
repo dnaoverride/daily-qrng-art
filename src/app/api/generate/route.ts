@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { claimQuantumValues } from "@/lib/daily-art";
+import { drawStudioValues } from "@/lib/daily-art";
 import { randomEntropySeed } from "@/lib/qrng-server";
 
 export const dynamic = "force-dynamic";
 
-/** Novih 1000 kvantnih brojeva (Studio „Izvuci"): qrng_pool → ANU → entropija. */
+/** Studio „Izvuci": qrng_pool (iznad rezerve) → kvantno seme + xorshift → entropija. */
 export async function GET() {
   try {
-    const { values, source } = await claimQuantumValues();
-    return NextResponse.json({ values, source });
+    const { values, source, fetchedAt } = await drawStudioValues();
+    return NextResponse.json({ values, source, fetchedAt });
   } catch (e) {
     console.error("[qrng] GET failed completely:", e);
     const values = randomEntropySeed();
-    return NextResponse.json({ values, source: "entropy" });
+    return NextResponse.json({ values, source: "entropy", fetchedAt: null });
   }
 }

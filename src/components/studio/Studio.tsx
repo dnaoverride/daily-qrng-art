@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArtCanvas } from "@/components/ArtCanvas";
-import { QRNGReveal } from "@/components/QRNGReveal";
+import { QRNGReveal, type ValuesOrigin } from "@/components/QRNGReveal";
 import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
 import { NUM_SCENARIOS_V2, scenarioIndexFor, type RenderResult } from "@/lib/scenarios";
 import { SCENE_CONTROLS, type SceneControls as Controls } from "@/lib/scenarios/controls-registry";
@@ -92,12 +92,13 @@ function decodeValues(s: string | null): number[] | null {
   }
 }
 
-async function fetchValues(url: string): Promise<number[]> {
+async function fetchValues(url: string, draw: boolean): Promise<{ values: number[]; origin: ValuesOrigin | null }> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(String(res.status));
-  const data = (await res.json()) as { values?: unknown };
+  const data = (await res.json()) as { values?: unknown; source?: ValuesOrigin["source"]; fetchedAt?: string | null };
   if (!Array.isArray(data.values) || data.values.length !== REQUIRED_COUNT) throw new Error("bad");
-  return data.values as number[];
+  const origin = data.source ? { source: data.source, fetchedAt: data.fetchedAt ?? null, draw } : null;
+  return { values: data.values as number[], origin };
 }
 
 export function Studio() {
@@ -111,6 +112,8 @@ export function Studio() {
   const [scene, setScene] = useState<number | null>(parseScene(params.get("s")));
   const [abstract, setAbstract] = useState<PhilosophyId>(parseAbstract(params.get("a")));
   const [values, setValues] = useState<number[] | null>(null);
+  // Izvor brojeva (Izvuci/Danas); null za zalepljene brojeve, favorite i deljene kodove.
+  const [origin, setOrigin] = useState<ValuesOrigin | null>(null);
   const [drawId, setDrawId] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,8 +138,9 @@ export function Studio() {
   // Stari favorit nastao pre v2 (bez ručne scene) crta se starim rendererom, kao u profilu.
   const [legacyVersion, setLegacyVersion] = useState<RenderVersion | null>(null);
 
-  const show = useCallback((vals: number[]) => {
+  const show = useCallback((vals: number[], from: ValuesOrigin | null = null) => {
     setLegacyVersion(null);
+    setOrigin(from);
     setValues(vals);
     setInput(vals.join(", "));
     setDrawId((d) => d + 1);
@@ -145,11 +149,12 @@ export function Studio() {
   }, []);
 
   const load = useCallback(
-    async (url: string, errKey: "errorDraw" | "errorToday") => {
+    async (url: string, errKey: "errorDraw" | "errorToday", draw = false) => {
       setError(null);
       setLoading(true);
       try {
-        show(await fetchValues(url));
+        const r = await fetchValues(url, draw);
+        show(r.values, r.origin);
       } catch {
         setError(t(errKey));
       } finally {
@@ -159,7 +164,7 @@ export function Studio() {
     [show, t]
   );
 
-  const handleDraw = () => load("/api/generate", "errorDraw");
+  const handleDraw = () => load("/api/generate", "errorDraw", true);
   const handleToday = () => load(dailyArtUrl(getTodayBelgrade()), "errorToday");
   const handlePaste = () => {
     const parsed = parseValues(input);
@@ -203,6 +208,7 @@ export function Studio() {
           if (!sc && fav.createdAt && renderVersionForTimestamp(fav.createdAt) === 1) setLegacyVersion(1);
         }
         setValues(numbers);
+        setOrigin(null);
         setInput(numbers.join(", "));
         setDrawId((d) => d + 1);
       } catch {
@@ -231,6 +237,7 @@ export function Studio() {
       setAbstract(preset.philosophy);
       setAbsParams((m) => ({ ...m, [preset.philosophy]: preset.params }));
       setValues(preset.values);
+      setOrigin(null);
       setInput(preset.values.join(", "));
       setDrawId((d) => d + 1);
       return;
@@ -238,6 +245,7 @@ export function Studio() {
     const shared = decodeValues(params.get("v"));
     if (shared) {
       setValues(shared);
+      setOrigin(null);
       setInput(shared.join(", "));
       setDrawId((d) => d + 1);
       return;
@@ -606,7 +614,7 @@ export function Studio() {
 
             {values && (
               <div className="mt-6">
-                <QRNGReveal values={values} className="max-w-none mx-0" />
+                <QRNGReveal values={values} origin={origin} className="max-w-none mx-0" />
               </div>
             )}
 

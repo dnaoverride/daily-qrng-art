@@ -1,24 +1,43 @@
 <?php
+
+declare(strict_types=1);
+
 /**
- * QRNG Pool Refill
- * Pokreće se svakih 1 minut putem Hostinger Cron Jobs.
- * Fetchuje 1 set od ANU QRNG API-ja ako je pool ispod POOL_MIN.
+ * QRNG Art — dopuna qrng_pool iz ANU Quantum Numbers API (v2) za Hostinger cron.
+ *
+ * Jedan poziv: type=hex16, length=1024, size=10 → 1024 bloka × 10 brojeva = 10.240 pravih
+ * kvantnih uint16 → 10 redova po 1000 brojeva (ostatak od 240 se odbacuje).
+ * Besplatno je 100 poziva mesečno; cron 2× dnevno = ~60 poziva/mes, do 20 redova dnevno.
+ *
+ * Cron (hPanel → Cron Jobs):   0 3,15 * * *   php /putanja/do/refill.php
+ *
+ * ⚠ DB_PASS i ANU_API_KEY popuni SAMO u kopiji na serveru (van public_html).
+ *   U repou moraju ostati prazni — nikad ne commituj pravu lozinku ili ključ.
  */
 
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-echo "[START] " . date('Y-m-d H:i:s') . "\n";
-flush();
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 
-define('POOL_MIN', 500);   // minimalan broj neiskorišćenih setova u bazi
-define('DB_HOST',  'auth-db1575.hstgr.io');
-define('DB_NAME',  'u565895409_qrng');   // ← popuni
-define('DB_USER',  'u565895409_qrng');   // ← popuni
-define('DB_PASS',  '');   // ← popuni
+const DB_HOST = 'auth-db1575.hstgr.io';
+const DB_NAME = 'u565895409_qrng';
+const DB_USER = 'u565895409_qrng';
+const DB_PASS = '';            // ← popuni na serveru
+const ANU_API_KEY = '';        // ← popuni na serveru
 
-echo "[STEP 1] Connecting to DB: " . DB_HOST . " / " . DB_NAME . "\n";
-flush();
+const POOL_MIN = 500;          // dopunjuj dok je slobodnih redova manje od ovoga
+const SET_SIZE = 1000;         // brojeva po redu (koliko troši jedna slika)
+const ANU_LENGTH = 1024;       // blokova po pozivu (max 1024)
+const ANU_BLOCK = 10;          // uint16 brojeva po bloku (max 10)
+
+if (DB_PASS === '' || trim(ANU_API_KEY) === '') {
+    fwrite(STDERR, "[ERROR] Popuni DB_PASS i ANU_API_KEY u refill.php na serveru.\n");
+    exit(1);
+}
+
+echo '[START] ' . date('Y-m-d H:i:s') . "\n";
+
 try {
     $pdo = new PDO(
         'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
@@ -26,70 +45,69 @@ try {
         DB_PASS,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-    echo "[STEP 1] DB connected OK\n";
-    flush();
-} catch (PDOException $e) {
-    echo "[ERROR] DB connect failed: " . $e->getMessage() . "\n";
+
+    $count = (int) $pdo->query('SELECT COUNT(*) FROM qrng_pool WHERE used = 0')->fetchColumn();
+    echo "[POOL] {$count} slobodnih redova, cilj " . POOL_MIN . ".\n";
+
+    if ($count >= POOL_MIN) {
+        echo "[OK] Bazen je pun, ANU se ne zove.\n";
+        exit(0);
+    }
+
+    $url = 'https://api.quantumnumbers.anu.edu.au/?length=' . ANU_LENGTH . '&type=hex16&size=' . ANU_BLOCK;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => ['Accept: application/json', 'x-api-key: ' . trim(ANU_API_KEY)],
+        CURLOPT_USERAGENT => 'qrng-art/1.0',
+    ]);
+    $raw = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    unset($ch);
+
+    if ($raw === false) {
+        throw new RuntimeException('ANU zahtev nije uspeo: ' . $curlError);
+    }
+    if ($httpCode !== 200) {
+        throw new RuntimeException("ANU je vratio HTTP {$httpCode}: " . substr((string) $raw, 0, 200));
+    }
+
+    $response = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    $blocks = $response['data'] ?? null;
+    if (($response['success'] ?? null) !== true || !is_array($blocks) || count($blocks) !== ANU_LENGTH) {
+        throw new RuntimeException('ANU nije vratio ' . ANU_LENGTH . ' blokova.');
+    }
+
+    // Svaki blok: 40 hex znakova = 10 × 4 hex = 10 uint16 (0–65535).
+    $numbers = [];
+    foreach ($blocks as $block) {
+        if (!is_string($block) || !preg_match('/^[0-9a-f]{' . (4 * ANU_BLOCK) . '}$/i', $block)) {
+            throw new RuntimeException('ANU blok nije u hex16 formatu.');
+        }
+        foreach (str_split($block, 4) as $hex) {
+            $numbers[] = (int) hexdec($hex);
+        }
+    }
+
+    $sets = intdiv(count($numbers), SET_SIZE);   // 10240 → 10 redova
+    $stmt = $pdo->prepare('INSERT INTO qrng_pool (`values`, fetchedAt, used) VALUES (?, NOW(3), 0)');
+    $pdo->beginTransaction();
+    for ($i = 0; $i < $sets; $i++) {
+        $stmt->execute([json_encode(array_slice($numbers, $i * SET_SIZE, SET_SIZE), JSON_THROW_ON_ERROR)]);
+    }
+    $pdo->commit();
+    echo "[OK] Upisano {$sets} redova (" . count($numbers) . " kvantnih brojeva iz jednog poziva).\n";
+
+    // Brojevi vezanih dana su kopirani u daily_art, pa stari iskorišćeni redovi nisu potrebni.
+    $deleted = $pdo->exec('DELETE FROM qrng_pool WHERE used = 1 AND fetchedAt < NOW() - INTERVAL 7 DAY');
+    echo "[OK] Obrisano {$deleted} starih iskorišćenih redova.\n";
+} catch (Throwable $e) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    fwrite(STDERR, '[ERROR] ' . $e->getMessage() . "\n");
     exit(1);
 }
-echo "[STEP 2] Counting unused sets in pool...\n";
-flush();
-$count = (int)$pdo->query("SELECT COUNT(*) FROM qrng_pool WHERE used = 0")->fetchColumn();
-echo "[STEP 2] Pool has $count unused sets (min " . POOL_MIN . ")\n";
-flush();
-if ($count >= POOL_MIN) {
-    echo "[OK] Pool full. Nothing to do.\n";
-    exit(0);
-}
-echo "[STEP 3] Fetching from ANU QRNG API...\n";
-flush();
-$url = "https://qrng.anu.edu.au/API/jsonI.php?length=1000&type=uint16";
-$ch = curl_init($url);
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT        => 15,
-    CURLOPT_USERAGENT      => 'qrng-art/1.0 (+php-cron; respectful-rate)',
-    CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_FOLLOWLOCATION => true,
-    CURLOPT_VERBOSE        => false,
-]);
-$raw    = curl_exec($ch);
-$errno  = curl_errno($ch);
-$errmsg = curl_error($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-echo "[STEP 3] cURL done. HTTP code: $httpCode, errno: $errno, errmsg: '$errmsg'\n";
-echo "[STEP 3] Raw response (first 300 chars): " . substr((string)$raw, 0, 300) . "\n";
-flush();
-if ($raw === false || $errno !== 0) {
-    echo "[WARN] ANU fetch failed (cURL $errno: $errmsg). Will retry next run.\n";
-    exit(1);
-}
-echo "[STEP 4] Decoding JSON...\n";
-flush();
-$obj = json_decode($raw, true);
-echo "[STEP 4] json_decode result: success=" . json_encode($obj['success'] ?? null) . ", data count=" . count($obj['data'] ?? []) . "\n";
-flush();
-if (
-    empty($obj['success'])
-    || !isset($obj['data'])
-    || !is_array($obj['data'])
-    || count($obj['data']) !== 1000
-) {
-    echo "[WARN] Invalid ANU response.\n";
-    exit(1);
-}
-echo "[STEP 5] Inserting into qrng_pool...\n";
-flush();
-$values = json_encode(array_map('intval', $obj['data']));
-$stmt = $pdo->prepare(
-    "INSERT INTO qrng_pool (`values`, fetchedAt, used) VALUES (?, NOW(3), 0)"
-);
-$stmt->execute([$values]);
-echo "[STEP 5] Insert OK\n";
-flush();
-$deleted = $pdo->exec(
-    "DELETE FROM qrng_pool WHERE used = 1 AND fetchedAt < NOW() - INTERVAL 7 DAY"
-);
-$newCount = $count + 1;
-echo "[OK] Done. Pool: $count -> $newCount / " . POOL_MIN . ". Cleaned: $deleted old rows.\n";
