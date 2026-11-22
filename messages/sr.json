@@ -16,12 +16,12 @@
   "home": {
     "title": "Slika dana",
     "howTitle": "Kako je ova slika nastala?",
-    "paragraph1": "Ovo nije slika koju je nacrtao umetnik niti izgenerisao veštački model. Svaki dan nova slika nastaje samo iz kvantne slučajnosti — prave nasumičnosti koja potiče iz kvantnih procesa na Australijskom nacionalnom univerzitetu.",
-    "paragraph2": "ANU QRNG servis generiše brojeve pomoću fotonske detekcije — ne pomoću računarskog algoritma. To znači da je svaki broj zaista nepredvidljiv i unikatan.",
-    "paragraph3": "Svaki od 1000 brojeva utiče na finalnu sliku: boju neba, broj zvezda, oblik planina, poziciju sunca ili meseca, oblake. Isti set brojeva uvek daje istu sliku — reproducibilnu umetnost iz haosa.",
-    "paragraph4Prefix": "Zainteresovan? ",
-    "paragraph4Link": "Studio",
-    "paragraph4Suffix": " prikazuje 15 scena i 9 apstrakcija iz istih brojeva i dozvoljava da ih podešavaš."
+    "paragraph1": "Ovu sliku nije nacrtao umetnik niti ju je napravio veštački model. Nastala je iz 1000 brojeva prave kvantne slučajnosti, koje daje generator Australijskog nacionalnog univerziteta (ANU QRNG). On meri kvantne fluktuacije vakuuma, pa su brojevi zaista nepredvidljivi — ne izračunava ih nikakav algoritam.",
+    "paragraph2": "Brojevi odlučuju o svemu: koja će od 15 scena biti danas — od pustinje i fjorda do Beograda i japanskog vrta — paleta i doba dana, šta je u kadru i da li će se pojaviti nešto retko, poput duge, komete ili pomračenja. Sitne detalje (zvezde, kapi kiše, travke) crta generator zasejan istim brojevima.",
+    "paragraph3": "Isti brojevi uvek daju istu sliku. Brojeve današnje slike vidiš iznad, a svaka prethodna čeka u arhivi.",
+    "paragraph4Prefix": "Zainteresovan? U ",
+    "paragraph4Link": "Studiju",
+    "paragraph4Suffix": " iz istih brojeva vidiš svih 15 scena i 9 apstrakcija i možeš da ih podešavaš."
   },
   "studio": {
     "title": "Studio",

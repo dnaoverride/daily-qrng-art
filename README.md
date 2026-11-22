@@ -570,6 +570,16 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-22 — Naslovna: novi tekst „Kako je ova slika nastala?" (grana `claude`)
+
+- **`messages/sr.json`, `messages/en.json` → `home.paragraph1–4`:** stari tekst je opisivao samo pejzaž („broj zvezda, oblik planina"). Novi kaže:
+  - odakle su brojevi (ANU QRNG, kvantne fluktuacije vakuuma);
+  - šta brojevi odlučuju (koja od 15 scena, paleta, doba, šta je u kadru, retki događaji);
+  - iskreno: sitne detalje crta generator zasejan istim brojevima;
+  - da isti brojevi uvek daju istu sliku (brojevi iznad, arhiva);
+  - poziv u Studio.
+- **Napomena:** tvrdnja da slika dana nastaje iz ANU brojeva postaje tačna tek sa `daily_art` (sledeći korak). Do tada se slika dana pravi iz datuma (`seedFromDate`).
+
 ### 2026-11-22 — Studio: vraćene priče o algoritmima (grana `claude`)
 
 - **`src/components/studio/Studio.tsx`** — u režimu apstrakcija, ispod kvantnih brojeva, vraćena sekcija iz starog `/algorithmic`: „QRNG priča za izabranu scenu" (`algorithmic.storyTitle`, `storyIntro`) i kartica sa pričom izabranog algoritma (`algorithmic.story*`).
