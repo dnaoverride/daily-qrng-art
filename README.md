@@ -603,6 +603,10 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-22 — `/api/art`: kod greške baze u odgovoru 503
+
+- **`src/app/api/art/[date]/route.ts`:** odgovor 503 sada ima i `code` (npr. `ER_ACCESS_DENIED_ERROR`, `ENOTFOUND`, `ETIMEDOUT`), samo kod iz mysql2 greške, bez poruke i tajni. Služi za dijagnozu na Hostingeru, gde ispis aplikacije nije lako dostupan.
+
 ### 2026-11-22 — Bazen pod novim ANU limitom: refill v2, rezerva, Studio „kvantno seme + xorshift"
 
 - **ANU je promenio API:** nova adresa sa ključem, 100 besplatnih poziva mesečno. Stara adresa `qrng.anu.edu.au/API/jsonI.php` ne radi, zato bazen stoji od 2026-07-05.

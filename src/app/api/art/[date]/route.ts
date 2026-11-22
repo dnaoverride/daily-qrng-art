@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { FutureDateError, getDailyValues } from "@/lib/daily-art";
 
+/** Samo kod greške baze (npr. ER_ACCESS_DENIED_ERROR, ENOTFOUND) — bez poruke i tajni. */
+function dbErrorCode(e: unknown): string | undefined {
+  for (let cur: unknown = e, i = 0; cur && i < 4; cur = (cur as { cause?: unknown }).cause, i++) {
+    const code = (cur as { code?: unknown }).code;
+    if (typeof code === "string" && /^[A-Z0-9_]{2,64}$/.test(code)) return code;
+  }
+  return undefined;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ date: string }> }
@@ -23,6 +32,6 @@ export async function GET(
       return NextResponse.json({ error: "No image for a future date yet" }, { status: 404, headers: { "Cache-Control": "no-store" } });
     }
     console.error("[daily-art]", e);
-    return NextResponse.json({ error: "Daily values unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ error: "Daily values unavailable", code: dbErrorCode(e) ?? "UNKNOWN" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
