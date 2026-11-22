@@ -30,3 +30,15 @@ export function archiveNeighbors(
     next: next >= ARCHIVE_START && next <= today ? next : null,
   };
 }
+
+/**
+ * Verzija u URL-u za /api/art/[date]. Odgovor je `immutable` (dan je trajno vezan), pa
+ * promena izvora brojeva (npr. prelazak na daily_art) mora da promeni URL — inače browser
+ * do 24 h prikazuje staru sliku dok sličica iz arhive već pokazuje novu.
+ */
+export const DAILY_API_VERSION = "q1";
+
+/** URL za brojeve slike dana. */
+export function dailyArtUrl(date: string): string {
+  return `/api/art/${date}?v=${DAILY_API_VERSION}`;
+}

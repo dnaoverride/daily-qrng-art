@@ -381,7 +381,10 @@
     "toggle": "Kvantni brojevi koji su kreirali ovu sliku",
     "count": "{count} uint16 vrednosti",
     "copied": "Kopirano!",
-    "copyJson": "Kopiraj JSON"
+    "copyJson": "Kopiraj JSON",
+    "originQuantum": "Izvor: ANU QRNG — kvantne fluktuacije vakuuma · brojevi preuzeti {when}, trajno vezani za ovaj dan",
+    "originEntropy": "Izvor: kriptografska entropija servera — ANU QRNG nije bio dostupan kada je ovaj dan izvučen",
+    "originDate": "Izvor: izvedeno iz datuma (SHA-256) — ova slika je nastala pre prelaska na kvantne brojeve za sliku dana"
   },
   "rarity": {
     "tier": {

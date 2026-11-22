@@ -1,18 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+
+/** Odakle su brojevi slike dana (iz /api/art/[date]). */
+export interface ValuesOrigin {
+  source: "date" | "pool" | "qrng" | "entropy";
+  fetchedAt: string | null;
+}
 
 interface QRNGRevealProps {
   values: number[];
   date?: string;
   className?: string;
+  /** Slika dana: prikazuje izvor brojeva ispod dugmeta. */
+  origin?: ValuesOrigin | null;
 }
 
-export function QRNGReveal({ values, date, className }: QRNGRevealProps) {
+export function QRNGReveal({ values, date, className, origin }: QRNGRevealProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const t = useTranslations("qrngReveal");
+  const locale = useLocale();
+
+  const originText = (() => {
+    if (!origin) return null;
+    if (origin.source === "date") return t("originDate");
+    if (origin.source === "entropy") return t("originEntropy");
+    const when = origin.fetchedAt
+      ? new Intl.DateTimeFormat(locale === "sr" ? "sr-Latn" : "en-GB", {
+          dateStyle: "long",
+          timeStyle: "short",
+          timeZone: "Europe/Belgrade",
+        }).format(new Date(origin.fetchedAt))
+      : "";
+    return t("originQuantum", { when });
+  })();
 
   const copyJson = () => {
     const text = JSON.stringify(values);
@@ -54,6 +77,8 @@ export function QRNGReveal({ values, date, className }: QRNGRevealProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
+
+      {originText && <p className="mt-1.5 px-1 text-xs text-zinc-500 dark:text-zinc-500">{originText}</p>}
 
       {open && (
         <div className="mt-2 p-4 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">

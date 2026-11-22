@@ -304,7 +304,29 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
 
 ## Otvorena pitanja / TODO
 
-- **Slika dana nije kvantna.** `/api/art/[date]` i `/api/og-image` koriste `seedFromDate()` iz [`src/lib/qrng-server.ts`](src/lib/qrng-server.ts): SHA-256 hash datuma → xorshift → 1000 brojeva. ANU QRNG i `qrng_pool` koristi samo `/api/generate` (Studio, „Izvuci"). Plan za kasnije: tabela `daily_art` (datum → 1000 brojeva), prvi zahtev dana uzima red iz `qrng_pool` i trajno ga vezuje za datum; stari datumi ostaju na `seedFromDate` da se arhiva ne promeni. Preduslov za sertifikat / „Usvoji dan" iz [CLAUDE-DEVELOPMENT-PROPOSAL.md](CLAUDE-DEVELOPMENT-PROPOSAL.md).
+- ~~**Slika dana nije kvantna.**~~ Rešeno 2026-11-22: vidi sekciju **Kvantna slika dana** ispod.
+
+---
+
+## Kvantna slika dana (`daily_art`)
+
+- **Od `DAILY_QUANTUM_FROM`** (podrazumevano **`2026-03-04`, početak arhive**, env `DAILY_QUANTUM_FROM`), slika dana nastaje iz **pravih ANU QRNG brojeva**.
+  - **Odluka 2026-11-22:** cela arhiva je kvantna. Favorita nije bilo, pa su se sve dotadašnje slike promenile.
+  - `fetchedAt` je vreme kada je red preuzet iz ANU u bazen (za martovske dane to je jun ili jul 2026), i tako piše ispod slike.
+  - Prvi zahtev za dan (naslovna, `/art/[date]`, OG slika, arhiva) uzima 1000 brojeva.
+  - Brojevi se **trajno upisuju** u tabelu `daily_art`: datum, brojevi, izvor, vreme preuzimanja iz ANU. Svi posle toga vide istu sliku.
+- **Izvor brojeva** ([`claimQuantumValues`](src/lib/daily-art.ts), isti kao Studio „Izvuci"):
+  - najstariji slobodan red iz `qrng_pool`. Zauzima se jednom naredbom (`UPDATE … ORDER BY fetchedAt LIMIT 1` + `LAST_INSERT_ID(id)` u transakciji), pa ni 20+ istovremenih zahteva iz arhive ne mogu uzeti isti red. Istovremeni zahtevi za isti dan u jednom procesu dele jedno zauzimanje, a ako dva procesa vežu isti dan, red koji izgubi trku vraća se u bazen (bez rasipanja);
+  - ako je bazen prazan, direktno ANU API;
+  - ako ni ANU ne radi, kriptografska entropija servera. To se upisuje kao `source = entropy` i iskreno prikazuje ispod slike.
+- **Dva istovremena „prva" zahteva:** primarni ključ je datum (`ON DUPLICATE KEY`), pa važi red koji je prvi upisan, a oba zahteva vraćaju njega.
+- **Dani pre prelaska** (samo ako se `DAILY_QUANTUM_FROM` pomeri unapred) ostaju na `seedFromDate()` (SHA-256 datuma).
+- **Arhiva ne vezuje dane sama.** `getDailyValuesMany` samo čita postojeće redove, a dan bez reda nema ime scene dok se ne otvori njegova sličica ili stranica. Tako se ~265 dana vezuje postepeno, a ne u jednom zahtevu.
+- **Budući dani** vraćaju 404. Slika se ne može „izvući" unapred.
+- **Ispod slike** (`QRNGReveal`, prop `origin`) piše izvor: „ANU QRNG · brojevi preuzeti …", „entropija servera" ili „izvedeno iz datuma".
+- **Kod:** [`src/lib/daily-art.ts`](src/lib/daily-art.ts) (`getDailyValues`, `getDailyValuesMany` za arhivu, keš u memoriji jer se vezani dani ne menjaju), tabela u [`schema.ts`](src/lib/schema.ts), SQL u [`drizzle/0001_daily_art.sql`](drizzle/0001_daily_art.sql).
+- **Ako baza ne radi**, `/api/art` vraća 503 umesto pogrešne slike, a arhiva radi bez imena scene za kvantne dane.
+- **Ovo je preduslov za sertifikat i „Usvoji dan"** ([predlog](CLAUDE-DEVELOPMENT-PROPOSAL.md), 3.6 i 5.1): brojevi, izvor i vreme preuzimanja su sačuvani za svaki dan.
 
 ---
 
@@ -569,6 +591,25 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-22 — Kvantna slika dana: `daily_art` (grana `claude`)
+
+- **Problem iz predloga (3.6):** slika dana je nastajala iz datuma (`seedFromDate`), a ne iz ANU QRNG-a, iako sajt tvrdi suprotno.
+- **NOVO `src/lib/daily-art.ts`:**
+  - `getDailyValues(date)`: od `DAILY_QUANTUM_FROM` (podrazumevano 2026-03-04, **cela arhiva**) prvi zahtev za dan uzima 1000 kvantnih brojeva i trajno ih vezuje za datum u tabeli `daily_art`; budući dani daju 404;
+  - `getDailyValuesMany(dates)` za arhivu samo čita i ne vezuje;
+  - `claimQuantumValues()` (bazen, pa ANU, pa entropija) sa atomskim zauzimanjem reda: `UPDATE … ORDER BY fetchedAt LIMIT 1` + `LAST_INSERT_ID(id)` u transakciji.
+  - Istovremeni zahtevi za isti datum dele jedno zauzimanje (in-flight mapa), a red iz bazena koji izgubi trku za datum vraća se (`used = 0`). Test: 4 procesa × 4 datuma → iste slike svuda, potrošena tačno 4 reda.
+- **Sve slike u arhivi su nove** (odluka 2026-11-22; favorita nije bilo). Ispod slike piše kad su brojevi preuzeti iz ANU (vreme reda u bazenu).
+- **NOVO `daily_art`** u `schema.ts` i [`drizzle/0001_daily_art.sql`](drizzle/0001_daily_art.sql) (samo `CREATE TABLE`).
+- **`/api/art/[date]`** vraća i `source` i `fetchedAt`. Budući dan daje 404, a nedostupna baza 503 (`no-store`), nikad pogrešnu sliku.
+- **Verzija u URL-u** (`dailyArtUrl(date)` u `src/lib/date.ts` → `/api/art/<datum>?v=q1`): odgovor je `immutable` 24 h, pa bez nove adrese browser posle deploy-a prikazuje staru sliku dok arhiva već ima novu sličicu. Koriste ga naslovna, `/art/[date]` i Studio „Danas“; pri sledećoj promeni izvora brojeva menja se `DAILY_API_VERSION`.
+- **`/api/og-image`** (vezuje dan pri prvom prikazu sličice) i **arhiva** (jedan upit za sve dane, bez vezivanja) koriste iste brojeve.
+- **`/api/generate`** koristi zajednički `claimQuantumValues()`. Ponašanje je isto, plus atomsko zauzimanje reda.
+- **`QRNGReveal`** — nov prop `origin`: ispod slike dana piše izvor brojeva (`qrngReveal.originQuantum`, `originEntropy`, `originDate`, sr i en). Koriste ga naslovna i `/art/[date]`.
+- **`.env.example`, `DEPLOY-CHECKLIST.md`** — `DAILY_QUANTUM_FROM`, korak 2b (SQL u phpMyAdmin-u, provera bazena).
+- **README** — nova sekcija „Kvantna slika dana"; stavka u „Otvorena pitanja" zatvorena.
+- Renderer nije menjan. Testirano lokalno: 5 istovremenih zahteva za isti dan daje iste brojeve i jedan red, arhiva daje iste brojeve kao stranica dana, budući dan je odbijen.
 
 ### 2026-11-22 — Naslovna: novi tekst „Kako je ova slika nastala?" (grana `claude`)
 

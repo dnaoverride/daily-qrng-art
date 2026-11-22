@@ -65,7 +65,15 @@ U **hPanel > Deployments > Environment Variables** dodaj:
 | `AUTH_SECRET` | `openssl rand -base64 32` ili [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) | Obavezno novi za produkciju |
 | `NEXTAUTH_SECRET` | isto kao `AUTH_SECRET` | Preporučeno zbog Auth.js kompatibilnosti |
 | `NEXTAUTH_URL` | `https://qrng-art.com` | Bez trailing slash-a |
+| `DAILY_QUANTUM_FROM` | *(opciono)* `YYYY-MM-DD` | Prvi dan kvantne slike dana (`daily_art`). Bez nje: `2026-03-04` (cela arhiva kvantna). Vidi korak 2b. |
 | `NEXT_PUBLIC_RENDER_V2_FROM` | *(opciono)* `YYYY-MM-DD` | Bez nje: `2000-01-01` → cela arhiva u v2. Postaviti samo ako treba vratiti stare datume na v1. Vidi korak 2a. |
+
+### 2b. Kvantna slika dana (`daily_art`)
+
+- [ ] U phpMyAdmin-u pokreni [`drizzle/0001_daily_art.sql`](drizzle/0001_daily_art.sql) (samo pravi tabelu `daily_art`, ništa ne briše). **Ne `drizzle-kit push`.**
+- [ ] Proveri da `qrng_pool` ima slobodnih redova (`SELECT COUNT(*) FROM qrng_pool WHERE used = 0`) i da cron `qrng-pool/refill.php` radi. Svaki dan troši jedan red (cela arhiva od 2026-03-04 ≈ 265 redova, vezuju se postepeno dok se arhiva otvara), plus svako „Izvuci" u Studiju. Stanje 2026-11-22: 500 slobodnih.
+- [ ] Datum prelaska: podrazumevano `2026-03-04` (početak arhive → **sve slike u arhivi se menjaju**, odluka 2026-11-22), ili env `DAILY_QUANTUM_FROM`.
+- [ ] Posle deploy-a otvori naslovnu: ispod slike treba da piše „Izvor: ANU QRNG … brojevi preuzeti …". U `daily_art` treba da postoji red za današnji datum sa `source = pool`.
 
 ### 2a. Render v2 (pri spajanju grane `claude` u `main`)
 

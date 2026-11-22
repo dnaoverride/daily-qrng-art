@@ -351,7 +351,10 @@
     "toggle": "Quantum numbers that created this image",
     "count": "{count} uint16 values",
     "copied": "Copied!",
-    "copyJson": "Copy JSON"
+    "copyJson": "Copy JSON",
+    "originQuantum": "Source: ANU QRNG — quantum vacuum fluctuations · numbers fetched {when}, permanently bound to this day",
+    "originEntropy": "Source: server cryptographic entropy — ANU QRNG was unavailable when this day was drawn",
+    "originDate": "Source: derived from the date (SHA-256) — this image predates the switch to quantum numbers for the daily image"
   },
   "shared": {
     "noTitle": "Untitled",

@@ -9,7 +9,7 @@ import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
 import { NUM_SCENARIOS_V2, scenarioIndexFor, type RenderResult } from "@/lib/scenarios";
 import { SCENE_CONTROLS, type SceneControls as Controls } from "@/lib/scenarios/controls-registry";
 import { decodeControls, encodeControls } from "@/lib/scenarios/controls";
-import { getTodayBelgrade } from "@/lib/date";
+import { dailyArtUrl, getTodayBelgrade } from "@/lib/date";
 import { currentRenderVersion, renderVersionForTimestamp, type RenderVersion } from "@/lib/render-version";
 import { PHILOSOPHIES, type AlgoParams, type PhilosophyId } from "@/lib/algorithmic/types";
 import { buildPreset, decodePreset, encodePreset, type AlgoPreset } from "@/lib/algorithmic/preset-code";
@@ -160,7 +160,7 @@ export function Studio() {
   );
 
   const handleDraw = () => load("/api/generate", "errorDraw");
-  const handleToday = () => load(`/api/art/${getTodayBelgrade()}`, "errorToday");
+  const handleToday = () => load(dailyArtUrl(getTodayBelgrade()), "errorToday");
   const handlePaste = () => {
     const parsed = parseValues(input);
     if (!parsed) {
@@ -207,7 +207,7 @@ export function Studio() {
         setDrawId((d) => d + 1);
       } catch {
         // Umesto favorita današnja slika, ali poruka ostaje (load briše grešku na početku).
-        await load(`/api/art/${getTodayBelgrade()}`, "errorToday");
+        await load(dailyArtUrl(getTodayBelgrade()), "errorToday");
         setError(t("errorFavorite"));
       } finally {
         setLoading(false);
@@ -242,7 +242,7 @@ export function Studio() {
       setDrawId((d) => d + 1);
       return;
     }
-    void load(`/api/art/${getTodayBelgrade()}`, "errorToday");
+    void load(dailyArtUrl(getTodayBelgrade()), "errorToday");
   }, [load, loadFavorite, params]);
 
   const ctlKey = String(scene ?? "auto");

@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
-import { QRNGReveal } from "./QRNGReveal";
+import { QRNGReveal, type ValuesOrigin } from "./QRNGReveal";
 import { SaveFavoriteButton } from "./SaveFavoriteButton";
 import { scenarioNameFor } from "@/lib/scenarios";
 import { renderVersionForDate } from "@/lib/render-version";
-import { archiveNeighbors } from "@/lib/date";
+import { archiveNeighbors, dailyArtUrl } from "@/lib/date";
 
 function Chevron({
   dir,
@@ -85,6 +85,7 @@ interface ArtPageContentProps {
 
 export function ArtPageContent({ date }: ArtPageContentProps) {
   const [values, setValues] = useState<number[] | null>(null);
+  const [origin, setOrigin] = useState<ValuesOrigin | null>(null);
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations("art");
   const router = useRouter();
@@ -114,10 +115,13 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
   }, [nav, router]);
 
   useEffect(() => {
-    fetch(`/api/art/${date}`)
+    fetch(dailyArtUrl(date))
       .then((r) => r.json())
       .then((data) => {
-        if (data.values) setValues(data.values);
+        if (data.values) {
+          setValues(data.values);
+          setOrigin(data.source ? { source: data.source, fetchedAt: data.fetchedAt ?? null } : null);
+        }
         else setError(data.error || t("error"));
       })
       .catch(() => setError(t("errorLoad")));
@@ -167,7 +171,7 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
           }
         />
       </div>
-      <QRNGReveal values={values} date={date} />
+      <QRNGReveal values={values} date={date} origin={origin} />
     </div>
   );
 }

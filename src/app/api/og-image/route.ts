@@ -12,7 +12,7 @@
  */
 import { NextResponse } from "next/server";
 import { createCanvas } from "@napi-rs/canvas/node-canvas";
-import { seedFromDate } from "@/lib/qrng-server";
+import { FutureDateError, getDailyValues } from "@/lib/daily-art";
 import { getTodayBelgrade } from "@/lib/date";
 import { QRNGStream } from "@/lib/qrng";
 import { renderArt } from "@/lib/scenarios";
@@ -30,8 +30,8 @@ const MAX_THUMB = 90;
 const pngCache = new Map<string, Buffer>();
 const thumbCache = new Map<string, Buffer>();
 
-function renderBuffer(date: string, thumb: boolean): Buffer {
-  const values = seedFromDate(date);
+async function renderBuffer(date: string, thumb: boolean): Promise<Buffer> {
+  const { values } = await getDailyValues(date);
   const stream = new QRNGStream(values);
   const w = thumb ? W_THUMB : W;
   const h = thumb ? H_THUMB : H;
@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     let buf = IS_DEV ? undefined : cache.get(cacheKey);
 
     if (!buf) {
-      buf = renderBuffer(date, isThumb);
+      buf = await renderBuffer(date, isThumb);
       if (!IS_DEV) {
         if (cache.size >= maxEntries) {
           const oldestKey = cache.keys().next().value;
@@ -78,7 +78,10 @@ export async function GET(req: Request) {
       },
     });
   } catch (e) {
+    if (e instanceof FutureDateError) {
+      return new NextResponse("No image for a future date yet", { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
     console.error("[og-image]", e);
-    return new NextResponse("Failed to generate image", { status: 500 });
+    return new NextResponse("Failed to generate image", { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }

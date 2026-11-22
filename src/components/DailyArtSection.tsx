@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
-import { QRNGReveal } from "./QRNGReveal";
+import { QRNGReveal, type ValuesOrigin } from "./QRNGReveal";
+import { dailyArtUrl } from "@/lib/date";
 
 interface DailyArtSectionProps {
   date: string;
@@ -11,14 +12,18 @@ interface DailyArtSectionProps {
 
 export function DailyArtSection({ date }: DailyArtSectionProps) {
   const [values, setValues] = useState<number[] | null>(null);
+  const [origin, setOrigin] = useState<ValuesOrigin | null>(null);
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations("art");
 
   useEffect(() => {
-    fetch(`/api/art/${date}`)
+    fetch(dailyArtUrl(date))
       .then((r) => r.json())
       .then((data) => {
-        if (data.values) setValues(data.values);
+        if (data.values) {
+          setValues(data.values);
+          setOrigin(data.source ? { source: data.source, fetchedAt: data.fetchedAt ?? null } : null);
+        }
         else setError(data.error || t("errorLoad"));
       })
       .catch(() => setError(t("errorLoad")));
@@ -45,7 +50,7 @@ export function DailyArtSection({ date }: DailyArtSectionProps) {
       <div className="flex justify-center">
         <ArtCanvas values={values} date={date} />
       </div>
-      <QRNGReveal values={values} date={date} />
+      <QRNGReveal values={values} date={date} origin={origin} />
     </div>
   );
 }

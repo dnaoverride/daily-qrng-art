@@ -53,7 +53,7 @@ Sa 12,5% šanse po scenariju korisnik posle desetak dana vidi „sve". Fale izne
 - trošiti QRNG vrednosti na *odluke* (kompozicija, paleta, retki događaji),
 - a za masovne detalje (zvezde, lišće, grain) koristiti PRNG seedovan iz QRNG-a, i to jasno napisati na sajtu.
 
-### 3.6 Slika dana trenutno nije kvantna ⚠️ (odloženo)
+### 3.6 Slika dana trenutno nije kvantna — ✅ rešeno 2026-11-22 (`daily_art`; cela arhiva od 2026-03-04 je kvantna)
 [api/art/[date]/route.ts](src/app/api/art/[date]/route.ts) i [api/og-image/route.ts](src/app/api/og-image/route.ts) koriste `seedFromDate()` iz [qrng-server.ts](src/lib/qrng-server.ts): SHA-256 hash datuma → xorshift → 1000 brojeva. ANU QRNG i `qrng_pool` koristi samo `/api/generate` (Igraonica i studio).
 - **Odluka (2026-11-19):** ostaje ovako za sada; prvo vizuelna poboljšanja.
 - **Plan za kasnije:** tabela `daily_art` (datum → 1000 brojeva + izvor + vreme). Prvi zahtev dana uzima red iz `qrng_pool` i trajno ga vezuje za datum; datumi pre prelaska ostaju na `seedFromDate`, pa se arhiva ne menja. Ovo je preduslov za sertifikat i „Usvoji dan" (5.1).

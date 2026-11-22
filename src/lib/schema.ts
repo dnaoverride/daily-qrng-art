@@ -44,3 +44,17 @@ export const favorites = mysqlTable(
   },
   (t) => [index("Favorite_userId_idx").on(t.userId)]
 );
+
+/**
+ * Kvantna slika dana: datum → 1000 brojeva, trajno vezanih pri prvom zahtevu za taj dan.
+ * Datumi pre DAILY_QUANTUM_FROM nemaju red (ostaju na seedFromDate, arhiva se ne menja).
+ * source: "pool" (qrng_pool, ANU), "qrng" (direktno ANU), "entropy" (ANU nedostupan — kripto entropija).
+ */
+export const daily_art = mysqlTable("daily_art", {
+  date:      varchar("date", { length: 10 }).primaryKey(),
+  values:    json("values").notNull().$type<number[]>(),
+  source:    varchar("source", { length: 16 }).notNull(),
+  /** Kada su brojevi preuzeti iz ANU (za pool: qrng_pool.fetchedAt). */
+  fetchedAt: datetime("fetchedAt", { fsp: 3 }).notNull(),
+  createdAt: datetime("createdAt", { fsp: 3 }).notNull(),
+});
