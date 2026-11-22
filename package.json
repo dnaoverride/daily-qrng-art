@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9500",
-    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 NEXT_CPU_COUNT=1 next build",
+    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 NEXT_CPU_COUNT=1 next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",

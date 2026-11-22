@@ -592,6 +592,10 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-22 — Build preko webpack-a (Hostinger)
+
+- **`package.json` → `build`: `next build --webpack`.** Turbopack pokreće PostCSS (Tailwind) u posebnom node procesu, koji je Hostinger ugasio pre povezivanja (`node process exited before we could connect to it`, `Failed to write app endpoint /page`), pa build nije prolazio. Webpack radi PostCSS u istom procesu. Lokalni build prolazi (18 ruta). Dev (`npm run dev`) i dalje koristi Turbopack.
+
 ### 2026-11-22 — Kvantna slika dana: `daily_art` (grana `claude`)
 
 - **Problem iz predloga (3.6):** slika dana je nastajala iz datuma (`seedFromDate`), a ne iz ANU QRNG-a, iako sajt tvrdi suprotno.
