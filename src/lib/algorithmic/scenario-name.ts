@@ -59,12 +59,6 @@ export function parseFavoriteScenarioToPhilosophyId(
   return null;
 }
 
-export function isAlgorithmicFavoriteScenario(
-  scenarioName: string | null | undefined
-): boolean {
-  return parseFavoriteScenarioToPhilosophyId(scenarioName) !== null;
-}
-
 /* ───────────── Favorit scene iz Studija ───────────── */
 
 /** Kolona favorites.scenarioName je varchar(191). */

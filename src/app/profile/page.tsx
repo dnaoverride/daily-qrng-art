@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
-import { favoriteDisplayName, isAlgorithmicFavoriteScenario, parseFavoriteScene } from "@/lib/algorithmic/scenario-name";
+import { favoriteDisplayName } from "@/lib/algorithmic/scenario-name";
 
 interface Favorite {
   id: string;
@@ -126,12 +126,8 @@ function FavoriteCard({
     tuned: tStudio("tuned"),
   });
 
-  // Scena iz Studija (ručna scena / kontrole) otvara se u Studiju; ostalo za sada na starim stranicama.
-  const playgroundHref = parseFavoriteScene(fav.scenarioName)
-    ? `/studio?favorite=${fav.id}`
-    : isAlgorithmicFavoriteScenario(fav.scenarioName)
-      ? `/algorithmic?favorite=${fav.id}`
-      : `/create-art?favorite=${fav.id}`;
+  // Svaki favorit (scena, apstrakcija, stari v1) otvara se u Studiju.
+  const playgroundHref = `/studio?favorite=${fav.id}`;
 
   return (
     <div ref={cardRef} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -275,7 +271,7 @@ export default function ProfilePage() {
           <div className="text-center py-16">
             <p className="text-zinc-500 mb-4">{t("empty")}</p>
             <Link
-              href="/create-art"
+              href="/studio"
               className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium hover:opacity-90 transition-opacity text-sm"
             >
               {t("goToPlayground")}

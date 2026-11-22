@@ -28,7 +28,7 @@ export default async function Home() {
           <p>
             {t("paragraph4Prefix")}
             <Link
-              href="/create-art"
+              href="/studio"
               className="font-medium text-zinc-800 dark:text-zinc-200 underline underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300"
             >
               {t("paragraph4Link")}

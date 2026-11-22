@@ -8,8 +8,6 @@
     "brand": "QRNG Art",
     "archive": "Image archive",
     "studio": "Studio — scenes & abstractions",
-    "playground": "Playground",
-    "algorithmic": "Algorithmic Art",
     "menuAria": "Menu",
     "login": "Sign in",
     "logout": "Sign out",
@@ -22,21 +20,8 @@
     "paragraph2": "The ANU QRNG service generates numbers using photon detection — not a computer algorithm. That means every number is truly unpredictable and unique.",
     "paragraph3": "Each of the 1000 numbers influences the final image: sky color, number of stars, mountain shape, sun or moon position, clouds. The same set of numbers always produces the same image — reproducible art from chaos.",
     "paragraph4Prefix": "Interested? The ",
-    "paragraph4Link": "Playground",
-    "paragraph4Suffix": " lets you experiment with your own numbers."
-  },
-  "createArt": {
-    "title": "Playground — enter 1000 numbers",
-    "placeholder": "1000 numbers (0–65535), separated by comma, space or newline",
-    "generate": "Generate image",
-    "loadToday": "Load today's art",
-    "random": "Random numbers",
-    "downloadPng": "Download PNG",
-    "scenario": "Scenario: {name}",
-    "errorRequired": "Enter exactly 1000 numbers (0–65535), separated by comma, space or newline.",
-    "errorLoadToday": "Unable to load today's art. Please try again.",
-    "errorRandom": "Unable to load random numbers. Please try again.",
-    "errorLoadFavorite": "Unable to load this favorite. It may have been removed or you may not have access."
+    "paragraph4Link": "Studio",
+    "paragraph4Suffix": " shows 15 scenes and 9 abstractions from the same numbers and lets you tweak them."
   },
   "studio": {
     "title": "Studio",
@@ -223,7 +208,8 @@
       "winter-fog": "Winter fog"
     },
     "tuned": "tuned",
-    "errorFavorite": "Could not load the favorite."
+    "errorFavorite": "Could not load the favorite.",
+    "legacyNote": "This is a favorite from the older version (v1), shown as it was saved. Scene controls exist only in the new version: pick a scene from the strip or draw new numbers."
   },
   "archive": {
     "title": "Generated image archive",
@@ -267,7 +253,7 @@
     "makePrivate": "Make private",
     "scenario": "Scenario: {name}",
     "createdAt": "Saved: {date}",
-    "goToPlayground": "Go to Playground"
+    "goToPlayground": "Go to Studio"
   },
   "algorithmic": {
     "title": "Algorithmic Art",
@@ -371,7 +357,7 @@
     "noTitle": "Untitled",
     "scenario": "Scenario: {name}",
     "observer": "Observer: {name}",
-    "goToPlayground": "Playground — create your own image",
+    "goToPlayground": "Studio — create your own image",
     "goHome": "QRNG Art"
   },
   "login": {

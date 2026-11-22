@@ -10,7 +10,7 @@ import { NUM_SCENARIOS_V2, scenarioIndexFor, type RenderResult } from "@/lib/sce
 import { SCENE_CONTROLS, type SceneControls as Controls } from "@/lib/scenarios/controls-registry";
 import { decodeControls, encodeControls } from "@/lib/scenarios/controls";
 import { getTodayBelgrade } from "@/lib/date";
-import { currentRenderVersion } from "@/lib/render-version";
+import { currentRenderVersion, renderVersionForTimestamp, type RenderVersion } from "@/lib/render-version";
 import { PHILOSOPHIES, type AlgoParams, type PhilosophyId } from "@/lib/algorithmic/types";
 import { buildPreset, decodePreset, encodePreset, type AlgoPreset } from "@/lib/algorithmic/preset-code";
 import { encodeFavoriteScene, parseFavoriteScene, parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
@@ -120,8 +120,11 @@ export function Studio() {
   const started = useRef(false);
   const randomizeTick = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Stari favorit nastao pre v2 (bez ručne scene) crta se starim rendererom, kao u profilu.
+  const [legacyVersion, setLegacyVersion] = useState<RenderVersion | null>(null);
 
   const show = useCallback((vals: number[]) => {
+    setLegacyVersion(null);
     setValues(vals);
     setInput(vals.join(", "));
     setDrawId((d) => d + 1);
@@ -165,7 +168,7 @@ export function Studio() {
       try {
         const res = await fetch(`/api/favorites/${encodeURIComponent(id)}`);
         const data = (await res.json()) as {
-          favorite?: { values?: unknown; scenarioName?: string | null; algoPreset?: unknown };
+          favorite?: { values?: unknown; scenarioName?: string | null; algoPreset?: unknown; createdAt?: string };
         };
         const fav = data.favorite;
         const raw = fav?.values;
@@ -173,6 +176,7 @@ export function Studio() {
         if (!res.ok || !fav || vals.length !== REQUIRED_COUNT) throw new Error("bad");
         const numbers = vals.map((n) => (Number(n) >>> 0) & 0xffff);
 
+        setLegacyVersion(null);
         const preset = fav.algoPreset as AlgoPreset | null | undefined;
         const pid = preset?.philosophy ?? parseFavoriteScenarioToPhilosophyId(fav.scenarioName);
         if (pid) {
@@ -184,6 +188,7 @@ export function Studio() {
           setMode("scene");
           setScene(sc?.scenario ?? null);
           setSceneCtl(sc ? { [String(sc.scenario)]: sc.controls } : {});
+          if (!sc && fav.createdAt && renderVersionForTimestamp(fav.createdAt) === 1) setLegacyVersion(1);
         }
         setValues(numbers);
         setInput(numbers.join(", "));
@@ -246,9 +251,11 @@ export function Studio() {
   }, [mode, scene, abstract, controls, router]);
 
   const items = mode === "scene" ? SCENE_ITEMS : ABSTRACT_ITEMS;
-  const autoScene = values ? scenarioIndexFor(values, currentRenderVersion()) : null;
+  // v1 važi samo za „Kvantni izbor" starog favorita; ručna scena i kontrole su v2.
+  const legacy = mode === "scene" && scene === null && legacyVersion === 1;
+  const autoScene = values ? scenarioIndexFor(values, legacy ? 1 : currentRenderVersion()) : null;
   const effScene = scene ?? autoScene;
-  const defs = effScene !== null ? (SCENE_CONTROLS[effScene] ?? []) : [];
+  const defs = !legacy && effScene !== null ? (SCENE_CONTROLS[effScene] ?? []) : [];
   const params0 = absParams[abstract];
 
   const onRendered = useCallback((r: RenderResult) => setNaturals(r.naturals), []);
@@ -390,7 +397,11 @@ export function Studio() {
 
   const controlsPanel =
     mode === "scene" ? (
-      defs.length > 0 && <SceneControls defs={defs} controls={controls} naturals={naturals} onChange={setControls} />
+      legacy ? (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{t("legacyNote")}</p>
+      ) : (
+        defs.length > 0 && <SceneControls defs={defs} controls={controls} naturals={naturals} onChange={setControls} />
+      )
     ) : (
       <AbstractControls
         id={abstract}
@@ -506,8 +517,9 @@ export function Studio() {
                   <ArtCanvas
                     values={values}
                     canvasClassName="max-w-none"
+                    renderVersion={legacy ? 1 : undefined}
                     scenario={scene ?? undefined}
-                    controls={controls}
+                    controls={legacy ? undefined : controls}
                     onRendered={onRendered}
                     onCanvasReady={onCanvasReady}
                   />

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
-import { favoriteDisplayName, parseFavoriteScene } from "@/lib/algorithmic/scenario-name";
+import { favoriteDisplayName } from "@/lib/algorithmic/scenario-name";
 import { db } from "@/lib/db";
 import { favorites, users } from "@/lib/schema";
 import { getTranslations } from "next-intl/server";
@@ -54,8 +54,8 @@ export default async function SharedFavoritePage({ params }: PageProps) {
     sceneLabel: (i) => tScenario(`s${i}`),
     tuned: tStudio("tuned"),
   });
-  // Scena iz Studija: „Otvori u igraonici" vodi u Studio sa istom scenom i podešavanjima.
-  const playgroundHref = parseFavoriteScene(favorite.scenarioName) ? `/studio?favorite=${favorite.id}` : "/create-art";
+  // Otvara isti favorit u Studiju (javni favorit može da učita svako).
+  const playgroundHref = `/studio?favorite=${favorite.id}`;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">

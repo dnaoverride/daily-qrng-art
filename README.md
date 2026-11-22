@@ -19,7 +19,7 @@ const mix = (v0 ^ v1 ^ v2 ^ v3) >>> 0;
 const scenarioIndex = mix % scenarioCount(version); // NUM_SCENARIOS_V1 = 8, NUM_SCENARIOS_V2 = 15
 ```
 
-`scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, `/create-art`). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
+`scenarioIndexFor(values, version)` i `scenarioNameFor(values, version)` ([`src/lib/scenarios/index.ts`](src/lib/scenarios/index.ts)) koriste se za ime scenarija pri snimanju omiljenih (`ArtPageContent`, Studio). Dodavanje scenarija u v2 menja koji scenario pada na koji v2 dan; v1 dani se ne menjaju.
 
 ### QRNGStream
 
@@ -287,8 +287,8 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
 | Mesto | Verzija |
 |---|---|
 | Slika dana, `/art/[date]`, arhiva, `/api/og-image` | po datumu slike (`renderVersionForDate`) |
-| `/create-art` — novi brojevi (ručno, „Nasumično", „Današnja") | po današnjem datumu (`currentRenderVersion`) |
-| Favorit (profil, `/f/[token]`, otvaranje u `/create-art`) | po datumu nastanka favorita (`renderVersionForTimestamp(createdAt)`) |
+| Studio (`/studio`) — novi brojevi (Izvuci, Danas, Zalepi) | po današnjem datumu (`currentRenderVersion`) |
+| Favorit (profil, `/f/[token]`, otvaranje u Studiju) | po datumu nastanka favorita (`renderVersionForTimestamp(createdAt)`) |
 
 **Keš thumbnail/OG slika — `RENDER_REVISION`:** `/api/og-image` kešira u memoriji (LRU), a odgovor ima `max-age=3600, s-maxage=86400` (browser/CDN). Da se posle izmene izgleda ne služi stara slika:
 
@@ -304,79 +304,63 @@ Parametri se biraju iz QRNG stream-a **posle** scene (2 vrednosti za seed + 5 za
 
 ## Otvorena pitanja / TODO
 
-- **Slika dana nije kvantna.** `/api/art/[date]` i `/api/og-image` koriste `seedFromDate()` iz [`src/lib/qrng-server.ts`](src/lib/qrng-server.ts): SHA-256 hash datuma → xorshift → 1000 brojeva. ANU QRNG i `qrng_pool` koristi samo `/api/generate` (`/create-art`, `/algorithmic`). Plan za kasnije: tabela `daily_art` (datum → 1000 brojeva), prvi zahtev dana uzima red iz `qrng_pool` i trajno ga vezuje za datum; stari datumi ostaju na `seedFromDate` da se arhiva ne promeni. Preduslov za sertifikat / „Usvoji dan" iz [CLAUDE-DEVELOPMENT-PROPOSAL.md](CLAUDE-DEVELOPMENT-PROPOSAL.md).
+- **Slika dana nije kvantna.** `/api/art/[date]` i `/api/og-image` koriste `seedFromDate()` iz [`src/lib/qrng-server.ts`](src/lib/qrng-server.ts): SHA-256 hash datuma → xorshift → 1000 brojeva. ANU QRNG i `qrng_pool` koristi samo `/api/generate` (Studio, „Izvuci"). Plan za kasnije: tabela `daily_art` (datum → 1000 brojeva), prvi zahtev dana uzima red iz `qrng_pool` i trajno ga vezuje za datum; stari datumi ostaju na `seedFromDate` da se arhiva ne promeni. Preduslov za sertifikat / „Usvoji dan" iz [CLAUDE-DEVELOPMENT-PROPOSAL.md](CLAUDE-DEVELOPMENT-PROPOSAL.md).
 
 ---
 
-## Algoritmički art (`/algorithmic`) — layout u `<style>`
+## Studio (`/studio`)
 
-**Zašto:** Na Next.js 16 + Turbopack + Tailwind v4, responsive utility klase (`md:flex-row` itd.) za ovu stranu ponekad **ne daju očekivani desktop layout** (panel i platno ostaju jedan ispod drugog). Zato je raspored rešen **čistim CSS-om** u ugrađenom `<style>` bloku u [`src/app/algorithmic/page.tsx`](src/app/algorithmic/page.tsx), ne kroz Tailwind breakpoint-e za tu osu.
+Studio je spojio igraonicu (`/create-art`) i algoritmički art (`/algorithmic`). Ideja: **jedno izvlačenje, više slika**. Iz istih 1000 brojeva nastaje 15 scena i 9 apstrakcija.
 
-**Ponašanje:**
+**Izvor brojeva:**
+- „Izvuci" (`/api/generate`, ANU QRNG preko `qrng_pool`);
+- „Danas" (`/api/art/[date]`);
+- „Zalepi brojeve";
+- deljeni link ili favorit.
 
-- **Uski ekran:** kolona — prvo sidebar (dugmad + parametri), ispod desna kolona (platno, QRNG otkrivanje, priča).
-- **≥ 48rem (768px):** red — **levo** fiksni sidebar `20rem`, **desno** elastična kolona (`flex: 1 1 0%`, `min-width: 0`) sa platnom i tekstom ispod.
+**Raspored:**
+- **Telefon:** slika, pa swipe traka sličica (Scene | Apstrakcija). Donja traka ima [⚛ Izvuci] [Danas] [⚙] [⋯]. ⚙ otvara panel odozdo (do 55% visine), pa slika ostaje vidljiva.
+- **768–1279px:** dve kolone. Levo su akcije, kontrole i deljenje, desno slika i mreža sličica.
+- **≥1280px:** tri kolone. Levo su akcije i deljenje, u sredini velika slika, desno kontrole. Sličice su u mreži od 8 kolona.
 
-**Korišćene klase:** `algo-art-workspace` (spoljašnji flex kontejner), `algo-art-sidebar` (`<aside>`), `algo-art-main` (desna kolona).
+**Kontrole:**
+- **Scena:** paleta, lokacija, doba, grad ili region, i prekidači elemenata (Auto ⚛ · Uklj · Isklj). Mehanizam je u [SCENARIOS.md → Kontrole scene](SCENARIOS.md#kontrole-scene--studio-v2-od-2026-11-22).
+- **Apstrakcija:** paleta, klizači po algoritmu, „Nasumičan stil" sa zaključavanjem, živi flow-field.
 
-**CSS (kopija logike — izvor istine je u `page.tsx`):**
+**URL parametri:**
 
-```css
-.algo-art-workspace {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 1.5rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-.algo-art-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 100%;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-.algo-art-main {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  flex: 1 1 0%;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-@media (min-width: 48rem) {
-  .algo-art-workspace {
-    flex-direction: row !important;
-    align-items: flex-start;
-    gap: 2rem;
-  }
-  .algo-art-sidebar {
-    width: 20rem;
-    max-width: 20rem;
-  }
-  .algo-art-main {
-    width: auto;
-    flex: 1 1 0%;
-    min-width: 0;
-  }
-}
-```
+| Parametar | Značenje |
+|-----------|----------|
+| `mode=scene\|abstract` | režim |
+| `s=<0–14\|auto>` | izabrana scena (`auto` = kvantni izbor) |
+| `c=birds:off,palette:3` | kontrole scene |
+| `a=<id>` | apstrakcija (npr. `julia`) |
+| `v=<base64url>` | 1000 brojeva (link „Kopiraj link" za scenu) |
+| `code=QAL1.…` | preset apstrakcije (algoritam, parametri, brojevi) |
+| `favorite=<id>` | otvara omiljenu sliku |
 
-**U JSX-u** spoljašnji wrapper koristi `className="algo-art-workspace"`, parametarski panel `className="algo-art-sidebar"`, blok sa platnom i pričom `className="algo-art-main"`. `flex-direction: row !important` na desktopu namerno pojačava prioritet da drugi stilovi ne vrate kolonu.
+**Izvoz i deljenje:**
+- PNG (scena 1200×675; apstrakcija 1200×675, 2400×1350 ili 3840×2160);
+- ZIP set varijacija i WebM loop (flow-field);
+- „Kopiraj link";
+- „Sačuvaj u omiljene".
 
-**Napomena:** Ako menjaš raspored, prvo ažuriraj `<style>` u `algorithmic/page.tsx`, zatim ovaj odeljak u README da ostanu usklađeni.
+**Favoriti** (`Favorite.scenarioName`):
+- kvantni izbor bez podešavanja → ime scene („Savana");
+- ručna scena ili kontrole → `scene:<idx>|c=…`;
+- apstrakcija → `algo:<id>` + `algoPreset` (pun preset, JSON).
+- Profil i `/f/[token]` crtaju istu sliku, a klik otvara `/studio?favorite=<id>`.
+- Favorit nastao pre `RENDER_V2_FROM` (v1) prikazuje se v1 rendererom, bez kontrola.
 
-### LUMEN-inspirisane funkcije (studio)
+**Preusmerenja:**
+- `/create-art` → `/studio?mode=scene`, `/algorithmic` → `/studio?mode=abstract`;
+- svi parametri se prenose, pa stari linkovi `?favorite=` i `?code=` rade ([`src/lib/studio-redirect.ts`](src/lib/studio-redirect.ts));
+- bez `favorite` i `code` dodaje se `mode`.
 
-- **Share preset (`QAL1.` kod):** `/algorithmic?code=...` — philosophy, parametri i 1000 QRNG vrednosti.
-- **Randomize style:** nasumični parametri uz lock filozofije/palete.
-- **Hi-res PNG export:** 1200×675, 2400×1350, 3840×2160 (offscreen render).
-- **Set export:** 4–12 varijacija istog stila u ZIP-u.
-- **WebM loop (flow-field):** deterministički loop preko `loopPhase`.
-- **Favorites `algoPreset`:** pun snapshot preset-a u bazi (kolona `algoPreset` JSON).
+**Kod:**
+- [`src/components/studio/`](src/components/studio/): `Studio`, `StudioThumb`, `thumb.worker` (sličice u Web Worker-u), `SceneControls`, `AbstractControls`, `AbstractCanvas`, `StudioSheet`;
+- [`src/lib/scenarios/controls.ts`](src/lib/scenarios/controls.ts), [`controls-registry.ts`](src/lib/scenarios/controls-registry.ts);
+- [`src/lib/algorithmic/scenario-name.ts`](src/lib/algorithmic/scenario-name.ts).
 
 ---
 
@@ -387,9 +371,9 @@ src/
 ├── app/
 │   ├── page.tsx              # Početna — današnji art
 │   ├── layout.tsx            # Root layout + Providers (SessionProvider)
-│   ├── create-art/page.tsx   # Igraonica — unesi 1000 brojeva, generiši, preuzmi PNG, snimi u omiljene
-│   ├── algorithmic/page.tsx # Algoritmički art — layout u <style> (vidi sekciju u README)
-│   ├── studio/page.tsx       # Studio — jedno izvlačenje → 15 scena + 9 apstrakcija; kontrole scene i parametri apstrakcija (spaja igraonicu i algoritmički art; u izradi)
+│   ├── create-art/page.tsx   # preusmerava na /studio?mode=scene (stara igraonica)
+│   ├── algorithmic/page.tsx # preusmerava na /studio?mode=abstract (stari algoritmički art)
+│   ├── studio/page.tsx       # Studio — jedno izvlačenje → 15 scena + 9 apstrakcija; kontrole scene i parametri apstrakcija (spaja igraonicu i algoritmički art; vidi sekciju Studio)
 │   ├── art/[date]/page.tsx   # Art po datumu — strelice ‹ › preko slike (i tasteri ←/→) za prethodni/sledeći dan
 │   ├── archive/page.tsx      # Arhiva (od ARCHIVE_START = 2026-03-04 do danas)
 │   ├── login/page.tsx        # Prijava / registracija
@@ -586,6 +570,29 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-22 — Studio, faza 4: preusmerenja, svi linkovi vode u Studio (grana `claude`)
+
+- **`/create-art` i `/algorithmic`** — stare stranice (246 i 1071 linija) zamenjene server stranicama koje preusmeravaju (307):
+  - `/create-art` → `/studio?mode=scene`, `/algorithmic` → `/studio?mode=abstract`;
+  - svi parametri se prenose (`?favorite=`, `?code=QAL1…`), pa stari linkovi, favoriti i deljeni kodovi rade;
+  - logika je u novom [`src/lib/studio-redirect.ts`](src/lib/studio-redirect.ts).
+- **Studio i stari v1 favoriti** — favorit bez ručne scene, nastao pre `RENDER_V2_FROM`, crta se v1 rendererom (kao u profilu), a umesto kontrola stoji objašnjenje (`studio.legacyNote`). Izbor scene iz trake ili novo izvlačenje vraća v2. Pošto je `RENDER_V2_FROM=2000-01-01` (sve je v2), ovo važi samo ako se datum ikad pomeri.
+- **Linkovi:**
+  - početna („Studio prikazuje 15 scena i 9 apstrakcija…");
+  - profil: kartica favorita → `/studio?favorite=<id>` za sve favorite, prazan profil → „Idi u Studio";
+  - `/f/[token]`: „Studio — napravi svoju sliku" otvara isti favorit.
+- **Prevodi:**
+  - uklonjeni `createArt.*`, `header.playground`, `header.algorithmic`;
+  - promenjeni `home.paragraph4*`, `profile.goToPlayground`, `shared.goToPlayground`;
+  - `algorithmic.*` ostaje (Studio koristi labele, klizače i palete).
+- **`scenario-name.ts`** — uklonjen `isAlgorithmicFavoriteScenario` (više se ne koristi).
+- **README** — sekcija „Algoritmički art — layout u `<style>`" zamenjena sekcijom **Studio** (raspored, kontrole, URL parametri, favoriti, preusmerenja). Ispravljena pominjanja `/create-art` u verzionisanju i strukturi. Napomena o produkcionoj bazi: kolona `algoPreset` već postoji.
+- Provereno u headless Chrome-u:
+  - `/create-art` i `/algorithmic` (sa i bez parametara) stižu u Studio u pravom režimu;
+  - `/create-art?favorite=` otvara scenu sa kontrolama;
+  - meni i početna vode u `/studio`;
+  - nema grešaka u konzoli; `tsc` i ESLint su čisti.
+
 ### 2026-11-22 — Arhiva: jedna kolona na telefonu (grana `claude`)
 
 - **`src/components/MonthAccordion.tsx`, `src/app/archive/page.tsx`** — mreža arhive je na telefonu `grid-cols-1` (bilo `grid-cols-2`), jer su dve slike u redu bile presitne. Od 640px ostaje 3 kolone, od 768px 4, kao do sada.
@@ -621,7 +628,7 @@ Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis prom
 - **Profil i `/f/[token]`** — favorit `scene:…` vodi u Studio (`/studio?favorite=<id>`). Ostali favoriti za sada i dalje idu na `/create-art` i `/algorithmic`, a preusmerenja dolaze u fazi 4.
 - **`/create-art?favorite=`** — favorit `scene:…` preusmerava u Studio, jer samo Studio crta ručnu scenu i kontrole.
 - **Prevodi:** `studio.tuned` („podešeno" / „tuned"), `studio.errorFavorite`.
-- **Lokalna baza:** u lokalnoj bazi nedostaje kolona `Favorite.algoPreset` (postoji u `schema.ts`, ali nema migracije), pa `GET /api/favorites/[id]` lokalno vraća 500. Učitavanje u Studiju je zato testirano sa podmetnutim odgovorom API-ja. Lokalno je kolona dodata ručno (`ALTER TABLE Favorite ADD COLUMN algoPreset JSON NULL`). Pre deploy-a proveri produkcionu bazu (`SHOW COLUMNS FROM Favorite LIKE 'algoPreset'`) i, ako kolone nema, pokreni samo taj `ALTER TABLE`. **Ne `drizzle-kit push`:** on poredi celu šemu i nudi brisanje tabele `_prisma_migrations` i pražnjenje tabele `User`.
+- **Lokalna baza:** u lokalnoj bazi nedostaje kolona `Favorite.algoPreset` (postoji u `schema.ts`, ali nema migracije), pa `GET /api/favorites/[id]` lokalno vraća 500. Učitavanje u Studiju je zato testirano sa podmetnutim odgovorom API-ja. Lokalno je kolona dodata ručno (`ALTER TABLE Favorite ADD COLUMN algoPreset JSON NULL`). Produkciona baza (Hostinger) već ima kolonu `algoPreset` (provereno u phpMyAdmin-u 2026-11-22), pa tamo ne treba ništa menjati. **Ne `drizzle-kit push`:** on poredi celu šemu i nudi brisanje tabele `_prisma_migrations` i pražnjenje tabele `User`.
 - Dnevna slika i v1 nisu dirani (renderer se ne menja u ovoj fazi).
 
 ### 2026-11-22 — Studio, faza 2: kontrole scene, parametri apstrakcija, izvoz (grana `claude`)
