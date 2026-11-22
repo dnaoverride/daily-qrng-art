@@ -3,7 +3,7 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
-import { PHILOSOPHIES } from "@/lib/algorithmic/types";
+import { favoriteDisplayName, parseFavoriteScene } from "@/lib/algorithmic/scenario-name";
 import { db } from "@/lib/db";
 import { favorites, users } from "@/lib/schema";
 import { getTranslations } from "next-intl/server";
@@ -46,18 +46,16 @@ export default async function SharedFavoritePage({ params }: PageProps) {
       : [];
 
   const tAlgo = await getTranslations("algorithmic");
+  const tScenario = await getTranslations("scenario");
+  const tStudio = await getTranslations("studio");
 
-  function getDisplayScenarioName(raw: string | null | undefined): string | null {
-    if (!raw) return null;
-    if (raw.startsWith("algo:")) {
-      const id = raw.slice(5);
-      const ph = PHILOSOPHIES.find((p) => p.id === id);
-      if (ph) return tAlgo(ph.labelKey);
-    }
-    return raw;
-  }
-
-  const displayScenario = getDisplayScenarioName(favorite.scenarioName);
+  const displayScenario = favoriteDisplayName(favorite.scenarioName, {
+    algoLabel: (k) => tAlgo(k),
+    sceneLabel: (i) => tScenario(`s${i}`),
+    tuned: tStudio("tuned"),
+  });
+  // Scena iz Studija: „Otvori u igraonici" vodi u Studio sa istom scenom i podešavanjima.
+  const playgroundHref = parseFavoriteScene(favorite.scenarioName) ? `/studio?favorite=${favorite.id}` : "/create-art";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -104,7 +102,7 @@ export default async function SharedFavoritePage({ params }: PageProps) {
 
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
-            href="/create-art"
+            href={playgroundHref}
             className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-sm"
           >
             {t("goToPlayground")}

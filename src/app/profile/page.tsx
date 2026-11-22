@@ -7,8 +7,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { AlgoArtCanvas } from "@/components/AlgoArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
-import { PHILOSOPHIES } from "@/lib/algorithmic/types";
-import { isAlgorithmicFavoriteScenario } from "@/lib/algorithmic/scenario-name";
+import { favoriteDisplayName, isAlgorithmicFavoriteScenario, parseFavoriteScene } from "@/lib/algorithmic/scenario-name";
 
 interface Favorite {
   id: string;
@@ -32,6 +31,8 @@ function FavoriteCard({
 }) {
   const t = useTranslations("profile");
   const tAlgo = useTranslations("algorithmic");
+  const tScenario = useTranslations("scenario");
+  const tStudio = useTranslations("studio");
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -119,21 +120,18 @@ function FavoriteCard({
     year: "numeric",
   });
 
-  function getDisplayScenarioName(raw: string | null): string | null {
-    if (!raw) return null;
-    if (raw.startsWith("algo:")) {
-      const id = raw.slice(5);
-      const ph = PHILOSOPHIES.find((p) => p.id === id);
-      if (ph) return tAlgo(ph.labelKey);
-    }
-    return raw;
-  }
+  const displayScenario = favoriteDisplayName(fav.scenarioName, {
+    algoLabel: (k) => tAlgo(k),
+    sceneLabel: (i) => tScenario(`s${i}`),
+    tuned: tStudio("tuned"),
+  });
 
-  const displayScenario = getDisplayScenarioName(fav.scenarioName ?? null);
-
-  const playgroundHref = isAlgorithmicFavoriteScenario(fav.scenarioName)
-    ? `/algorithmic?favorite=${fav.id}`
-    : `/create-art?favorite=${fav.id}`;
+  // Scena iz Studija (ručna scena / kontrole) otvara se u Studiju; ostalo za sada na starim stranicama.
+  const playgroundHref = parseFavoriteScene(fav.scenarioName)
+    ? `/studio?favorite=${fav.id}`
+    : isAlgorithmicFavoriteScenario(fav.scenarioName)
+      ? `/algorithmic?favorite=${fav.id}`
+      : `/create-art?favorite=${fav.id}`;
 
   return (
     <div ref={cardRef} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">

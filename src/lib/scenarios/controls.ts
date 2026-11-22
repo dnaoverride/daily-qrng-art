@@ -102,3 +102,21 @@ export interface ControlDef {
   /** Za choice: ključevi prevoda opcija (messages → studio.opt.<opcija>), po indeksu. */
   options?: string[];
 }
+
+/** Kontrole u tekstu (URL `c=` i favorit): `birds:off,clouds:on,palette:3`. */
+export function encodeControls(c: SceneControls): string {
+  return Object.entries(c)
+    .map(([k, v]) => `${k}:${typeof v === "boolean" ? (v ? "on" : "off") : v}`)
+    .join(",");
+}
+
+export function decodeControls(s: string | null | undefined): SceneControls {
+  const out: SceneControls = {};
+  for (const part of (s ?? "").split(",")) {
+    const [k, v] = part.split(":");
+    if (!k || v === undefined || !/^\w+$/.test(k)) continue;
+    if (v === "on" || v === "off") out[k] = v === "on";
+    else if (/^\d+$/.test(v)) out[k] = Number(v);
+  }
+  return out;
+}

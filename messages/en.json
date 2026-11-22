@@ -7,6 +7,7 @@
   "header": {
     "brand": "QRNG Art",
     "archive": "Image archive",
+    "studio": "Studio — scenes & abstractions",
     "playground": "Playground",
     "algorithmic": "Algorithmic Art",
     "menuAria": "Menu",
@@ -220,7 +221,9 @@
       "violet-magenta": "Violet magenta",
       "winter": "Winter",
       "winter-fog": "Winter fog"
-    }
+    },
+    "tuned": "tuned",
+    "errorFavorite": "Could not load the favorite."
   },
   "archive": {
     "title": "Generated image archive",

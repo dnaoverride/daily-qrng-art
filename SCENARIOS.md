@@ -337,6 +337,7 @@ U Studiju (`/studio`) korisnik može da menja kvantne odluke scene: paletu, loka
   - elementi menjaju obično 0–6% piksela, samo svoje područje;
   - munje do ~20% (bljesak u oblacima), polarna svetlost do ~18%;
   - strukturni prekidači menjaju kompoziciju: reka u noćnom gradu, planeta izbliza i zvezda u kosmosu, more oblaka u pejzažu.
+- **Favorit** (od faze 3): ručna scena i kontrole čuvaju se u `scenarioName` kao `scene:<idx>|c=birds:off,palette:3`, a profil i `/f/[token]` crtaju istu sliku. Bez ručne scene i bez podešavanja ostaje staro ime scene.
 - **Napomena:** izbor (paleta, lokacija, doba, grad) menja i odluke koje od njega zavise. To je namerno, jer paleta ili lokacija menjaju celu scenu.
 
 | # | Scenario | Izbori | Prekidači |
@@ -416,6 +417,7 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-20 | Svi (v2) | Fix: pomračenje i krvavi mesec se crtaju u `hooks.body` (klipovano na nebo) umesto posle scene — više ne prekrivaju životinje, drveće i zgrade; korona ograničena kod ogromnog sunca (savana). |
 | 2026-11-21 | Router (v2) | `renderArt(..., { scenario })` — Studio može ručno da izabere scenario. v0..v3 se i dalje troše iz streama, pa su palete, detalji, retki događaji i post-fx isti; bez opcije (dnevna slika, arhiva) ponašanje je nepromenjeno, v1 ignoriše opciju. |
 | 2026-11-22 | Svi (v2) | **Kontrole scene za Studio**: odluke su umotane u `toggle` / `choice` / `optional` ([`controls.ts`](src/lib/scenarios/controls.ts)), svaki scenario izvozi `*_CONTROLS`, a router dobija `controls`, `forkSeed`, `report` i probni prolaz za post-fx. Bez kontrola izgled je bit-identičan (v1 i v2, 60 dana). Vidi „Kontrole scene" u odeljku 6. |
+| 2026-11-22 | Svi (v2) | **Favorit sa scenom i kontrolama**: `scenarioName` = `scene:<idx>\|c=…` (helperi u `scenario-name.ts`, `encodeControls`/`decodeControls` u `controls.ts`), a profil i `/f/[token]` crtaju istu scenu i kontrole. Renderer nije menjan. |
 | 2026-11-19 | Savana (novo, v2) | Scenario 10: ogromno nisko sunce, akacije, baobab, žirafe, slonovi, antilope/zebre, Kilimandžaro, visoka trava; siluete u zalasku/noći, boja danju; 6 paleta. v2 bira `% 11`. |
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |

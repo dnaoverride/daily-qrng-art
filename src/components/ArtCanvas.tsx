@@ -53,6 +53,8 @@ interface ArtCanvasProps {
   onRendered?: (result: RenderResult) => void;
   /** Sadržaj preko samog platna (npr. strelice prethodni/sledeći dan). */
   overlay?: ReactNode;
+  /** Klase platna (podrazumevano max-w-4xl; Studio na širokom ekranu: max-w-none). */
+  canvasClassName?: string;
   /** Called with the canvas element after draw (e.g. for PNG download) */
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
 }
@@ -67,6 +69,7 @@ export function ArtCanvas({
   onRendered,
   overlay,
   onCanvasReady,
+  canvasClassName = "max-w-4xl",
 }: ArtCanvasProps) {
   const version =
     renderVersion ?? (date ? renderVersionForDate(date) : currentRenderVersion());
@@ -108,7 +111,7 @@ export function ArtCanvas({
           ref={canvasRef}
           width={W}
           height={H}
-          className="block w-full max-w-4xl h-auto rounded-lg shadow-xl"
+          className={`block w-full ${canvasClassName} h-auto rounded-lg shadow-xl`}
           style={{ aspectRatio: `${W} / ${H}` }}
         />
         {overlay}

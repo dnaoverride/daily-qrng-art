@@ -113,7 +113,7 @@ export function MonthAccordion({ monthKey, label, dates, scenarios }: MonthAccor
 
       {open && (
         <div className="px-4 pb-4 pt-3 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800">
-          <div ref={gridRef} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {dates.map((date) => (
               <Link
                 key={date}

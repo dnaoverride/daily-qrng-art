@@ -6,12 +6,14 @@ import { useTranslations } from "next-intl";
 import { ArtCanvas } from "@/components/ArtCanvas";
 import { QRNGReveal } from "@/components/QRNGReveal";
 import { SaveFavoriteButton } from "@/components/SaveFavoriteButton";
-import { NUM_SCENARIOS_V2, SCENARIO_NAMES, scenarioIndexFor, type RenderResult } from "@/lib/scenarios";
+import { NUM_SCENARIOS_V2, scenarioIndexFor, type RenderResult } from "@/lib/scenarios";
 import { SCENE_CONTROLS, type SceneControls as Controls } from "@/lib/scenarios/controls-registry";
+import { decodeControls, encodeControls } from "@/lib/scenarios/controls";
 import { getTodayBelgrade } from "@/lib/date";
 import { currentRenderVersion } from "@/lib/render-version";
 import { PHILOSOPHIES, type AlgoParams, type PhilosophyId } from "@/lib/algorithmic/types";
-import { buildPreset, decodePreset, encodePreset } from "@/lib/algorithmic/preset-code";
+import { buildPreset, decodePreset, encodePreset, type AlgoPreset } from "@/lib/algorithmic/preset-code";
+import { encodeFavoriteScene, parseFavoriteScene, parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
 import { randomizeParams } from "@/lib/algorithmic/randomize-params";
 import { EXPORT_PRESETS, exportAlgorithmicPng, type ExportPresetId } from "@/lib/algorithmic/export-png";
 import { exportVariationSetZip } from "@/lib/algorithmic/export-set";
@@ -54,23 +56,6 @@ function parseScene(s: string | null): number | null {
 
 function parseAbstract(a: string | null): PhilosophyId {
   return PHILOSOPHIES.find((p) => p.id === a)?.id ?? PHILOSOPHIES[0]!.id;
-}
-
-/** Kontrole scene u URL-u: `birds:off,clouds:on,palette:3`. */
-function encodeControls(c: Controls): string {
-  return Object.entries(c)
-    .map(([k, v]) => `${k}:${typeof v === "boolean" ? (v ? "on" : "off") : v}`)
-    .join(",");
-}
-function decodeControls(s: string | null): Controls {
-  const out: Controls = {};
-  for (const part of (s ?? "").split(",")) {
-    const [k, v] = part.split(":");
-    if (!k || v === undefined || !/^\w+$/.test(k)) continue;
-    if (v === "on" || v === "off") out[k] = v === "on";
-    else if (/^\d+$/.test(v)) out[k] = Number(v);
-  }
-  return out;
 }
 
 /** 1000 brojeva ↔ base64url (za deljeni link scene). */
@@ -172,10 +157,57 @@ export function Studio() {
     show(parsed);
   };
 
-  // Prvi prikaz: deljeni link (preset kod ili brojevi) ili današnji brojevi.
+  // Omiljena slika (`?favorite=<id>`): brojevi + scena/kontrole ili apstrakcija/parametri.
+  const loadFavorite = useCallback(
+    async (id: string) => {
+      setError(null);
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/favorites/${encodeURIComponent(id)}`);
+        const data = (await res.json()) as {
+          favorite?: { values?: unknown; scenarioName?: string | null; algoPreset?: unknown };
+        };
+        const fav = data.favorite;
+        const raw = fav?.values;
+        const vals = Array.isArray(raw) ? raw : typeof raw === "string" ? (JSON.parse(raw) as unknown[]) : [];
+        if (!res.ok || !fav || vals.length !== REQUIRED_COUNT) throw new Error("bad");
+        const numbers = vals.map((n) => (Number(n) >>> 0) & 0xffff);
+
+        const preset = fav.algoPreset as AlgoPreset | null | undefined;
+        const pid = preset?.philosophy ?? parseFavoriteScenarioToPhilosophyId(fav.scenarioName);
+        if (pid) {
+          setMode("abstract");
+          setAbstract(pid);
+          if (preset?.philosophy && preset.params) setAbsParams((m) => ({ ...m, [pid]: preset.params }));
+        } else {
+          const sc = parseFavoriteScene(fav.scenarioName);
+          setMode("scene");
+          setScene(sc?.scenario ?? null);
+          setSceneCtl(sc ? { [String(sc.scenario)]: sc.controls } : {});
+        }
+        setValues(numbers);
+        setInput(numbers.join(", "));
+        setDrawId((d) => d + 1);
+      } catch {
+        // Umesto favorita današnja slika, ali poruka ostaje (load briše grešku na početku).
+        await load(`/api/art/${getTodayBelgrade()}`, "errorToday");
+        setError(t("errorFavorite"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [load, t]
+  );
+
+  // Prvi prikaz: omiljena slika, deljeni link (preset kod ili brojevi) ili današnji brojevi.
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    const favoriteId = params.get("favorite");
+    if (favoriteId) {
+      void loadFavorite(favoriteId);
+      return;
+    }
     const preset = params.get("code") ? decodePreset(params.get("code")!) : null;
     if (preset) {
       setMode("abstract");
@@ -194,7 +226,7 @@ export function Studio() {
       return;
     }
     void load(`/api/art/${getTodayBelgrade()}`, "errorToday");
-  }, [load, params]);
+  }, [load, loadFavorite, params]);
 
   const ctlKey = String(scene ?? "auto");
   const controls = useMemo(() => sceneCtl[ctlKey] ?? {}, [sceneCtl, ctlKey]);
@@ -412,7 +444,13 @@ export function Studio() {
       )}
       <SaveFavoriteButton
         values={values}
-        scenarioName={mode === "abstract" ? `algo:${abstract}` : effScene !== null ? (SCENARIO_NAMES[effScene] ?? null) : null}
+        scenarioName={
+          mode === "abstract"
+            ? `algo:${abstract}`
+            : effScene !== null
+              ? encodeFavoriteScene(effScene, controls, scene !== null)
+              : null
+        }
         algoPreset={mode === "abstract" ? buildPreset(abstract, params0, values) : undefined}
       />
     </div>
@@ -420,13 +458,13 @@ export function Studio() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <main className="pt-20 pb-32 md:pb-16 px-4 max-w-6xl mx-auto">
+      <main className="pt-20 pb-32 md:pb-16 px-4 max-w-6xl xl:max-w-[110rem] mx-auto">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center">{t("title")}</h1>
-        <p className="text-center text-sm text-zinc-500 mt-1 mb-6">{t("subtitle")}</p>
+        <p className="text-center text-sm text-zinc-500 mt-1 mb-6 md:mb-5">{t("subtitle")}</p>
 
-        <div className="md:grid md:grid-cols-[17rem_minmax(0,1fr)] md:gap-8 md:items-start">
-          {/* Desktop: akcije, kontrole i izvoz levo */}
-          <aside className="hidden md:flex flex-col gap-5 md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:pr-1">
+        <div className="md:grid md:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)_19rem] md:gap-8 md:items-start">
+          {/* Desktop: akcije i izvoz levo (kontrole levo do 1280px, iznad toga u desnoj koloni) */}
+          <aside className="studio-scroll hidden md:flex flex-col gap-5 md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:overflow-y-auto md:pr-1">
             <div className="flex flex-col gap-2">
               <button type="button" onClick={handleDraw} disabled={loading} className={btnPrimary}>
                 <span aria-hidden>⚛</span> {loading ? t("drawing") : t("draw")}
@@ -447,7 +485,7 @@ export function Studio() {
               {pasteOpen && pastePanel}
             </div>
             {values && (
-              <section className="space-y-3">
+              <section className="space-y-3 xl:hidden">
                 <h2 className={sectionTitle}>{mode === "scene" ? t("controls") : t("controlsAbstract")}</h2>
                 {controlsPanel}
               </section>
@@ -467,6 +505,7 @@ export function Studio() {
                 mode === "scene" ? (
                   <ArtCanvas
                     values={values}
+                    canvasClassName="max-w-none"
                     scenario={scene ?? undefined}
                     controls={controls}
                     onRendered={onRendered}
@@ -485,11 +524,12 @@ export function Studio() {
                 <div className="studio-shimmer aspect-video w-full rounded-lg" aria-hidden />
               )}
             </div>
-            <p className="mt-2 text-center text-sm font-medium text-zinc-700 dark:text-zinc-300">{values ? caption : " "}</p>
-
-            {/* Prekidač Scene | Apstrakcija */}
-            <div className="mt-5 flex justify-center">
-              <div role="tablist" className="inline-flex rounded-lg bg-zinc-200/70 dark:bg-zinc-800/70 p-1">
+            {/* Ime slike + prekidač Scene | Apstrakcija (desktop: u istom redu) */}
+            <div className="md:mt-3 md:flex md:items-center md:justify-between md:gap-4">
+              <p className="mt-2 md:mt-0 min-w-0 truncate text-center md:text-left text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                {values ? caption : " "}
+              </p>
+              <div role="tablist" className="mt-5 md:mt-0 mx-auto md:mx-0 flex w-fit shrink-0 rounded-lg bg-zinc-200/70 dark:bg-zinc-800/70 p-1">
                 {(["scene", "abstract"] as const).map((m) => (
                   <button
                     key={m}
@@ -514,7 +554,8 @@ export function Studio() {
 
             {/* Traka sličica — swipe na telefonu */}
             <div className="mt-3 -mx-4 md:mx-0">
-              <div className="studio-strip flex gap-2 overflow-x-auto snap-x snap-mandatory px-4 md:px-1 pt-1 pb-2">
+              {/* telefon: swipe traka; desktop: mreža bez skrolovanja */}
+              <div className="studio-strip flex gap-2 overflow-x-auto snap-x snap-mandatory px-4 pt-1 pb-2 md:grid md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 md:overflow-visible md:snap-none md:px-0 md:pb-0">
                 {values &&
                   items.map((item, i) => (
                     <StudioThumb
@@ -545,6 +586,14 @@ export function Studio() {
               </div>
             )}
           </section>
+
+          {/* Široki ekran: kontrole u desnoj koloni, uz sliku */}
+          {values && (
+            <aside className="studio-scroll hidden xl:flex flex-col gap-3 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+              <h2 className={sectionTitle}>{mode === "scene" ? t("controls") : t("controlsAbstract")}</h2>
+              {controlsPanel}
+            </aside>
+          )}
         </div>
       </main>
 

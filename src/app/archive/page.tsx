@@ -97,7 +97,7 @@ export default async function ArchivePage() {
                     — {currentGroup.label}
                   </span>
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {currentGroup.dates.map((date) => (
                     <Link
                       key={date}

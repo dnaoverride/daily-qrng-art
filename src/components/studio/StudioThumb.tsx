@@ -49,7 +49,12 @@ export function StudioThumb({ values, item, label, active, index, onSelect }: St
   }, [visible, values]);
 
   useEffect(() => {
-    if (active) ref.current?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    // Samo horizontalno, unutar trake (telefon). Na desktopu je mreža, pa se stranica ne pomera.
+    const el = ref.current;
+    const strip = el?.parentElement;
+    if (!active || !el || !strip || strip.scrollWidth <= strip.clientWidth) return;
+    const dx = el.getBoundingClientRect().left - strip.getBoundingClientRect().left;
+    strip.scrollTo({ left: strip.scrollLeft + dx - (strip.clientWidth - el.offsetWidth) / 2, behavior: "smooth" });
   }, [active]);
 
   const ready = drawnFor === values;
@@ -60,7 +65,7 @@ export function StudioThumb({ values, item, label, active, index, onSelect }: St
       type="button"
       onClick={onSelect}
       aria-pressed={active}
-      className={`group shrink-0 snap-center w-36 sm:w-40 text-left rounded-lg p-1 transition-colors ${
+      className={`group shrink-0 snap-center w-36 sm:w-40 md:w-auto min-w-0 text-left rounded-lg p-1 transition-colors ${
         active
           ? "bg-violet-500/15 ring-2 ring-violet-500"
           : "hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60"

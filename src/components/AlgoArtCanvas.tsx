@@ -17,7 +17,7 @@ import {
   type PhilosophyId,
   type AlgoParams,
 } from "@/lib/algorithmic/types";
-import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
+import { parseFavoriteScenarioToPhilosophyId, parseFavoriteScene } from "@/lib/algorithmic/scenario-name";
 import { renderAlgorithmicToContext } from "@/lib/algorithmic/render-algorithmic";
 
 const W = 1200;
@@ -62,8 +62,10 @@ export function AlgoArtCanvas({ values, scenarioName, className = "", createdAt 
         flowFieldWarmupFrames: 120,
       });
     } else {
+      // Favorit iz Studija: ručno izabrana scena i kontrole (`scene:<idx>|c=…`)
+      const scene = parseFavoriteScene(scenarioName);
       const stream = new QRNGStream(values);
-      renderArt(ctx, stream, W, H, version);
+      renderArt(ctx, stream, W, H, version, scene ? { scenario: scene.scenario, controls: scene.controls } : undefined);
     }
   }, [values, scenarioName, version]);
 

@@ -586,6 +586,44 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-22 — Arhiva: jedna kolona na telefonu (grana `claude`)
+
+- **`src/components/MonthAccordion.tsx`, `src/app/archive/page.tsx`** — mreža arhive je na telefonu `grid-cols-1` (bilo `grid-cols-2`), jer su dve slike u redu bile presitne. Od 640px ostaje 3 kolone, od 768px 4, kao do sada.
+- Provereno u headless Chrome-u: na 412px jedna slika od 380px u redu, na 1400px četiri kolone, bez horizontalnog skrola.
+
+### 2026-11-22 — Studio: raspored za velike ekrane, „Studio" u meniju (grana `claude`)
+
+- **Desktop ≥1280px** (zahtev: „na Full HD ima smisla da popunimo prostor, zašto ovakav skroler"):
+  - tri kolone: levo akcije i deljenje, u sredini velika slika (~1090px na 1920), desno kontrole scene ili parametri apstrakcije;
+  - stranica je široka do 110rem umesto 6xl.
+- **Sličice na desktopu (≥768px)** — mreža bez horizontalnog skrolera (4, 6 ili 8 kolona). Svih 16 scena (dva reda) ili 9 apstrakcija staje ispod slike. Na telefonu ostaje swipe traka.
+- **Ime slike i prekidač Scene | Apstrakcija** su na desktopu u istom redu. Na 1400×900 cela stranica staje u jedan ekran.
+- **`StudioThumb`** — aktivna sličica se centrira samo horizontalno, unutar trake. Pre je `scrollIntoView` mogao da pomeri celu stranicu.
+- **`ArtCanvas`** — nov prop `canvasClassName` (podrazumevano `max-w-4xl`, kao do sada). Studio koristi `max-w-none`, da slika popuni kolonu.
+- **`globals.css`** — `.studio-scroll`: tanka, diskretna traka za skrol u bočnim kolonama.
+- **Meni (`Header.tsx`)** — „Igraonica" i „Algoritmički Art" zamenjeni jednom stavkom **„Studio — scene i apstrakcije"** (`header.studio`, sr i en). Stare stranice i dalje rade direktno; preusmerenja dolaze u fazi 4.
+- Provereno u headless Chrome-u na 1920×1080, 1400×900, 1024×768 i 390×844: bez horizontalnog skrola, klik na sličicu ne pomera stranicu, bez grešaka u konzoli.
+
+### 2026-11-22 — Studio, faza 3: favoriti sa scenom i kontrolama (grana `claude`)
+
+- **Format favorita scene** (kolona `Favorite.scenarioName`, varchar 191):
+  - kvantni izbor bez podešavanja → staro ime („Savana"), isto kao igraonica i slika dana;
+  - ručno izabrana scena i/ili podešavanja → `scene:<idx>` ili `scene:<idx>|c=birds:off,palette:3`;
+  - najduža moguća oznaka (japanski vrt, sve kontrole podešene) ima 130 znakova. Ako bi ikad prešla 191, odbacuju se cele kontrole s kraja, nikad pola kontrole.
+- **`src/lib/algorithmic/scenario-name.ts`** — NOVO: `encodeFavoriteScene`, `parseFavoriteScene`, `favoriteDisplayName` (jedno mesto za ime favorita u profilu i na `/f/[token]`: „Japanski vrt · podešeno", „Julia fraktal", staro ime).
+- **`src/lib/scenarios/controls.ts`** — `encodeControls` / `decodeControls` premešteni iz Studija, da ih dele URL (`c=`) i favorit.
+- **`AlgoArtCanvas`** — favorit `scene:…` crta se sa istom scenom i kontrolama kao u Studiju. Slika na `/f/[token]` i u Studiju je piksel-ista (provereno u headless Chrome-u).
+- **Studio** — `/studio?favorite=<id>` otvara omiljenu sliku:
+  - scenu sa kontrolama;
+  - apstrakciju sa sačuvanim parametrima (`algoPreset`) ili podrazumevanim;
+  - stari favorit kao „Kvantni izbor";
+  - ako favorit ne može da se učita, prikazuje se današnja slika uz poruku.
+- **Profil i `/f/[token]`** — favorit `scene:…` vodi u Studio (`/studio?favorite=<id>`). Ostali favoriti za sada i dalje idu na `/create-art` i `/algorithmic`, a preusmerenja dolaze u fazi 4.
+- **`/create-art?favorite=`** — favorit `scene:…` preusmerava u Studio, jer samo Studio crta ručnu scenu i kontrole.
+- **Prevodi:** `studio.tuned` („podešeno" / „tuned"), `studio.errorFavorite`.
+- **Lokalna baza:** u lokalnoj bazi nedostaje kolona `Favorite.algoPreset` (postoji u `schema.ts`, ali nema migracije), pa `GET /api/favorites/[id]` lokalno vraća 500. Učitavanje u Studiju je zato testirano sa podmetnutim odgovorom API-ja. Lokalno je kolona dodata ručno (`ALTER TABLE Favorite ADD COLUMN algoPreset JSON NULL`). Pre deploy-a proveri produkcionu bazu (`SHOW COLUMNS FROM Favorite LIKE 'algoPreset'`) i, ako kolone nema, pokreni samo taj `ALTER TABLE`. **Ne `drizzle-kit push`:** on poredi celu šemu i nudi brisanje tabele `_prisma_migrations` i pražnjenje tabele `User`.
+- Dnevna slika i v1 nisu dirani (renderer se ne menja u ovoj fazi).
+
 ### 2026-11-22 — Studio, faza 2: kontrole scene, parametri apstrakcija, izvoz (grana `claude`)
 
 - **Kontrole scene** (zahtev: „kao što apstrakcije imaju parametre, i scene da se minimalno modifikuju"):
@@ -613,7 +651,7 @@ Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis prom
 - **URL stanja:** `?mode=scene&s=12&c=rain:off,rainbow:on` čuva izbor posle reload-a; `v=` i `code=` otvaraju tačno podeljenu sliku.
 - **`src/components/ArtCanvas.tsx`** — props `controls` i `onRendered`.
 - **`messages/*.json`** — `studio.ctl.*` (labele kontrola), `studio.opt.*` (opcije), `studio.pal.*` (imena svih paleta), tekstovi panela (sr i en).
-- **Poznato ograničenje (faza 3):** favorit scene za sada pamti samo brojeve i ime scene, bez ručno izabrane scene i kontrola.
+- **Poznato ograničenje (faza 3):** favorit scene za sada pamti samo brojeve i ime scene, bez ručno izabrane scene i kontrola. *(Rešeno u fazi 3.)*
 - **Verifikacija:**
   - hash v1 i v2 dnevne slike identičan na 60 dana (HEAD worktree u odnosu na radno stablo);
   - izolacija prekidača izmerena za svih 15 scenarija;

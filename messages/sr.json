@@ -7,6 +7,7 @@
   "header": {
     "brand": "QRNG Art",
     "archive": "Arhiva generisanih slika",
+    "studio": "Studio — scene i apstrakcije",
     "playground": "Igraonica",
     "algorithmic": "Algoritmički Art",
     "menuAria": "Meni",
@@ -220,7 +221,9 @@
       "violet-magenta": "Ljubičasto-magenta",
       "winter": "Zima",
       "winter-fog": "Zimska magla"
-    }
+    },
+    "tuned": "podešeno",
+    "errorFavorite": "Omiljena slika nije mogla da se učita."
   },
   "archive": {
     "title": "Arhiva generisanih slika",

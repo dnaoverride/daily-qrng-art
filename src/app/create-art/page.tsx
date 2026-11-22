@@ -13,7 +13,7 @@ import {
   renderVersionForTimestamp,
   type RenderVersion,
 } from "@/lib/render-version";
-import { parseFavoriteScenarioToPhilosophyId } from "@/lib/algorithmic/scenario-name";
+import { parseFavoriteScenarioToPhilosophyId, parseFavoriteScene } from "@/lib/algorithmic/scenario-name";
 
 const REQUIRED_COUNT = 1000;
 
@@ -69,6 +69,11 @@ function CreateArtPageInner() {
             setError(t("errorLoadFavorite"));
             router.replace("/create-art");
           }
+          return;
+        }
+        // Favorit iz Studija (ručna scena / kontrole) — samo Studio ume da ga nacrta tačno.
+        if (parseFavoriteScene(data.favorite.scenarioName)) {
+          if (alive) router.replace(`/studio?favorite=${favoriteId}`);
           return;
         }
         if (parseFavoriteScenarioToPhilosophyId(data.favorite.scenarioName) !== null) {
