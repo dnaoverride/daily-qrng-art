@@ -570,6 +570,13 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-22 — Studio: vraćene priče o algoritmima (grana `claude`)
+
+- **`src/components/studio/Studio.tsx`** — u režimu apstrakcija, ispod kvantnih brojeva, vraćena sekcija iz starog `/algorithmic`: „QRNG priča za izabranu scenu" (`algorithmic.storyTitle`, `storyIntro`) i kartica sa pričom izabranog algoritma (`algorithmic.story*`).
+  - Tekstovi su nepromenjeni (dogovor: o tekstovima se razgovara posle).
+  - Dodata je samo svetla tema, jer je stara stranica bila samo tamna.
+- Provereno na 1400px (svetlo) i 390px (tamno); u režimu scena sekcija se ne prikazuje.
+
 ### 2026-11-22 — Studio, faza 4: preusmerenja, svi linkovi vode u Studio (grana `claude`)
 
 - **`/create-art` i `/algorithmic`** — stare stranice (246 i 1071 linija) zamenjene server stranicama koje preusmeravaju (307):

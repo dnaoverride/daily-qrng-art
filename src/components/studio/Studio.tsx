@@ -34,6 +34,18 @@ const SCENE_ITEMS: StudioItem[] = [
   ...Array.from({ length: NUM_SCENARIOS_V2 }, (_, i) => ({ kind: "scene" as const, scenario: i })),
 ];
 const ABSTRACT_ITEMS: StudioItem[] = PHILOSOPHIES.map((p) => ({ kind: "abstract" as const, id: p.id }));
+/** Priča o algoritmu (isti tekstovi kao u starom /algorithmic). */
+const STORY_KEY: Record<PhilosophyId, string> = {
+  "flow-field": "storyFlowField",
+  wave: "storyWave",
+  voronoi: "storyVoronoi",
+  "l-system": "storyLSystem",
+  "cellular-automata": "storyCellular",
+  truchet: "storyTruchet",
+  julia: "storyJulia",
+  newton: "storyNewton",
+  apollonian: "storyApollonian",
+};
 const LABEL_KEY = Object.fromEntries(PHILOSOPHIES.map((p) => [p.id, p.labelKey])) as Record<PhilosophyId, string>;
 
 function parseValues(text: string): number[] | null {
@@ -596,6 +608,20 @@ export function Studio() {
               <div className="mt-6">
                 <QRNGReveal values={values} className="max-w-none mx-0" />
               </div>
+            )}
+
+            {/* Priča o algoritmu (iz starog /algorithmic) */}
+            {mode === "abstract" && (
+              <section className="mt-6 space-y-3" aria-labelledby="studio-story-heading">
+                <h2 id="studio-story-heading" className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">
+                  {tAlgo("storyTitle")}
+                </h2>
+                <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">{tAlgo("storyIntro")}</p>
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4">
+                  <p className="text-xs font-medium text-violet-700 dark:text-violet-400/90 mb-2">{tAlgo(LABEL_KEY[abstract])}</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{tAlgo(STORY_KEY[abstract])}</p>
+                </div>
+              </section>
             )}
           </section>
 
