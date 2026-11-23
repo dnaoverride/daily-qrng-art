@@ -603,6 +603,17 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-23 — Bezbednosna ažuriranja paketa (upozorenje Hostingera)
+
+- **`next` 16.1.6 → 16.4.6** i `eslint-config-next` 16.4.6: kritične ranjivosti (izvršavanje koda na serveru bez prijave, DoS u App Routeru); ranjivo je sve do 16.4.4. Uz `next` dolazi i `sharp` 0.35.5.
+- **`next-auth` 5.0.0-beta.30 → beta.32** (`@auth/core` 0.41.0 → 0.41.3, kritična ranjivost u normalizaciji email adrese).
+- **`drizzle-orm` 0.39 → 0.45.4** (visoka ranjivost); oblik rezultata `db.execute` je isti, vezivanje dana i atomsko zauzimanje bazena rade bez izmena koda. `drizzle-kit` 0.31 (samo razvoj; `push` se i dalje ne koristi).
+- **`npm audit fix`:** `mysql2` 3.24, `nanoid`, `icu-minify`, `baseline-browser-mapping`.
+- `npm audit --omit=dev`: **0 ranjivosti**. Ostala su 4 umerena upozorenja samo u razvojnim alatima (`drizzle-kit`), koji ne idu na server.
+- Paketi se ažuriraju u repou, ne Hostingerovim „Auto-fix“ (on menja server mimo gita).
+- Provereno: `tsc`, build preko webpack-a (18 ruta), produkcijski server lokalno: sve stranice, preusmerenja, `/api/art` (vezan dan, novi dan iz bazena, budući dan 404), og-image, `/api/generate` (rezerva bazena), `/api/favorites` 401 bez prijave, `/api/auth/session`; headless Chrome: naslovna, arhiva, `/art`, Studio i „Izvuci“ bez grešaka u konzoli.
+- Napomena: novija pravila `eslint-plugin-react-hooks` 7.1.1 prijavljuju 3 `setState` u `useEffect` (profil, `ArtPageContent`, Studio) i 2 `prefer-const` u `draw-utils`. Samo lint, ne utiče na build ni rad; ostavljeno za posebnu izmenu.
+
 ### 2026-11-22 — `/api/art`: kod greške baze u odgovoru 503
 
 - **`src/app/api/art/[date]/route.ts`:** odgovor 503 sada ima i `code` (npr. `ER_ACCESS_DENIED_ERROR`, `ENOTFOUND`, `ETIMEDOUT`), samo kod iz mysql2 greške, bez poruke i tajni. Služi za dijagnozu na Hostingeru, gde ispis aplikacije nije lako dostupan.
