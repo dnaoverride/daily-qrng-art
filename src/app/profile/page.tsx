@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -205,20 +205,22 @@ export default function ProfilePage() {
     }
   }, [status, router]);
 
-  const loadFavorites = useCallback(async () => {
-    const res = await fetch("/api/favorites");
-    if (res.ok) {
-      const data = await res.json() as { favorites: Favorite[] };
-      setFavorites(data.favorites);
-    }
-    setLoading(false);
-  }, []);
-
+  // Omiljene se učitavaju kad je korisnik prijavljen; stanje se menja tek kad stigne odgovor.
   useEffect(() => {
-    if (status === "authenticated") {
-      void loadFavorites();
-    }
-  }, [status, loadFavorites]);
+    if (status !== "authenticated") return;
+    let alive = true;
+    fetch("/api/favorites")
+      .then((res) => (res.ok ? (res.json() as Promise<{ favorites: Favorite[] }>) : null))
+      .catch(() => null)
+      .then((data) => {
+        if (!alive) return;
+        if (data) setFavorites(data.favorites);
+        setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [status]);
 
   function handleDelete(id: string) {
     setFavorites((prev) => prev.filter((f) => f.id !== id));

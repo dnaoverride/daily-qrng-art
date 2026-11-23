@@ -351,6 +351,10 @@ Studio je spojio igraonicu (`/create-art`) i algoritmički art (`/algorithmic`).
 - „Zalepi brojeve";
 - deljeni link ili favorit.
 
+**Priče ispod slike** (sr/en):
+- **Apstrakcija:** „Kako nastaje ova apstrakcija": popularan opis algoritma (`algorithmic.about*`: šta je, odakle potiče, gde ulaze kvantni brojevi), kratak uvod (`storyIntro`) i sklopivi „Tehnički detalji" (`algorithmic.story*`: kontrole i koliko brojeva troši, plus `storyStream` o XOR proširenju posle 1000 brojeva).
+- **Scena:** „O ovoj sceni" ([`SceneStory`](src/components/SceneStory.tsx), `sceneStory.s0–s14`): šta scena prikazuje i spisak onoga što kvantni brojevi biraju, napravljen automatski iz registra kontrola scene (`SCENE_CONTROLS`), pa je uvek tačan. Ista komponenta je i ispod slike dana (naslovna, `/art/[date]`).
+
 **Raspored:**
 - **Telefon:** slika, pa swipe traka sličica (Scene | Apstrakcija). Donja traka ima [⚛ Izvuci] [Danas] [⚙] [⋯]. ⚙ otvara panel odozdo (do 55% visine), pa slika ostaje vidljiva.
 - **768–1279px:** dve kolone. Levo su akcije, kontrole i deljenje, desno slika i mreža sličica.
@@ -602,6 +606,22 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-23 — Tekstovi: priče o algoritmima i scenama
+
+- **Apstrakcije u Studiju:** naslov „QRNG priča za izabranu scenu" (stajao je iznad apstrakcija) → „Kako nastaje ova apstrakcija". Svaki od 9 algoritama dobio je popularan opis (`algorithmic.aboutFlowField` … `aboutApollonian`); dosadašnji tehnički tekstovi (`story*`) su u sklopivom „Tehnički detalji", zajedno sa delom uvoda o XOR proširenju (`storyStream`). Uvod skraćen. Apolonijev tehnički tekst ujednačen sa ostalima (kontrole, bez gole adrese).
+- **Scene:** nova komponenta [`SceneStory`](src/components/SceneStory.tsx) i tekstovi `sceneStory.*` za svih 15 scena: opis, „Kvantni brojevi ovde biraju: …" (iz `SCENE_CONTROLS`) i sklopivi tehnički detalji (izbor scene `(v0 ⊕ v1 ⊕ v2 ⊕ v3) mod 15`, ručni izbor u Studiju). Prikazuje se u Studiju (režim scene) i ispod slike dana na naslovnoj i `/art/[date]`.
+- Sve na srpskom i engleskom. Provereno u browseru (desktop i telefon, sr i en): bez grešaka u konzoli, bez horizontalnog skrola.
+
+### 2026-11-23 — ESLint: `react-hooks` 7.1.1 bez grešaka
+
+- **Novo pravilo `set-state-in-effect`** (stroža verzija iz `eslint-config-next` 16.4.6) prijavljivalo je 3 mesta; ispravljeno bez gašenja pravila:
+  - **`src/app/profile/page.tsx`:** omiljene se učitavaju lancem `fetch().then()` u efektu; stanje se menja tek kad stigne odgovor (i ne posle napuštanja stranice).
+  - **`src/components/ArtPageContent.tsx`:** susedni dani (strelice) preko `useSyncExternalStore`: na serveru bez strelica, na klijentu po beogradskom datumu, kao i ranije.
+  - **`src/components/studio/Studio.tsx`:** deljeni link (`?code=` preset ili `?v=` brojevi) čita se već u početnom stanju (`useState` inicijalizator), a ne u efektu; `load` i `loadFavorite` su lanci `fetch().then()`, a „učitava se" uključuju dugmad „Izvuci"/„Danas" pre poziva.
+- **Sitnice:** `prefer-const` u `draw-utils` (v1 i v2; samo `let` → `const`, bez uticaja na sliku), uklonjeni neiskorišćeni `u16`/`u32` u `zip-store.ts` i `useCallback` u profilu, nepotreban `eslint-disable` u `AbstractCanvas`, `t` u zavisnostima efekata za brojeve slike.
+- **Ostala 2 namerna upozorenja:** `<img>` u sličicama arhive (slike već pravi `/api/og-image`) i neiskorišćena promenljiva u zamrznutom v1 `city-night`.
+- Provereno u browseru: Studio bez parametara (današnji brojevi), `?v=`, `?code=` (Julia) i nepostojeći favorit (poruka + današnja slika); strelice na `/art`; profil bez prijave vodi na login; bez grešaka u konzoli (desktop i telefon).
 
 ### 2026-11-23 — Bezbednosna ažuriranja paketa (upozorenje Hostingera)
 

@@ -5,6 +5,9 @@ import { useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal, type ValuesOrigin } from "./QRNGReveal";
 import { dailyArtUrl } from "@/lib/date";
+import { scenarioIndexFor } from "@/lib/scenarios";
+import { renderVersionForDate } from "@/lib/render-version";
+import { SceneStory } from "./SceneStory";
 
 interface DailyArtSectionProps {
   date: string;
@@ -27,7 +30,7 @@ export function DailyArtSection({ date }: DailyArtSectionProps) {
         else setError(data.error || t("errorLoad"));
       })
       .catch(() => setError(t("errorLoad")));
-  }, [date]);
+  }, [date, t]);
 
   if (error) {
     return (
@@ -51,6 +54,7 @@ export function DailyArtSection({ date }: DailyArtSectionProps) {
         <ArtCanvas values={values} date={date} />
       </div>
       <QRNGReveal values={values} date={date} origin={origin} />
+      <SceneStory index={scenarioIndexFor(values, renderVersionForDate(date))} className="mt-8 max-w-4xl mx-auto" />
     </div>
   );
 }

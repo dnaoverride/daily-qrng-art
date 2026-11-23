@@ -1,15 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal, type ValuesOrigin } from "./QRNGReveal";
 import { SaveFavoriteButton } from "./SaveFavoriteButton";
-import { scenarioNameFor } from "@/lib/scenarios";
+import { scenarioIndexFor, scenarioNameFor } from "@/lib/scenarios";
+import { SceneStory } from "./SceneStory";
 import { renderVersionForDate } from "@/lib/render-version";
 import { archiveNeighbors, dailyArtUrl } from "@/lib/date";
+
+type Nav = { prev: string | null; next: string | null };
+const NO_NAV: Nav = { prev: null, next: null };
+const subscribeNever = () => () => {};
+// Stabilan objekat po datumu (useSyncExternalStore traži istu referencu dok se ništa ne menja).
+const navCache = new Map<string, Nav>();
+function neighborsFor(date: string): Nav {
+  let n = navCache.get(date);
+  if (!n) {
+    n = archiveNeighbors(date);
+    navCache.set(date, n);
+  }
+  return n;
+}
 
 function Chevron({
   dir,
@@ -90,16 +105,9 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
   const t = useTranslations("art");
   const router = useRouter();
   const locale = useLocale();
-  const [nav, setNav] = useState<{ prev: string | null; next: string | null }>({
-    prev: null,
-    next: null,
-  });
-
-  // Susedni dani se računaju na klijentu (danas po Beogradu), da nema
-  // razlike između keširanog servera i stvarnog datuma.
-  useEffect(() => {
-    setNav(archiveNeighbors(date));
-  }, [date]);
+  // Susedni dani se računaju na klijentu (danas po Beogradu), da nema razlike između
+  // keširanog servera i stvarnog datuma. Server i hidratacija: bez strelica.
+  const nav = useSyncExternalStore(subscribeNever, () => neighborsFor(date), () => NO_NAV);
 
   // Strelice na tastaturi: ← noviji dan, → stariji dan (isto kao strelice na slici).
   useEffect(() => {
@@ -125,7 +133,7 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
         else setError(data.error || t("error"));
       })
       .catch(() => setError(t("errorLoad")));
-  }, [date]);
+  }, [date, t]);
 
   useEffect(() => {
     if (nav.prev) router.prefetch(`/art/${nav.prev}`);
@@ -172,6 +180,7 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
         />
       </div>
       <QRNGReveal values={values} date={date} origin={origin} />
+      <SceneStory index={scenarioIndexFor(values, renderVersionForDate(date))} className="mt-8 max-w-4xl mx-auto" />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import { AbstractControls } from "./AbstractControls";
 import { SceneControls } from "./SceneControls";
 import { StudioSheet } from "./StudioSheet";
 import { StudioThumb } from "./StudioThumb";
+import { SceneStory } from "@/components/SceneStory";
 import { DEFAULT_ALGO_PARAMS, itemKey, type StudioItem } from "./thumb-render";
 
 const REQUIRED_COUNT = 1000;
@@ -34,7 +35,19 @@ const SCENE_ITEMS: StudioItem[] = [
   ...Array.from({ length: NUM_SCENARIOS_V2 }, (_, i) => ({ kind: "scene" as const, scenario: i })),
 ];
 const ABSTRACT_ITEMS: StudioItem[] = PHILOSOPHIES.map((p) => ({ kind: "abstract" as const, id: p.id }));
-/** Priča o algoritmu (isti tekstovi kao u starom /algorithmic). */
+/** Popularna priča o algoritmu. */
+const ABOUT_KEY: Record<PhilosophyId, string> = {
+  "flow-field": "aboutFlowField",
+  wave: "aboutWave",
+  voronoi: "aboutVoronoi",
+  "l-system": "aboutLSystem",
+  "cellular-automata": "aboutCellular",
+  truchet: "aboutTruchet",
+  julia: "aboutJulia",
+  newton: "aboutNewton",
+  apollonian: "aboutApollonian",
+};
+/** Tehnički detalji algoritma (kontrole i koliko brojeva troši). */
 const STORY_KEY: Record<PhilosophyId, string> = {
   "flow-field": "storyFlowField",
   wave: "storyWave",
@@ -108,24 +121,38 @@ export function Studio() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const [mode, setMode] = useState<Mode>(params.get("mode") === "abstract" ? "abstract" : "scene");
+  // Deljeni link (preset kod ili brojevi) se čita već pri prvom prikazu; favorit i
+  // današnji brojevi stižu asinhrono (efekat ispod).
+  const [initial] = useState(() => {
+    const preset = params.get("favorite") ? null : params.get("code") ? decodePreset(params.get("code")!) : null;
+    const shared = params.get("favorite") || preset ? null : decodeValues(params.get("v"));
+    return { preset, values: preset?.values ?? shared ?? null };
+  });
+  const [mode, setMode] = useState<Mode>(
+    initial.preset || params.get("mode") === "abstract" ? "abstract" : "scene"
+  );
   const [scene, setScene] = useState<number | null>(parseScene(params.get("s")));
-  const [abstract, setAbstract] = useState<PhilosophyId>(parseAbstract(params.get("a")));
-  const [values, setValues] = useState<number[] | null>(null);
+  const [abstract, setAbstract] = useState<PhilosophyId>(initial.preset?.philosophy ?? parseAbstract(params.get("a")));
+  const [values, setValues] = useState<number[] | null>(initial.values);
   // Izvor brojeva (Izvuci/Danas); null za zalepljene brojeve, favorite i deljene kodove.
   const [origin, setOrigin] = useState<ValuesOrigin | null>(null);
-  const [drawId, setDrawId] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [drawId, setDrawId] = useState(initial.values ? 1 : 0);
+  // Bez brojeva iz linka, prvi prikaz odmah učitava (favorit ili današnji brojevi).
+  const [loading, setLoading] = useState(!initial.values);
   const [error, setError] = useState<string | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => initial.values?.join(", ") ?? "");
   // Kontrole scene po izboru u traci ("auto" ili indeks scene)
   const [sceneCtl, setSceneCtl] = useState<Record<string, Controls>>(() => ({
     [String(parseScene(params.get("s")) ?? "auto")]: decodeControls(params.get("c")),
   }));
   const [naturals, setNaturals] = useState<Record<string, boolean | number>>({});
-  const [absParams, setAbsParams] = useState<Record<PhilosophyId, AlgoParams>>(() => ({ ...DEFAULT_ALGO_PARAMS }));
+  const [absParams, setAbsParams] = useState<Record<PhilosophyId, AlgoParams>>(() =>
+    initial.preset
+      ? { ...DEFAULT_ALGO_PARAMS, [initial.preset.philosophy]: initial.preset.params }
+      : { ...DEFAULT_ALGO_PARAMS }
+  );
   const [lockPhilosophy, setLockPhilosophy] = useState(true);
   const [lockPalette, setLockPalette] = useState(false);
   const [animate, setAnimate] = useState(true);
@@ -149,23 +176,33 @@ export function Studio() {
   }, []);
 
   const load = useCallback(
-    async (url: string, errKey: "errorDraw" | "errorToday", draw = false) => {
-      setError(null);
-      setLoading(true);
-      try {
-        const r = await fetchValues(url, draw);
-        show(r.values, r.origin);
-      } catch {
-        setError(t(errKey));
-      } finally {
-        setLoading(false);
-      }
-    },
+    (url: string, errKey: "errorDraw" | "errorToday", draw = false): Promise<void> =>
+      fetchValues(url, draw).then(
+        (r) => {
+          setError(null);
+          show(r.values, r.origin);
+          setLoading(false);
+        },
+        () => {
+          setError(t(errKey));
+          setLoading(false);
+        }
+      ),
     [show, t]
   );
 
-  const handleDraw = () => load("/api/generate", "errorDraw", true);
-  const handleToday = () => load(dailyArtUrl(getTodayBelgrade()), "errorToday");
+  const startLoading = () => {
+    setError(null);
+    setLoading(true);
+  };
+  const handleDraw = () => {
+    startLoading();
+    void load("/api/generate", "errorDraw", true);
+  };
+  const handleToday = () => {
+    startLoading();
+    void load(dailyArtUrl(getTodayBelgrade()), "errorToday");
+  };
   const handlePaste = () => {
     const parsed = parseValues(input);
     if (!parsed) {
@@ -179,79 +216,57 @@ export function Studio() {
 
   // Omiljena slika (`?favorite=<id>`): brojevi + scena/kontrole ili apstrakcija/parametri.
   const loadFavorite = useCallback(
-    async (id: string) => {
-      setError(null);
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/favorites/${encodeURIComponent(id)}`);
-        const data = (await res.json()) as {
-          favorite?: { values?: unknown; scenarioName?: string | null; algoPreset?: unknown; createdAt?: string };
-        };
-        const fav = data.favorite;
-        const raw = fav?.values;
-        const vals = Array.isArray(raw) ? raw : typeof raw === "string" ? (JSON.parse(raw) as unknown[]) : [];
-        if (!res.ok || !fav || vals.length !== REQUIRED_COUNT) throw new Error("bad");
-        const numbers = vals.map((n) => (Number(n) >>> 0) & 0xffff);
+    (id: string) =>
+      fetch(`/api/favorites/${encodeURIComponent(id)}`)
+        .then(async (res) => {
+          const data = (await res.json()) as {
+            favorite?: { values?: unknown; scenarioName?: string | null; algoPreset?: unknown; createdAt?: string };
+          };
+          const fav = data.favorite;
+          const raw = fav?.values;
+          const vals = Array.isArray(raw) ? raw : typeof raw === "string" ? (JSON.parse(raw) as unknown[]) : [];
+          if (!res.ok || !fav || vals.length !== REQUIRED_COUNT) throw new Error("bad");
+          const numbers = vals.map((n) => (Number(n) >>> 0) & 0xffff);
 
-        setLegacyVersion(null);
-        const preset = fav.algoPreset as AlgoPreset | null | undefined;
-        const pid = preset?.philosophy ?? parseFavoriteScenarioToPhilosophyId(fav.scenarioName);
-        if (pid) {
-          setMode("abstract");
-          setAbstract(pid);
-          if (preset?.philosophy && preset.params) setAbsParams((m) => ({ ...m, [pid]: preset.params }));
-        } else {
-          const sc = parseFavoriteScene(fav.scenarioName);
-          setMode("scene");
-          setScene(sc?.scenario ?? null);
-          setSceneCtl(sc ? { [String(sc.scenario)]: sc.controls } : {});
-          if (!sc && fav.createdAt && renderVersionForTimestamp(fav.createdAt) === 1) setLegacyVersion(1);
-        }
-        setValues(numbers);
-        setOrigin(null);
-        setInput(numbers.join(", "));
-        setDrawId((d) => d + 1);
-      } catch {
-        // Umesto favorita današnja slika, ali poruka ostaje (load briše grešku na početku).
-        await load(dailyArtUrl(getTodayBelgrade()), "errorToday");
-        setError(t("errorFavorite"));
-      } finally {
-        setLoading(false);
-      }
-    },
+          setLegacyVersion(null);
+          const preset = fav.algoPreset as AlgoPreset | null | undefined;
+          const pid = preset?.philosophy ?? parseFavoriteScenarioToPhilosophyId(fav.scenarioName);
+          if (pid) {
+            setMode("abstract");
+            setAbstract(pid);
+            if (preset?.philosophy && preset.params) setAbsParams((m) => ({ ...m, [pid]: preset.params }));
+          } else {
+            const sc = parseFavoriteScene(fav.scenarioName);
+            setMode("scene");
+            setScene(sc?.scenario ?? null);
+            setSceneCtl(sc ? { [String(sc.scenario)]: sc.controls } : {});
+            if (!sc && fav.createdAt && renderVersionForTimestamp(fav.createdAt) === 1) setLegacyVersion(1);
+          }
+          setValues(numbers);
+          setOrigin(null);
+          setInput(numbers.join(", "));
+          setDrawId((d) => d + 1);
+          setLoading(false);
+        })
+        .catch(async () => {
+          // Umesto favorita današnja slika, ali poruka ostaje (load briše grešku kad uspe).
+          await load(dailyArtUrl(getTodayBelgrade()), "errorToday");
+          setError(t("errorFavorite"));
+          setLoading(false);
+        }),
     [load, t]
   );
 
-  // Prvi prikaz: omiljena slika, deljeni link (preset kod ili brojevi) ili današnji brojevi.
+  // Prvi prikaz: deljeni link je već u početnom stanju; inače omiljena slika ili današnji
+  // brojevi (stanje se menja tek kad stigne odgovor).
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    if (initial.values) return;
     const favoriteId = params.get("favorite");
-    if (favoriteId) {
-      void loadFavorite(favoriteId);
-      return;
-    }
-    const preset = params.get("code") ? decodePreset(params.get("code")!) : null;
-    if (preset) {
-      setMode("abstract");
-      setAbstract(preset.philosophy);
-      setAbsParams((m) => ({ ...m, [preset.philosophy]: preset.params }));
-      setValues(preset.values);
-      setOrigin(null);
-      setInput(preset.values.join(", "));
-      setDrawId((d) => d + 1);
-      return;
-    }
-    const shared = decodeValues(params.get("v"));
-    if (shared) {
-      setValues(shared);
-      setOrigin(null);
-      setInput(shared.join(", "));
-      setDrawId((d) => d + 1);
-      return;
-    }
-    void load(dailyArtUrl(getTodayBelgrade()), "errorToday");
-  }, [load, loadFavorite, params]);
+    if (favoriteId) void loadFavorite(favoriteId);
+    else void load(dailyArtUrl(getTodayBelgrade()), "errorToday");
+  }, [initial.values, load, loadFavorite, params]);
 
   const ctlKey = String(scene ?? "auto");
   const controls = useMemo(() => sceneCtl[ctlKey] ?? {}, [sceneCtl, ctlKey]);
@@ -618,19 +633,31 @@ export function Studio() {
               </div>
             )}
 
-            {/* Priča o algoritmu (iz starog /algorithmic) */}
+            {/* Priča o algoritmu: popularno + sklopivi tehnički detalji */}
             {mode === "abstract" && (
               <section className="mt-6 space-y-3" aria-labelledby="studio-story-heading">
                 <h2 id="studio-story-heading" className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">
                   {tAlgo("storyTitle")}
                 </h2>
-                <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">{tAlgo("storyIntro")}</p>
-                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4">
-                  <p className="text-xs font-medium text-violet-700 dark:text-violet-400/90 mb-2">{tAlgo(LABEL_KEY[abstract])}</p>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{tAlgo(STORY_KEY[abstract])}</p>
+                <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4 space-y-2">
+                  <p className="text-xs font-medium text-violet-700 dark:text-violet-400/90">{tAlgo(LABEL_KEY[abstract])}</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{tAlgo(ABOUT_KEY[abstract])}</p>
                 </div>
+                <p className="text-sm text-zinc-600 dark:text-zinc-500 leading-relaxed">{tAlgo("storyIntro")}</p>
+                <details className="text-sm text-zinc-600 dark:text-zinc-500">
+                  <summary className="cursor-pointer select-none font-medium text-zinc-700 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200">
+                    {tAlgo("storyTechnical")}
+                  </summary>
+                  <div className="mt-2 space-y-2 leading-relaxed">
+                    <p>{tAlgo(STORY_KEY[abstract])}</p>
+                    <p>{tAlgo("storyStream")}</p>
+                  </div>
+                </details>
               </section>
             )}
+
+            {/* Priča o sceni (izabrana ili kvantni izbor) */}
+            {mode === "scene" && effScene !== null && <SceneStory index={effScene} className="mt-6" />}
           </section>
 
           {/* Široki ekran: kontrole u desnoj koloni, uz sliku */}

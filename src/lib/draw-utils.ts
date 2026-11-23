@@ -63,7 +63,7 @@ export function ridgePoints(
     const t = (x % anchorStep) / anchorStep;
     const v0 = anchors[ai % anchors.length]!;
     const v1 = anchors[(ai + 1) % anchors.length]!;
-    let v = lerp(v0, v1, smoothstep(t));
+    const v = lerp(v0, v1, smoothstep(t));
 
     let detail = 0;
     if (detailScale > 0) {

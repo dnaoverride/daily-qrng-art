@@ -11,19 +11,6 @@ function crc32(data: Uint8Array): number {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function u16(n: number): Uint8Array {
-  return new Uint8Array([n & 0xff, (n >>> 8) & 0xff]);
-}
-
-function u32(n: number): Uint8Array {
-  return new Uint8Array([
-    n & 0xff,
-    (n >>> 8) & 0xff,
-    (n >>> 16) & 0xff,
-    (n >>> 24) & 0xff,
-  ]);
-}
-
 export interface ZipEntry {
   name: string;
   data: Uint8Array;

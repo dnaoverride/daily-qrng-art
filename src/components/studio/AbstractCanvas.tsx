@@ -64,7 +64,6 @@ export function AbstractCanvas({ values, id, params, animate, onCanvasReady }: A
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- platno je odmah „nacrtano"
     setDrawn(key);
     return () => cancelAnimationFrame(raf);
   }, [values, params, key, live]);
