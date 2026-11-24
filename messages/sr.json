@@ -408,6 +408,7 @@
     },
     "event": {
       "meteors": "Zvezde padalice",
+      "meteoroids": "Meteoroidi",
       "rainbow": "Duga",
       "comet": "Kometa",
       "aurora": "Polarna svetlost",

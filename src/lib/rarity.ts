@@ -12,6 +12,7 @@ export type RarityTier = "common" | "rare" | "epic" | "legendary";
 
 export type RarityEvent =
   | "meteors" // zvezde padalice
+  | "meteoroids" // isti crtež kao meteors, ali u svemiru (kosmos — nema atmosfere, pa nisu „zvezde padalice")
   | "rainbow" // duga
   | "comet" // kometa
   | "aurora" // polarna svetlost

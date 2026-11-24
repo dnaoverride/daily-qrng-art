@@ -408,6 +408,7 @@
     },
     "event": {
       "meteors": "Shooting stars",
+      "meteoroids": "Meteoroids",
       "rainbow": "Rainbow",
       "comet": "Comet",
       "aurora": "Aurora",

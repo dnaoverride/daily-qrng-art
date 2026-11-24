@@ -18,6 +18,7 @@ const H = 675;
 /** Ključ prevoda (messages → rarity.event.*) za događaj. */
 const EVENT_KEY: Record<RarityEvent, string> = {
   meteors: "meteors",
+  meteoroids: "meteoroids",
   rainbow: "rainbow",
   comet: "comet",
   aurora: "aurora",

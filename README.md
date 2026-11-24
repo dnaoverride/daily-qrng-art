@@ -607,6 +607,11 @@ Aplikacija je dostupna na **http://localhost:9500**.
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
 
+### 2026-11-24 — Kosmos: „Meteoroidi" umesto „Zvezde padalice"
+
+- Retki događaj u Kosmosu (noć bez horizonta) zvao se „Zvezde padalice", a u svemiru nema atmosfere u kojoj bi sagorevale. Novi događaj `meteoroids` ([`rarity.ts`](src/lib/rarity.ts), [`sky-events.ts`](src/lib/sky-events.ts)) crta se isto kao `meteors`, samo je natpis „Retko · Meteoroidi" / "Meteoroids".
+- Slike se ne menjaju: na 400 slika pikseli su isti, promenio se samo natpis kod kosmos slika.
+
 ### 2026-11-24 — Preuzimanje PNG u 3 rezolucije svuda
 
 - **Slika dana i arhiva:** nova komponenta [`DownloadPng`](src/components/DownloadPng.tsx) (izbor 1200×675 / 2400×1350 / 3840×2160 + „↓ Preuzmi PNG"). Na naslovnoj je ispod slike, a na `/art/[date]` pored „Sačuvaj u omiljene". Fajl: `qrng-art-<datum>-<hd|2k|4k>.png`.

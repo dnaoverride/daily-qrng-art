@@ -108,6 +108,7 @@ export function createSceneHooks(
       ctx.clip();
       switch (event) {
         case "meteors":
+        case "meteoroids":
           drawMeteors(ctx, rand, w, i.horizonY, s);
           break;
         case "rainbow":
@@ -181,7 +182,8 @@ function chooseEvent(tier: RarityTier, i: SkyInfo, pick: number): RarityEvent {
   const night = i.light === "night";
   const day = i.light === "day";
   // Zvezde padalice samo noću (u svetlom sumraku se ne vide); danju i u sumraku duga
-  if (tier === "rare") return night ? "meteors" : "rainbow";
+  // Bez horizonta (kosmos) nema atmosfere: isti crtež, ali se zovu meteoroidi.
+  if (tier === "rare") return night ? (i.hasHorizon === false ? "meteoroids" : "meteors") : "rainbow";
   if (tier === "epic") {
     if (day) return "double-rainbow";
     if (night && i.hasHorizon !== false && pick < 0.55) return "aurora";
