@@ -9,6 +9,7 @@ export {
   scenarioCount,
   scenarioIndexFor,
   type RenderResult,
+  type RenderOptions,
 } from "./router";
 
 /** Imena scenarija (indeks 0–7 isti u v1 i v2; 8+ samo v2). */

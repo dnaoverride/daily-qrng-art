@@ -65,6 +65,12 @@ export interface RenderOptions {
   scenario?: number;
   /** Samo v2 (Studio): kontrole scene — vidi ./controls.ts. */
   controls?: SceneControls;
+  /**
+   * Izvoz u većoj rezoluciji: platno je (w·k)×(h·k), a scena se crta u logičkim
+   * w×h koordinatama uvećanim k puta — ista kompozicija kao na ekranu, samo oštrija.
+   * Piksel prolazi (post-fx, glitch) rade nad punim platnom. Podrazumevano 1.
+   */
+  pixelRatio?: number;
 }
 
 export function renderArt(
@@ -85,12 +91,18 @@ export function renderArt(
       ? opts.scenario
       : undefined;
   const scenarioIndex = forced ?? scenarioIndexFor(v, version);
+  const k = opts.pixelRatio && opts.pixelRatio > 0 ? opts.pixelRatio : 1;
+  if (k !== 1) {
+    ctx.save();
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+  }
   if (version === 1) {
     renderArtV1(ctx, stream, w, h);
+    if (k !== 1) ctx.restore();
     return { version, scenarioIndex, rarity: null, meta: {}, naturals: {} };
   }
   // Rarity: nebeski događaji preko hook-ova u scenariju (ne troše QRNGStream)
-  const { hooks, finish } = createSceneHooks(ctx, v, w, h);
+  const { hooks, finish } = createSceneHooks(ctx, v, w, h, k);
   const meta: SceneMeta = {};
   const ctl =
     opts.controls && Object.keys(opts.controls).length
@@ -112,8 +124,9 @@ export function renderArt(
   }
   renderArtV2(ctx, stream, w, h, { ...hooks, ...ctl, report, meta: (m) => Object.assign(meta, m) }, forced);
   const rarity = finish();
-  // Post-fx (grain, vinjeta, split-tone, kontrast) — samo v2, posle scene.
-  applyPostFx(ctx, w, h, postFx ?? pickPostFxParams(stream));
+  if (k !== 1) ctx.restore();
+  // Post-fx (grain, vinjeta, split-tone, kontrast) — samo v2, posle scene, nad svim pikselima platna.
+  applyPostFx(ctx, Math.round(w * k), Math.round(h * k), postFx ?? pickPostFxParams(stream));
   return { version, scenarioIndex, rarity, meta, naturals };
 }
 

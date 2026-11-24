@@ -422,5 +422,6 @@ Izmene u scenarijima se beleže ovde. README.md referencira ovu sekciju.
 | 2026-11-19 | Podvodni svet (novo, v2) | Scenario 9: greben, kelp, ribe, kornjača, meduze, udičarka, zraci, kaustike; 6 paleta uklj. ponor; podvodni retki događaji (raža, kit, kraken). v2 bira `% 10`. |
 | 2026-11-19 | Gradovi (v2) | Dodati Pariz (Ajfelova kula, Sacré-Cœur, Notre-Dame, Haussmann, kameni most, bateau-mouche) i Rim (Sv. Petar, Koloseum, Anđeoska tvrđava i most, pinije, čempresi); težine 35 / 32.5 / 32.5; izmaglica nad gradom slabija. |
 | 2026-11-19 | Gradovi (novo, v2) | Scenario 8: pogled preko reke na Beograd (Hram Svetog Save, Ušće, Beograđanka, Kula Beograd, Avala, Kalemegdan sa Pobednikom, Most na Adi), pravi odraz, splav, 6 paleta; ime grada ispod slike. v2 bira `% 9`. |
+| 2026-11-24 | Router / rarity (v2) | `RenderOptions.pixelRatio` za izvoz u većoj rezoluciji: scena u logičkih 1200×675 uvećana k puta; post-fx i glitch rade nad svim pikselima platna, glitch linije debljine `round(s)`. Pri k = 1 izlaz je identičan bajt-za-bajt (400 slika, v1 i v2). |
 
 **Pravilo:** Pri svakoj izmeni scenarija dodati red u ovu tabelu (datum, scenarij, kratak opis).

@@ -55,7 +55,9 @@ export function createSceneHooks(
   ctx: CanvasRenderingContext2D,
   values: readonly number[],
   w: number,
-  h: number
+  h: number,
+  /** Izvoz u većoj rezoluciji (vidi RenderOptions.pixelRatio): ctx je već uvećan k puta. */
+  pixelRatio = 1
 ): { hooks: SceneHooks; finish: () => RarityResult } {
   const tier: RarityTier = rarityTier(values);
   const rand = rarityRand(values);
@@ -154,7 +156,14 @@ export function createSceneHooks(
       }
     } else if (event === "eclipse" || event === "blood-moon" || event === "glitch") {
       event = "glitch";
-      drawGlitch(ctx, rand, w, h, s);
+      // Piksel prolaz radi u pravim pikselima platna (bez transformacije).
+      const k = pixelRatio;
+      if (k !== 1) {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      drawGlitch(ctx, rand, Math.round(w * k), Math.round(h * k), s * k);
+      if (k !== 1) ctx.restore();
     }
     return { tier, event };
   }
@@ -562,13 +571,17 @@ function drawGlitch(ctx: CanvasRenderingContext2D, rand: Rand, w: number, h: num
   }
   // Par tankih svetlih „scanline" linija
   const lines = 2 + Math.floor(rand() * 3);
+  // Debljina linije prati razmeru (1 px na ekranu; veći izvoz → deblja, ista slika)
+  const lw = Math.max(1, Math.round(s));
   for (let k = 0; k < lines; k++) {
-    const y = Math.floor(rand() * h);
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      d[i] = Math.min(255, d[i]! + 60);
-      d[i + 1] = Math.min(255, d[i + 1]! + 60);
-      d[i + 2] = Math.min(255, d[i + 2]! + 60);
+    const y0 = Math.floor(rand() * h);
+    for (let y = y0; y < Math.min(h, y0 + lw); y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        d[i] = Math.min(255, d[i]! + 60);
+        d[i + 1] = Math.min(255, d[i + 1]! + 60);
+        d[i + 2] = Math.min(255, d[i + 2]! + 60);
+      }
     }
   }
   ctx.putImageData(img, 0, 0);

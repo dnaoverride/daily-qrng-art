@@ -8,6 +8,7 @@ import { dailyArtUrl } from "@/lib/date";
 import { scenarioIndexFor } from "@/lib/scenarios";
 import { renderVersionForDate } from "@/lib/render-version";
 import { SceneStory } from "./SceneStory";
+import { DownloadPng } from "./DownloadPng";
 
 interface DailyArtSectionProps {
   date: string;
@@ -53,6 +54,7 @@ export function DailyArtSection({ date }: DailyArtSectionProps) {
       <div className="flex justify-center">
         <ArtCanvas values={values} date={date} />
       </div>
+      <DownloadPng values={values} date={date} className="mt-3 max-w-4xl mx-auto justify-end" />
       <QRNGReveal values={values} date={date} origin={origin} />
       <SceneStory index={scenarioIndexFor(values, renderVersionForDate(date))} className="mt-8 max-w-4xl mx-auto" />
     </div>

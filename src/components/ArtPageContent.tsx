@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { ArtCanvas } from "./ArtCanvas";
 import { QRNGReveal, type ValuesOrigin } from "./QRNGReveal";
 import { SaveFavoriteButton } from "./SaveFavoriteButton";
+import { DownloadPng } from "./DownloadPng";
 import { scenarioIndexFor, scenarioNameFor } from "@/lib/scenarios";
 import { SceneStory } from "./SceneStory";
 import { renderVersionForDate } from "@/lib/render-version";
@@ -164,7 +165,10 @@ export function ArtPageContent({ date }: ArtPageContentProps) {
         <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
           {t("title", { date })}
         </h1>
-        <SaveFavoriteButton values={values} scenarioName={scenarioName} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <DownloadPng values={values} date={date} />
+          <SaveFavoriteButton values={values} scenarioName={scenarioName} />
+        </div>
       </div>
       <div className="flex justify-center">
         <ArtCanvas

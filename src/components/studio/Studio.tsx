@@ -17,6 +17,7 @@ import { encodeFavoriteScene, parseFavoriteScene, parseFavoriteScenarioToPhiloso
 import { randomizeParams } from "@/lib/algorithmic/randomize-params";
 import { EXPORT_PRESETS, exportAlgorithmicPng, type ExportPresetId } from "@/lib/algorithmic/export-png";
 import { exportVariationSetZip } from "@/lib/algorithmic/export-set";
+import { exportScenePng } from "@/lib/scene-export";
 import { exportFlowFieldWebm, supportsWebmExport } from "@/lib/algorithmic/export-video";
 import { AbstractCanvas } from "./AbstractCanvas";
 import { AbstractControls } from "./AbstractControls";
@@ -342,11 +343,14 @@ export function Studio() {
     try {
       if (mode === "abstract") {
         await exportAlgorithmicPng(abstract, values, params0, exportPresetId, `qrng-studio-${abstract}-${exportPresetId}.png`);
-      } else if (canvasRef.current) {
-        const a = document.createElement("a");
-        a.href = canvasRef.current.toDataURL("image/png");
-        a.download = `qrng-studio-${effScene ?? "scene"}-${Date.now()}.png`;
-        a.click();
+      } else {
+        await exportScenePng(
+          values,
+          legacy ? 1 : currentRenderVersion(),
+          { scenario: scene ?? undefined, controls: legacy ? undefined : controls },
+          exportPresetId,
+          `qrng-studio-scene${effScene ?? ""}-${exportPresetId}-${Date.now()}.png`
+        );
       }
     } finally {
       setBusy(false);
@@ -454,20 +458,18 @@ export function Studio() {
 
   const exportPanel = values && (
     <div className="space-y-2">
-      {mode === "abstract" && (
-        <select
-          value={exportPresetId}
-          onChange={(e) => setExportPresetId(e.target.value as ExportPresetId)}
-          aria-label={tAlgo("exportResolution")}
-          className="w-full min-h-11 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-sm text-zinc-900 dark:text-zinc-100"
-        >
-          {EXPORT_PRESETS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-      )}
+      <select
+        value={exportPresetId}
+        onChange={(e) => setExportPresetId(e.target.value as ExportPresetId)}
+        aria-label={tAlgo("exportResolution")}
+        className="w-full min-h-11 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-sm text-zinc-900 dark:text-zinc-100"
+      >
+        {EXPORT_PRESETS.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.label}
+          </option>
+        ))}
+      </select>
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={handlePng} disabled={busy} className={btnSecondary}>
           {busy ? tAlgo("exporting") : `↓ ${t("downloadPng")}`}

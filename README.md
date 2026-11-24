@@ -377,7 +377,7 @@ Studio je spojio igraonicu (`/create-art`) i algoritmički art (`/algorithmic`).
 | `favorite=<id>` | otvara omiljenu sliku |
 
 **Izvoz i deljenje:**
-- PNG (scena 1200×675; apstrakcija 1200×675, 2400×1350 ili 3840×2160);
+- PNG u 1200×675, 2400×1350 ili 3840×2160, za scenu i apstrakciju (scena: [`scene-export.ts`](src/lib/scene-export.ts), ista kompozicija u svakoj rezoluciji);
 - ZIP set varijacija i WebM loop (flow-field);
 - „Kopiraj link";
 - „Sačuvaj u omiljene".
@@ -606,6 +606,14 @@ Aplikacija je dostupna na **http://localhost:9500**.
 ## Changelog
 
 Svaki update aplikacije se beleži ovde. Format: datum, scenarij/fajl, opis promene. **Detaljne izmene scenarija** vidi u [SCENARIOS.md](SCENARIOS.md#7-changelog-scenarija).
+
+### 2026-11-24 — Preuzimanje PNG u 3 rezolucije svuda
+
+- **Slika dana i arhiva:** nova komponenta [`DownloadPng`](src/components/DownloadPng.tsx) (izbor 1200×675 / 2400×1350 / 3840×2160 + „↓ Preuzmi PNG"). Na naslovnoj je ispod slike, a na `/art/[date]` pored „Sačuvaj u omiljene". Fajl: `qrng-art-<datum>-<hd|2k|4k>.png`.
+- **Studio, scene:** izbor rezolucije više nije samo za apstrakcije; PNG scene se crta ponovo u izabranoj rezoluciji (sa izabranom scenom i kontrolama), umesto snimka platna sa ekrana.
+- **[`src/lib/scene-export.ts`](src/lib/scene-export.ts):** scena se crta u logičkih 1200×675 uvećano k puta (`renderArt(..., { pixelRatio })`). Direktno crtanje u 3840×2160 menjalo je kompoziciju: v1 je ceo u apsolutnim pikselima, a japanski vrt (v2) pomera pagodu i drvo. Uvećanjem je slika ista u svakoj rezoluciji, samo oštrija.
+- **Renderer (v2):** `pixelRatio` u [`router.ts`](src/lib/scenarios/router.ts); post-fx i kvantni glitch ([`sky-events.ts`](src/lib/sky-events.ts)) rade nad svim pikselima platna, a glitch linije su deblje u većem izvozu. v1 nije menjan. Bez `pixelRatio` izlaz je bajt-za-bajt isti (provereno na 400 slika, v1 i v2, uključujući glitch), pa se slike u arhivi ne menjaju.
+- Provereno u browseru: preuzeti fajlovi imaju tačne dimenzije (v2 4K, v1 2K, naslovna HD, Studio scena 4K), slika odgovara onoj na ekranu, telefon bez horizontalnog skrola, bez grešaka u konzoli.
 
 ### 2026-11-23 — Tekstovi: priče o algoritmima i scenama
 
